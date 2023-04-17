@@ -2,6 +2,8 @@
 # MIT License
 
 class HTTP::Tiny {
+  use HTTP::Tiny::CookieJar::Interface;
+  
   has default_headers : string[];
   has http_proxy : string;
   has https_proxy : string;
@@ -10,13 +12,9 @@ class HTTP::Tiny {
   has max_redirect : int;
   has max_size : int;
   has proxy : string;
-
-=pod
-  has cookie_jar : HTTP::CookieJar;
+  has cookie_jar : HTTP::Tiny::CookieJar::Interface;
   has SSL_options : object[];
   has verify_SSL : int;
-=cut
-
 }
 
 =pod
