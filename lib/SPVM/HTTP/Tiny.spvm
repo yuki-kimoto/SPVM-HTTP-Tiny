@@ -8,6 +8,9 @@ class HTTP::Tiny {
   use Regex;
   use HTTP::Tiny::CookieJar::Interface;
   use HTTP::Tiny::Handle;
+  use Hash;
+  use Sys::Env;
+  use MIME::Base64;
   
   has default_headers : string[];
   has http_proxy : string;
@@ -23,17 +26,19 @@ class HTTP::Tiny {
   has agent : ro string;
   has timeout : ro int;
   has handle : HTTP::Tiny::Handle;
+  has no_proxy : string[];
+  has _has_proxy : Hash;
   
   method set_agent : void ($agent : string) {
     
     if ($agent && Regex->new(" $")->match($agent)) {
-      $agent = $agent . $self->_agent;
+      $agent = $agent . &_agent;
     }
     
     $self->{agent} = $agent;
   }
   
-  private method _agent : string () {
+  private static method _agent : string () {
     
     my $default_agent = "HTTP-Tiny";
     
@@ -50,119 +55,181 @@ class HTTP::Tiny {
       $self->{handle}->set_timeout($timeout);
     }
   }
- 
+  
+  static method new : HTTP::Tiny ($options = undef : object[]) {
+    
+    my $options_h = Hash->new($options);
+    
+    my $self = new HTTP::Tiny;
+    
+    $self->{max_redirect} = 5;
+    
+    $self->{timeout} = $options_h->delete_or_default_int("timeout", 60);
+    
+    $self->{keep_alive} = $options_h->delete_or_default_int("keep_alive", 1);
+    
+    $self->{verify_SSL} = $options_h->delete_or_default_int("verify_SSL", 0);
+    
+    my $env_no_proxy = Sys::Env->getenv("no_proxy");
+    my $no_proxy_default = (string[])undef;
+    if ($env_no_proxy) {
+      $no_proxy_default = [$env_no_proxy];
+    }
+    else {
+      $no_proxy_default = new string [0];
+    }
+    $self->{no_proxy} = (string[])$options_h->delete_or_default("no_proxy", $no_proxy_default);
+    
+    $self->{cookie_jar} = (HTTP::Tiny::CookieJar::Interface)$options_h->delete_or_default("cookie_jar", undef);
+    
+    $self->{default_headers} = (string[])$options_h->delete_or_default("default_headers", undef);
+    
+    $self->{http_proxy} = $options_h->delete_or_default_string("http_proxy", undef);
+    
+    $self->{https_proxy} = $options_h->delete_or_default_string("https_proxy", undef);
+    
+    $self->{local_address} = $options_h->delete_or_default_string("local_address", undef);
+    
+    $self->{max_redirect} = $options_h->delete_or_default_int("max_redirect", -1);
+    
+    $self->{max_size} = $options_h->delete_or_default_int("max_size", -1);
+    
+    $self->{proxy} = $options_h->delete_or_default_string("proxy", undef);
+    
+    $self->{SSL_options} = (object[])$options_h->delete_or_default("SSL_options", undef);
+    
+    $self->{verify_SSL} = $options_h->delete_or_default_int("verify_SSL", 0);
+    
+    $self->{agent} = $options_h->delete_or_default_string("agent", &_agent);
+    
+    # $self->_set_proxies;
+    
+    return $self;
+  }
+
+=pod
+
+  method _set_proxies {
+    
+    # generic proxy
+    if (!$self->{proxy} ) {
+      $self->{proxy} = Sys::Env->getenv("all_proxy") || Sys::Env->getenv("ALL_PROXY");
+    }
+    
+    if ($self->{proxy} ) {
+      $self->_split_proxy("generic proxy", $self->{proxy}); # validate
+    }
+    else {
+      $self->{proxy} = undef;
+    }
+    
+    # http proxy
+    if (!$self->{http_proxy} ) {
+      # under CGI, bypass HTTP_PROXY as request sets it from Proxy header
+      local Sys::Env->getenv("HTTP_PROXY") = (Sys::Env->getenv("CGI_HTTP_PROXY") || "") if Sys::Env->getenv("REQUEST_METHOD");
+      $self->{http_proxy} = Sys::Env->getenv("http_proxy") || Sys::Env->getenv("HTTP_PROXY") || $self->{proxy};
+    }
+    
+    if ($self->{http_proxy} ) {
+      $self->_split_proxy("http_proxy", $self->{http_proxy}); # validate
+      $self->{_has_proxy}->set_int("http", 1);
+    }
+    else {
+      $self->{http_proxy} = undef;
+    }
+    
+    # https proxy
+    if (!$self->{https_proxy}) {
+      $self->{https_proxy} = Sys::Env->getenv("https_proxy") || Sys::Env->getenv("HTTPS_PROXY") || $self->{proxy};
+    }
+    
+    if ($self->{https_proxy}) {
+      $self->_split_proxy("https_proxy", $self->{https_proxy} ); # validate
+      $self->{_has_proxy}->set_int("https", 1);
+    }
+    else {
+      $self->{https_proxy} = undef;
+    }
+    
+    return;
+  }
+
+
+  method _split_proxy {
+    
+    my ($scheme, $host, $port, $path_query, $auth) = eval { $self->_split_url($proxy) };
+    
+    unless(
+        defined($scheme) && length($scheme) && length($host) && length($port)
+        && $path_query eq '/'
+    ) {
+        _croak(qq{$type URL must be in format http[s]://[auth@]<host>:<port>/\n});
+    }
+    
+    return ($scheme, $host, $port, $auth);
+  }
+
+  method _split_url {
+      my $url = pop;
+
+      # URI regex adapted from the URI module
+      my ($scheme, $host, $path_query) = $url =~ m<\A([^:/?#]+)://([^/?#]*)([^#]*)>
+        or die(qq/Cannot parse URL: '$url'\n/);
+
+      $scheme     = lc $scheme;
+      $path_query = "/$path_query" unless $path_query =~ m<\A/>;
+
+      my $auth = '';
+      if ( (my $i = index $host, '@') != -1 ) {
+          # user:pass@host
+          $auth = substr $host, 0, $i, ''; # take up to the @ for auth
+          substr $host, 0, 1, '';          # knock the @ off the host
+
+          # userinfo might be percent escaped, so recover real auth info
+          $auth =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+      }
+      my $port = $host =~ s/:(\d*)\z// && length $1 ? $1
+               : $scheme eq 'http'                  ? 80
+               : $scheme eq 'https'                 ? 443
+               : undef;
+
+      return ($scheme, (length $host ? lc $host : "localhost") , $port, $path_query, $auth);
+  }
+
+=cut
+
 }
 
 =pod
 
-  method new {
-      my($class, %args) = @_;
-
-      my $self = {
-          max_redirect => 5,
-          timeout      => defined $args{timeout} ? $args{timeout} : 60,
-          keep_alive   => 1,
-          verify_SSL   => $args{verify_SSL} || $args{verify_ssl} || 0, # no verification by default
-          no_proxy     => $ENV{no_proxy},
-      };
-
-      bless $self, $class;
-
-      $class->_validate_cookie_jar( $args{cookie_jar} ) if $args{cookie_jar};
-
-      for my $key ( @attributes ) {
-          $self->{$key} = $args{$key} if exists $args{$key}
-      }
-
-      $self->agent( exists $args{agent} ? $args{agent} : $class->_agent );
-
-      $self->_set_proxies;
-
-      return $self;
-  }
-
-  method _set_proxies {
-      my ($self) = @_;
-
-      # get proxies from %ENV only if not provided; explicit undef will disable
-      # getting proxies from the environment
-
-      # generic proxy
-      if (! exists $self->{proxy} ) {
-          $self->{proxy} = $ENV{all_proxy} || $ENV{ALL_PROXY};
-      }
-
-      if ( defined $self->{proxy} ) {
-          $self->_split_proxy( 'generic proxy' => $self->{proxy} ); # validate
-      }
-      else {
-          delete $self->{proxy};
-      }
-
-      # http proxy
-      if (! exists $self->{http_proxy} ) {
-          # under CGI, bypass HTTP_PROXY as request sets it from Proxy header
-          local $ENV{HTTP_PROXY} = ($ENV{CGI_HTTP_PROXY} || "") if $ENV{REQUEST_METHOD};
-          $self->{http_proxy} = $ENV{http_proxy} || $ENV{HTTP_PROXY} || $self->{proxy};
-      }
-
-      if ( defined $self->{http_proxy} ) {
-          $self->_split_proxy( http_proxy => $self->{http_proxy} ); # validate
-          $self->{_has_proxy}{http} = 1;
-      }
-      else {
-          delete $self->{http_proxy};
-      }
-
-      # https proxy
-      if (! exists $self->{https_proxy} ) {
-          $self->{https_proxy} = $ENV{https_proxy} || $ENV{HTTPS_PROXY} || $self->{proxy};
-      }
-
-      if ( $self->{https_proxy} ) {
-          $self->_split_proxy( https_proxy => $self->{https_proxy} ); # validate
-          $self->{_has_proxy}{https} = 1;
-      }
-      else {
-          delete $self->{https_proxy};
-      }
-
-      # Split no_proxy to array reference if not provided as such
-      unless ( ref $self->{no_proxy} eq 'ARRAY' ) {
-          $self->{no_proxy} =
-              (defined $self->{no_proxy}) ? [ split /\s*,\s*/, $self->{no_proxy} ] : [];
-      }
-
-      return;
-  }
 
   for my $sub_name ( qw/get head put post patch delete/ ) {
       my $req_method = uc $sub_name;
       no strict 'refs';
       eval <<"HERE"; ## no critic
       method $sub_name {
-          my (\$self, \$url, \$args) = \@_;
-          \@_ == 2 || (\@_ == 3 && ref \$args eq 'HASH')
+          my (\$self, \$url, \$options) = \@_;
+          \@_ == 2 || (\@_ == 3 && ref \$options eq 'HASH')
           or _croak(q/Usage: \$http->$sub_name(URL, [HASHREF])/ . "\n");
-          return \$self->request('$req_method', \$url, \$args || {});
+          return \$self->request('$req_method', \$url, \$options || {});
       }
   HERE
   }
 
   method post_form {
-      my ($self, $url, $data, $args) = @_;
-      (@_ == 3 || @_ == 4 && ref $args eq 'HASH')
+      my ($self, $url, $data, $options) = @_;
+      (@_ == 3 || @_ == 4 && ref $options eq 'HASH')
           or _croak(q/Usage: $http->post_form(URL, DATAREF, [HASHREF])/ . "\n");
 
       my $headers = {};
-      while ( my ($key, $value) = each %{$args->{headers} || {}} ) {
+      while ( my ($key, $value) = each %{$options->{headers} || {}} ) {
           $headers->{lc $key} = $value;
       }
 
       return $self->request('POST', $url, {
-              # Any existing 'headers' key in $args will be overridden with a
+              # Any existing 'headers' key in $options will be overridden with a
               # normalized version below.
-              %$args,
+              %$options,
               content => $self->www_form_urlencode($data),
               headers => {
                   %$headers,
@@ -173,20 +240,20 @@ class HTTP::Tiny {
   }
 
   method mirror {
-      my ($self, $url, $file, $args) = @_;
-      @_ == 3 || (@_ == 4 && ref $args eq 'HASH')
+      my ($self, $url, $file, $options) = @_;
+      @_ == 3 || (@_ == 4 && ref $options eq 'HASH')
         or _croak(q/Usage: $http->mirror(URL, FILE, [HASHREF])/ . "\n");
 
-      if ( exists $args->{headers} ) {
+      if ( exists $options->{headers} ) {
           my $headers = {};
-          while ( my ($key, $value) = each %{$args->{headers} || {}} ) {
+          while ( my ($key, $value) = each %{$options->{headers} || {}} ) {
               $headers->{lc $key} = $value;
           }
-          $args->{headers} = $headers;
+          $options->{headers} = $headers;
       }
 
       if ( -e $file and my $mtime = (stat($file))[9] ) {
-          $args->{headers}{'if-modified-since'} ||= $self->_http_date($mtime);
+          $options->{headers}{'if-modified-since'} ||= $self->_http_date($mtime);
       }
       my $tempfile = $file . int(rand(2**31));
 
@@ -194,8 +261,8 @@ class HTTP::Tiny {
       sysopen my $fh, $tempfile, Fcntl::O_CREAT()|Fcntl::O_EXCL()|Fcntl::O_WRONLY()
          or _croak(qq/Error: Could not create temporary file $tempfile for downloading: $!\n/);
       binmode $fh;
-      $args->{data_callback} = method { print {$fh} $_[0] };
-      my $response = $self->request('GET', $url, $args);
+      $options->{data_callback} = method { print {$fh} $_[0] };
+      my $response = $self->request('GET', $url, $options);
       close $fh
           or _croak(qq/Error: Caught error closing temporary file $tempfile: $!\n/);
 
@@ -215,15 +282,15 @@ class HTTP::Tiny {
   my %idempotent = map { $_ => 1 } qw/GET HEAD PUT DELETE OPTIONS TRACE/;
 
   method request {
-      my ($self, $method, $url, $args) = @_;
-      @_ == 3 || (@_ == 4 && ref $args eq 'HASH')
+      my ($self, $method, $url, $options) = @_;
+      @_ == 3 || (@_ == 4 && ref $options eq 'HASH')
         or _croak(q/Usage: $http->request(METHOD, URL, [HASHREF])/ . "\n");
-      $args ||= {}; # we keep some state in this during _request
+      $options ||= {}; # we keep some state in this during _request
 
       # RFC 2616 Section 8.1.4 mandates a single retry on broken socket
       my $response;
       for ( 0 .. 1 ) {
-          $response = eval { $self->_request($method, $url, $args) };
+          $response = eval { $self->_request($method, $url, $options) };
           last unless $@ && $idempotent{$method}
               && $@ =~ m{^(?:Socket closed|Unexpected end|SSL read error)};
       }
@@ -231,7 +298,7 @@ class HTTP::Tiny {
       if (my $e = $@) {
           # maybe we got a response hash thrown from somewhere deep
           if ( ref $e eq 'HASH' && exists $e->{status} ) {
-              $e->{redirects} = delete $args->{_redirects} if @{ $args->{_redirects} || []};
+              $e->{redirects} = delete $options->{_redirects} if @{ $options->{_redirects} || []};
               return $e;
           }
 
@@ -247,7 +314,7 @@ class HTTP::Tiny {
                   'content-type'   => 'text/plain',
                   'content-length' => length $e,
               },
-              ( @{$args->{_redirects} || []} ? (redirects => delete $args->{_redirects}) : () ),
+              ( @{$options->{_redirects} || []} ? (redirects => delete $options->{_redirects}) : () ),
           };
       }
       return $response;
@@ -333,7 +400,7 @@ class HTTP::Tiny {
   );
 
   method _request {
-      my ($self, $method, $url, $args) = @_;
+      my ($self, $method, $url, $options) = @_;
 
       my ($scheme, $host, $port, $path_query, $auth) = $self->_split_url($url);
 
@@ -351,7 +418,7 @@ class HTTP::Tiny {
           headers   => {},
       };
 
-      my $peer = $args->{peer} || $host;
+      my $peer = $options->{peer} || $host;
 
       # Allow 'peer' to be a coderef.
       if ('CODE' eq ref $peer) {
@@ -370,7 +437,7 @@ class HTTP::Tiny {
       }
       $handle ||= $self->_open_handle( $request, $scheme, $host, $port, $peer );
 
-      $self->_prepare_headers_and_cb($request, $args, $url, $auth);
+      $self->_prepare_headers_and_cb($request, $options, $url, $auth);
       $handle->write_request($request);
 
       my $response;
@@ -378,7 +445,7 @@ class HTTP::Tiny {
           until (substr($response->{status},0,1) ne '1');
 
       $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
-      my @redir_args = $self->_maybe_redirect($request, $response, $args);
+      my @redir_options = $self->_maybe_redirect($request, $response, $options);
 
       my $known_message_length;
       if ($method eq 'HEAD' || $response->{status} =~ /^[23]04/) {
@@ -387,8 +454,8 @@ class HTTP::Tiny {
       }
       else {
           # Ignore any data callbacks during redirection.
-          my $cb_args = @redir_args ? +{} : $args;
-          my $data_cb = $self->_prepare_data_cb($response, $cb_args);
+          my $cb_options = @redir_options ? +{} : $options;
+          my $data_cb = $self->_prepare_data_cb($response, $cb_options);
           $known_message_length = $handle->read_body($data_cb, $response);
       }
 
@@ -408,14 +475,14 @@ class HTTP::Tiny {
       $response->{url} = $url;
 
       # Push the current response onto the stack of redirects if redirecting.
-      if (@redir_args) {
-          push @{$args->{_redirects}}, $response;
-          return $self->_request(@redir_args, $args);
+      if (@redir_options) {
+          push @{$options->{_redirects}}, $response;
+          return $self->_request(@redir_options, $options);
       }
 
       # Copy the stack of redirects into the response before returning.
-      $response->{redirects} = delete $args->{_redirects}
-        if @{$args->{_redirects}};
+      $response->{redirects} = delete $options->{_redirects}
+        if @{$options->{_redirects}};
       return $response;
   }
 
@@ -430,7 +497,7 @@ class HTTP::Tiny {
           keep_alive      => $self->{keep_alive}
       );
 
-      if ($self->{_has_proxy}{$scheme} && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
+      if ($self->{_has_proxy}->get($scheme) && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
           return $self->_proxy_connect( $request, $handle );
       }
       else {
@@ -473,21 +540,6 @@ class HTTP::Tiny {
       return $handle;
   }
 
-  method _split_proxy {
-      my ($self, $type, $proxy) = @_;
-
-      my ($scheme, $host, $port, $path_query, $auth) = eval { $self->_split_url($proxy) };
-
-      unless(
-          defined($scheme) && length($scheme) && length($host) && length($port)
-          && $path_query eq '/'
-      ) {
-          _croak(qq{$type URL must be in format http[s]://[auth@]<host>:<port>/\n});
-      }
-
-      return ($scheme, $host, $port, $auth);
-  }
-
   method _create_proxy_tunnel {
       my ($self, $request, $handle) = @_;
 
@@ -528,9 +580,9 @@ class HTTP::Tiny {
   }
 
   method _prepare_headers_and_cb {
-      my ($self, $request, $args, $url, $auth) = @_;
+      my ($self, $request, $options, $url, $auth) = @_;
 
-      for ($self->{default_headers}, $args->{headers}) {
+      for ($self->{default_headers}, $options->{headers}) {
           next unless defined;
           while (my ($k, $v) = each %$_) {
               $request->{headers}{lc $k} = $v;
@@ -549,13 +601,13 @@ class HTTP::Tiny {
 
       # Some servers error on an empty-body PUT/POST without a content-length
       if ( $request->{method} eq 'PUT' || $request->{method} eq 'POST' ) {
-          if (!defined($args->{content}) || !length($args->{content}) ) {
+          if (!defined($options->{content}) || !length($options->{content}) ) {
               $request->{headers}{'content-length'} = 0;
           }
       }
 
-      if ( defined $args->{content} ) {
-          if ( ref $args->{content} eq 'CODE' ) {
+      if ( defined $options->{content} ) {
+          if ( ref $options->{content} eq 'CODE' ) {
               if ( exists $request->{'content-length'} && $request->{'content-length'} == 0 ) {
                   $request->{cb} = method { "" };
               }
@@ -564,11 +616,11 @@ class HTTP::Tiny {
                   $request->{headers}{'transfer-encoding'} = 'chunked'
                     unless exists $request->{headers}{'content-length'}
                     || $request->{headers}{'transfer-encoding'};
-                  $request->{cb} = $args->{content};
+                  $request->{cb} = $options->{content};
               }
           }
-          elsif ( length $args->{content} ) {
-              my $content = $args->{content};
+          elsif ( length $options->{content} ) {
+              my $content = $options->{content};
               if ( $] ge '5.008' ) {
                   utf8::downgrade($content, 1)
                       or die(qq/Wide character in request message body\n/);
@@ -579,8 +631,8 @@ class HTTP::Tiny {
                     || $request->{headers}{'transfer-encoding'};
               $request->{cb} = method { substr $content, 0, length $content, '' };
           }
-          $request->{trailer_cb} = $args->{trailer_callback}
-              if ref $args->{trailer_callback} eq 'CODE';
+          $request->{trailer_cb} = $options->{trailer_callback}
+              if ref $options->{trailer_callback} eq 'CODE';
       }
 
       ### If we have a cookie jar, then maybe add relevant cookies
@@ -606,8 +658,8 @@ class HTTP::Tiny {
   }
 
   method _prepare_data_cb {
-      my ($self, $response, $args) = @_;
-      my $data_cb = $args->{data_callback};
+      my ($self, $response, $options) = @_;
+      my $data_cb = $options->{data_callback};
       $response->{content} = '';
 
       if (!$data_cb || $response->{status} !~ /^2/) {
@@ -638,27 +690,15 @@ class HTTP::Tiny {
       return;
   }
 
-  method _validate_cookie_jar {
-      my ($class, $jar) = @_;
-
-      # duck typing
-      for my $method ( qw/add cookie_header/ ) {
-          _croak(qq/Cookie jar must provide the '$method' method\n/)
-              unless ref($jar) && ref($jar)->can($method);
-      }
-
-      return;
-  }
-
   method _maybe_redirect {
-      my ($self, $request, $response, $args) = @_;
+      my ($self, $request, $response, $options) = @_;
       my $headers = $response->{headers};
       my ($status, $method) = ($response->{status}, $request->{method});
-      $args->{_redirects} ||= [];
+      $options->{_redirects} ||= [];
 
       if (($status eq '303' or ($status =~ /^30[1278]/ && $method =~ /^GET|HEAD$/))
           and $headers->{location}
-          and @{$args->{_redirects}} < $self->{max_redirect}
+          and @{$options->{_redirects}} < $self->{max_redirect}
       ) {
           my $location = ($headers->{location} =~ /^\//)
               ? "$request->{scheme}://$request->{host_port}$headers->{location}"
@@ -666,33 +706,6 @@ class HTTP::Tiny {
           return (($status eq '303' ? 'GET' : $method), $location);
       }
       return;
-  }
-
-  method _split_url {
-      my $url = pop;
-
-      # URI regex adapted from the URI module
-      my ($scheme, $host, $path_query) = $url =~ m<\A([^:/?#]+)://([^/?#]*)([^#]*)>
-        or die(qq/Cannot parse URL: '$url'\n/);
-
-      $scheme     = lc $scheme;
-      $path_query = "/$path_query" unless $path_query =~ m<\A/>;
-
-      my $auth = '';
-      if ( (my $i = index $host, '@') != -1 ) {
-          # user:pass@host
-          $auth = substr $host, 0, $i, ''; # take up to the @ for auth
-          substr $host, 0, 1, '';          # knock the @ off the host
-
-          # userinfo might be percent escaped, so recover real auth info
-          $auth =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-      }
-      my $port = $host =~ s/:(\d*)\z// && length $1 ? $1
-               : $scheme eq 'http'                  ? 80
-               : $scheme eq 'https'                 ? 443
-               : undef;
-
-      return ($scheme, (length $host ? lc $host : "localhost") , $port, $path_query, $auth);
   }
 
   # Date conversions adapted from HTTP::Date

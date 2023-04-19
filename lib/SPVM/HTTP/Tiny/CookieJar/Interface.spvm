@@ -3,4 +3,10 @@
 
 class HTTP::Tiny::CookieJar::Interface {
 
+=pod
+
+  add cookie_header
+
+=cut
+
 }
