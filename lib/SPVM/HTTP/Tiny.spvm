@@ -3,6 +3,7 @@
 
 class HTTP::Tiny {
   use Fn;
+  use Regex;
   
   version "0.001_001";
   
@@ -20,9 +21,18 @@ class HTTP::Tiny {
   has cookie_jar : HTTP::Tiny::CookieJar::Interface;
   has SSL_options : object[];
   has verify_SSL : int;
-  has agent : string;
+  has agent : ro string;
   
-  method _default_agent : string () {
+  method set_agent : void ($agent : string) {
+    
+    if ($agent && Regex->new(" $")->match($agent)) {
+      $agent = $agent . $self->_agent;
+    }
+    
+    $self->{agent} = $agent;
+  }
+  
+  private method _agent : string () {
     
     my $default_agent = "HTTP-Tiny";
     
@@ -32,6 +42,7 @@ class HTTP::Tiny {
     
     return $default_agent;
   }
+  
 }
 
 =pod
