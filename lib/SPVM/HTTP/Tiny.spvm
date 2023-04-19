@@ -106,6 +106,29 @@ class HTTP::Tiny {
     
     return $self;
   }
+  
+  private method _uri_escape : string ($string : string) {
+    
+    my $regex = Regex->new("([^A-Za-z0-9\-\._~])");
+    my $escaped_string = $regex->replace_g($string, method : string ($re : Regex) {
+      my $bytes = $re->cap1;
+      
+      my $escaped_char_buffer = StringBuffer->new;
+      
+      for (my $i = 0; $i < length $bytes; $i++) {
+        my $byte = $bytes->[$i];
+        my $hex_string = Format->sprintf("%%%02X", [(object)($byte & 0xFF)]);
+        $escaped_char_buffer->push($hex_string);
+      }
+      
+      my $escaped_char = $escaped_char_buffer->to_string;
+      
+      return $escaped_char;
+    });
+    
+    return $escaped_string;
+  }
+
 
 =pod
 
@@ -739,27 +762,6 @@ class HTTP::Tiny {
       };
   }
 
-  # URI escaping adapted from URI::Escape
-  # c.f. http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.1
-  # perl 5.6 ready UTF-8 encoding adapted from JSON::PP
-  my %escapes = map { chr($_) => sprintf("%%%02X", $_) } 0..255;
-  $escapes{' '}="+";
-  my $unsafe_char = qr/[^A-Za-z0-9\-\._~]/;
-
-  method _uri_escape {
-      my ($self, $str) = @_;
-      return "" if !defined $str;
-      if ( $] ge '5.008' ) {
-          utf8::encode($str);
-      }
-      else {
-          $str = pack("U*", unpack("C*", $str)) # UTF-8 encode a byte string
-              if ( length $str == do { use bytes; length $str } );
-          $str = pack("C*", unpack("C*", $str)); # clear UTF-8 flag
-      }
-      $str =~ s/($unsafe_char)/$escapes{$1}/g;
-      return $str;
-  }
 
 
 =cut
