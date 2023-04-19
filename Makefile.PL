@@ -18,10 +18,12 @@ unless ($meta) {
   # Do something such as environment check.
 }
 
+my $version_string = &get_version_string('lib/SPVM/HTTP/Tiny.spvm');
+
 my %configure_and_runtime_requires = ('SPVM' => '0.9706');
 WriteMakefile(
   NAME              => 'SPVM::HTTP::Tiny',
-  VERSION_FROM      => 'lib/SPVM/HTTP/Tiny.pm',
+  VERSION           => $version_string,
   LICENSE           => 'mit',
   ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
     (ABSTRACT_FROM  => 'lib/SPVM/HTTP/Tiny.pm',
@@ -66,6 +68,20 @@ sub MY::postamble {
   }
   
   return $make_rule;
+}
+
+sub get_version_string {
+  my ($spvm_class_file) = @_;
+  
+  open my $spvm_class_fh, '<', $spvm_class_file or die "Can't open the file \"$spvm_class_file\": $!";
+  local $/;
+  my $content = <$spvm_class_fh>;
+  my $version_string;
+  if ($content =~ /\bversion\s*"([\d\._]+)"\s*;/) {
+    $version_string = $1;
+  }
+  
+  return $version_string;
 }
 
 1;

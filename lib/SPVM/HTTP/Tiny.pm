@@ -1,7 +1,5 @@
 package SPVM::HTTP::Tiny;
 
-our $VERSION = '0.01';
-
 1;
 
 =head1 Name
