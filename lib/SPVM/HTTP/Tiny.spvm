@@ -11,6 +11,18 @@ class HTTP::Tiny {
   use Hash;
   use Sys::Env;
   use MIME::Base64;
+  use Sys;
+  use Format;
+  use Time::Local;
+  use Sys::Time::Tm;
+  
+  our $DoW : string;
+  our $MoY : string;
+  
+  INIT {
+    $DoW = "Sun|Mon|Tue|Wed|Thu|Fri|Sat";
+    $MoY = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
+  }
   
   has default_headers : string[];
   has http_proxy : string;
@@ -29,6 +41,8 @@ class HTTP::Tiny {
   has no_proxy : string[];
   has _has_proxy : Hash;
   
+  
+
   method set_agent : void ($agent : string) {
     
     if ($agent && Regex->new(" $")->match($agent)) {
@@ -128,7 +142,56 @@ class HTTP::Tiny {
     
     return $escaped_string;
   }
-
+  
+  private method _http_date : string ($time : long) {
+    
+    my $tm = Sys->gmtime($time);
+    
+    my $http_date = Format->sprintf("%s, %02d %s %04d %02d:%02d:%02d GMT",
+      Fn->substr($DoW, $tm->tm_wday * 4, 3),
+      $tm->tm_mday, Fn->substr($MoY, $tm->tm_mon * 4, 3), $tm->tm_year + 1900,
+      $tm->tm_hour, $tm->tm_min, $tm->tm_sec,
+    );
+    
+    return $http_date;
+  }
+  
+  private method _parse_http_date : long ($string : string) {
+    my $tm = Sys::Time::Tm->new;
+    
+    my $re1 = Regex->new("^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$");
+    my $re2 = Regex->new("^[SMTWF][a-z]+, +(\d\d)-($MoY)-(\d{2,4}) +(\d\d):(\d\d):(\d\d) +GMT$");
+    my $re3 = Regex->new("^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$");
+    if ($re1->match($string)) {
+      $tm->set_tm_sec(Fn->to_int($re1->cap6));
+      $tm->set_tm_min(Fn->to_int($re1->cap5));
+      $tm->set_tm_hour(Fn->to_int($re1->cap4));
+      $tm->set_tm_mday(Fn->to_int($re1->cap1));
+      $tm->set_tm_mon((Fn->index($MoY, $re1->cap2) / 4));
+      $tm->set_tm_year(Fn->to_int($re1->cap3));
+    }
+    elsif ($re2->match($string)) {
+      $tm->set_tm_sec(Fn->to_int($re1->cap6));
+      $tm->set_tm_min(Fn->to_int($re1->cap5));
+      $tm->set_tm_hour(Fn->to_int($re1->cap4));
+      $tm->set_tm_mday(Fn->to_int($re1->cap1));
+      $tm->set_tm_mon((Fn->index($MoY, $re1->cap2) / 4));
+      $tm->set_tm_year(Fn->to_int($re1->cap3));
+    }
+    elsif ($re3->match($string)) {
+      $tm->set_tm_sec(Fn->to_int($re1->cap5));
+      $tm->set_tm_min(Fn->to_int($re1->cap4));
+      $tm->set_tm_hour(Fn->to_int($re1->cap3));
+      $tm->set_tm_mday(Fn->to_int($re1->cap2));
+      $tm->set_tm_mon((Fn->index($MoY, $re1->cap1) / 4));
+      $tm->set_tm_year(Fn->to_int($re1->cap6));
+    }
+    
+    my $time = -1L;
+    eval { $time = Time::Local->timegm($tm); };
+    
+    return $time;
+  }
 
 =pod
 
@@ -730,38 +793,5 @@ class HTTP::Tiny {
       }
       return;
   }
-
-  # Date conversions adapted from HTTP::Date
-  my $DoW = "Sun|Mon|Tue|Wed|Thu|Fri|Sat";
-  my $MoY = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
-  method _http_date {
-      my ($sec, $min, $hour, $mday, $mon, $year, $wday) = gmtime($_[1]);
-      return sprintf("%s, %02d %s %04d %02d:%02d:%02d GMT",
-          substr($DoW,$wday*4,3),
-          $mday, substr($MoY,$mon*4,3), $year+1900,
-          $hour, $min, $sec
-      );
-  }
-
-  method _parse_http_date {
-      my ($self, $str) = @_;
-      require Time::Local;
-      my @tl_parts;
-      if ($str =~ /^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$/) {
-          @tl_parts = ($6, $5, $4, $1, (index($MoY,$2)/4), $3);
-      }
-      elsif ($str =~ /^[SMTWF][a-z]+, +(\d\d)-($MoY)-(\d{2,4}) +(\d\d):(\d\d):(\d\d) +GMT$/ ) {
-          @tl_parts = ($6, $5, $4, $1, (index($MoY,$2)/4), $3);
-      }
-      elsif ($str =~ /^[SMTWF][a-z]+ +($MoY) +(\d{1,2}) +(\d\d):(\d\d):(\d\d) +(?:[^0-9]+ +)?(\d\d\d\d)$/ ) {
-          @tl_parts = ($5, $4, $3, $2, (index($MoY,$1)/4), $6);
-      }
-      return eval {
-          my $t = @tl_parts ? Time::Local::timegm(@tl_parts) : -1;
-          $t < 0 ? undef : $t;
-      };
-  }
-
-
 
 =cut
