@@ -8,10 +8,6 @@ lib/SPVM/HTTP/Tiny/CookieJar/Interface.native/include/.gitkeep
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.native/src/.gitkeep
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.pm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.spvm
-lib/SPVM/HTTP/Tiny/Handle.c
-lib/SPVM/HTTP/Tiny/Handle.config
-lib/SPVM/HTTP/Tiny/Handle.native/include/.gitkeep
-lib/SPVM/HTTP/Tiny/Handle.native/src/.gitkeep
 lib/SPVM/HTTP/Tiny/Handle.pm
 lib/SPVM/HTTP/Tiny/Handle.spvm
 LICENSE
