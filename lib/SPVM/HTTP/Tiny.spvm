@@ -16,6 +16,7 @@ class HTTP::Tiny {
   use Time::Local;
   use Sys::Time::Tm;
   use Scope::Guard;
+  use HTTP::Tiny::Error;
   
   our $DoW : string;
   our $MoY : string;
@@ -41,7 +42,7 @@ class HTTP::Tiny {
   has handle : HTTP::Tiny::Handle;
   has no_proxy : string[];
   has _has_proxy : Hash;
-  
+  has error_response : Hash;
   
 
   method set_agent : void ($agent : string) {
@@ -408,50 +409,156 @@ class HTTP::Tiny {
     return $response;
   }
   
-  method request ($method : string, $url : string, $options : object[] = undef) {
+  method request : Hash ($method : string, $url : string, $options : object[] = undef) {
+    
+    my $options_h = Hash->new($options);
     
     # RFC 2616 Section 8.1.4 mandates a single retry on broken socket
     my $response = (Hash)undef;
     my $exception = (string)undef;
+    my $error = 0;
     for (my $i = 0; $i <= 1; $i++) {
       eval {
-        $response = $self->_request($method, $url, $options)
+        $response = $self->_request($method, $url, $options);
       };
       
       my $idempotent = Hash->new({GET => 1, HEAD => 1, PUT => 1, DELETE => 1, OPTIONS => 1, TRACE => 1});
       
       $exception = $@;
+      $error = error;
       
-      unless ($exception && (int)$idempotent->get($method) && Regex->new("^(?:Socket closed|Unexpected end|SSL read error)")->match($idempotent)) {
+      unless ($exception && (int)$idempotent->get($method) && Regex->new("^(?:Socket closed|Unexpected end|SSL read error)")->match($exception)) {
         last;
       }
     }
     
     if ($exception) {
-        # maybe we got a response hash thrown from somewhere deep
-        if ( ref $e eq 'HASH' && exists $e->{status} ) {
-            $e->{redirects} = delete $options->{_redirects} if @{ $options->{_redirects} || []};
-            return $e;
+      # maybe we got a response hash thrown from somewhere deep
+      if (error == class_id HTTP::Tiny::Error) {
+        my $error_response = $self->{error_response};
+        
+        if (my $redirects = $options_h->delete("_redirects")) {
+          $error_response->set("redirects" => $redirects);
         }
         
-        # otherwise, stringify it
-        $e = "$e";
-        $response = {
-            url     => $url,
-            success => q{},
-            status  => 599,
-            reason  => 'Internal Exception',
-            content => $e,
-            headers => {
-                'content-type'   => 'text/plain',
-                'content-length' => length $e,
-            },
-            ( @{$options->{_redirects} || []} ? (redirects => delete $options->{_redirects}) : () ),
-        };
+        return $error_response;
+      }
+      
+      # otherwise, stringify it
+      my $redirects = $options_h->delete("_redirects");
+      unless ($redirects) {
+        $redirects = new string[0];
+      }
+      $response = Hash->new({
+        url     => $url,
+        success => 0,
+        status  => 599,
+        reason  => "Internal Exception",
+        content => $exception,
+        headers => Hash->new({
+          "content-type"   => "text/plain",
+          "content-length" => length $exception,
+        }),
+        redirects => $redirects,
+      });
     }
     
     return $response;
   }
+
+  method _request : Hash ($method : string, $url : string, $options : object[])  {
+
+=pod
+      my ($self, $method, $url, $options) = @_;
+
+      my ($scheme, $host, $port, $path_query, $auth) = $self->_split_url($url);
+
+      if ($scheme ne 'http' && $scheme ne 'https') {
+        die(qq/Unsupported URL scheme '$scheme'\n/);
+      }
+
+      my $request = {
+          method    => $method,
+          scheme    => $scheme,
+          host      => $host,
+          port      => $port,
+          host_port => ($port == $DefaultPort{$scheme} ? $host : "$host:$port"),
+          uri       => $path_query,
+          headers   => {},
+      };
+
+      my $peer = $options->{peer} || $host;
+
+      # Allow 'peer' to be a coderef.
+      if ('CODE' eq ref $peer) {
+          $peer = $peer->($host);
+      }
+
+      # We remove the cached handle so it is not reused in the case of redirect.
+      # If all is well, it will be recached at the end of _request.  We only
+      # reuse for the same scheme, host and port
+      my $handle = delete $self->{handle};
+      if ( $handle ) {
+          unless ( $handle->can_reuse( $scheme, $host, $port, $peer ) ) {
+              $handle->close;
+              undef $handle;
+          }
+      }
+      $handle ||= $self->_open_handle( $request, $scheme, $host, $port, $peer );
+
+      $self->_prepare_headers_and_cb($request, $options, $url, $auth);
+      $handle->write_request($request);
+
+      my $response;
+      do { $response = $handle->read_response_header }
+          until (substr($response->{status},0,1) ne '1');
+
+      $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
+      my @redir_options = $self->_maybe_redirect($request, $response, $options);
+
+      my $known_message_length;
+      if ($method eq 'HEAD' || $response->{status} =~ /^[23]04/) {
+          # response has no message body
+          $known_message_length = 1;
+      }
+      else {
+          # Ignore any data callbacks during redirection.
+          my $cb_options = @redir_options ? +{} : $options;
+          my $data_cb = $self->_prepare_data_cb($response, $cb_options);
+          $known_message_length = $handle->read_body($data_cb, $response);
+      }
+
+      if ( $self->{keep_alive}
+          && $handle->connected
+          && $known_message_length
+          && $response->{protocol} eq 'HTTP/1.1'
+          && ($response->{headers}{connection} || '') ne 'close'
+      ) {
+          $self->{handle} = $handle;
+      }
+      else {
+          $handle->close;
+      }
+
+      $response->{success} = substr( $response->{status}, 0, 1 ) eq '2';
+      $response->{url} = $url;
+
+      # Push the current response onto the stack of redirects if redirecting.
+      if (@redir_options) {
+          push @{$options->{_redirects}}, $response;
+          return $self->_request(@redir_options, $options);
+      }
+
+      # Copy the stack of redirects into the response before returning.
+      $response->{redirects} = delete $options->{_redirects}
+        if @{$options->{_redirects}};
+      return $response;
+
+=cut
+
+    return undef;
+  }
+
 }
 
 =pod
