@@ -15,6 +15,7 @@ class HTTP::Tiny {
   use Format;
   use Time::Local;
   use Sys::Time::Tm;
+  use Scope::Guard;
   
   our $DoW : string;
   our $MoY : string;
@@ -212,13 +213,33 @@ class HTTP::Tiny {
     # http proxy
     if (!$self->{http_proxy} ) {
       # under CGI, bypass HTTP_PROXY as request sets it from Proxy header
-      local Sys::Env->getenv("HTTP_PROXY") = (Sys::Env->getenv("CGI_HTTP_PROXY") || "") if Sys::Env->getenv("REQUEST_METHOD");
-      $self->{http_proxy} = Sys::Env->getenv("http_proxy") || Sys::Env->getenv("HTTP_PROXY") || $self->{proxy};
+      my $old_http_proxy = Sys::Env->getenv("HTTP_PROXY");
+      my $resotre_http_proxy = Scope::Guard->new([has old_http_proxy : string = $old_http_proxy]method : void () {
+        Sys::Env->setenv("HTTP_PROXY", $self->{old_http_proxy}, 1);
+      });
+      if (Sys::Env->getenv("REQUEST_METHOD")) {
+        
+        my $http_proxy = Sys::Env->getenv("CGI_HTTP_PROXY");
+        unless ($http_proxy) {
+          $http_proxy = "";
+        }
+        Sys::Env->setenv("HTTP_PROXY", $http_proxy, 1);
+      }
+      
+      my $http_proxy = Sys::Env->getenv("http_proxy");
+      unless ($http_proxy) {
+        $http_proxy = Sys::Env->getenv("HTTP_PROXY");
+      }
+      unless ($http_proxy) {
+        $http_proxy = $self->{proxy};
+      }
+      
+      $self->{http_proxy} = $http_proxy;
     }
     
     if ($self->{http_proxy} ) {
       $self->_split_proxy("http_proxy", $self->{http_proxy}); # validate
-      $self->{_has_proxy}->set_int("http", 1);
+      $self->{_has_proxy}->set("http", 1);
     }
     else {
       $self->{http_proxy} = undef;
@@ -231,7 +252,7 @@ class HTTP::Tiny {
     
     if ($self->{https_proxy}) {
       $self->_split_proxy("https_proxy", $self->{https_proxy} ); # validate
-      $self->{_has_proxy}->set_int("https", 1);
+      $self->{_has_proxy}->set("https", 1);
     }
     else {
       $self->{https_proxy} = undef;
@@ -239,53 +260,123 @@ class HTTP::Tiny {
     
     return;
   }
-
-=pod
-
-
-  method _split_proxy {
+  
+  private method _split_proxy : string[] ($type : string, $proxy : string) {
     
-    my ($scheme, $host, $port, $path_query, $auth) = eval { $self->_split_url($proxy) };
+    my $scheme = (string)undef;
+    my $host = (string)undef;
+    my $port = (string)undef;
+    my $path_query = (string)undef;
+    my $auth = (string)undef;
     
-    unless(
-        defined($scheme) && length($scheme) && length($host) && length($port)
-        && $path_query eq '/'
-    ) {
-        _croak(qq{$type URL must be in format http[s]://[auth@]<host>:<port>/\n});
+    {
+      my $ret = $self->_split_url($proxy);
+      $scheme = $ret->[0];
+      $host = $ret->[1];
+      $port = $ret->[2];
+      $path_query = $ret->[3];
+      $auth = $ret->[4];
     }
     
-    return ($scheme, $host, $port, $auth);
+    unless($scheme && $scheme && $host && $port && $path_query eq "/") {
+      die "$type URL must be in format http[s]://[auth@]<host>:<port>/\n";
+    }
+    
+    return [$scheme, $host, $port, $auth];
   }
-
-  method _split_url {
-      my $url = pop;
-
-      # URI regex adapted from the URI module
-      my ($scheme, $host, $path_query) = $url =~ m<\A([^:/?#]+)://([^/?#]*)([^#]*)>
-        or die(qq/Cannot parse URL: '$url'\n/);
-
-      $scheme     = lc $scheme;
-      $path_query = "/$path_query" unless $path_query =~ m<\A/>;
-
-      my $auth = '';
-      if ( (my $i = index $host, '@') != -1 ) {
-          # user:pass@host
-          $auth = substr $host, 0, $i, ''; # take up to the @ for auth
-          substr $host, 0, 1, '';          # knock the @ off the host
-
-          # userinfo might be percent escaped, so recover real auth info
-          $auth =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+  
+  private static method substr_replacement : string ($string : string, $offset : int, $length = -1 : int, $replacement = undef : string) {
+    
+    unless ($string) {
+      die "The \$string must be defined.";
+    }
+    
+    unless ($offset >= 0) {
+      die "The \$offset must be greater than or equal to 0.";
+    }
+    
+    my $string_length = length $string;
+    if ($length < 0) {
+      $length = $string_length - $offset;
+    }
+    
+    unless ($offset + $length <= $string_length) {
+      die "The \$offset + the \$length must be less than or equal to the length of the \$string.";
+    }
+    
+    my $substring = (string)undef;
+    if ($replacement) {
+      
+      $substring = Fn->substr($string, 0, $offset) . $replacement . Fn->substr($string, $length - $offset);
+    }
+    else {
+      $substring = (mutable string)new_string_len($length);
+      Fn->memcpy($substring, 0, $string, $offset, $length);
+    }
+    
+    return $substring;
+  }
+  
+  private method _split_url : string[] ($url : string) {
+    
+    # URI regex adapted from the URI module
+    my $scheme = (string)undef;
+    my $host = (string)undef;
+    my $path_query = (string)undef;
+    
+    if (my $match = Regex->new("\A([^:/?#]+)://([^/?#]*)([^#]*)")->match($url)) {
+      $scheme = $match->cap1;
+      $host = $match->cap2;
+      $path_query = $match->cap3;
+    }
+    else {
+      die "Cannot parse URL: \"$url\"";
+    }
+    
+    $scheme = Fn->lc($scheme);
+    
+    unless (Regex->new("\A/")->match($path_query)) {
+      $path_query = "/$path_query";
+    }
+    
+    my $auth = "";
+    if ((my $i = Fn->index($host, '@')) != -1 ) {
+      # user:pass@host
+      $auth = &substr_replacement($host, 0, $i, ""); # take up to the @ for auth
+      &substr_replacement($host, 0, 1, "");          # knock the @ off the host
+      
+      # userinfo might be percent escaped, so recover real auth info
+      Regex->new("%([0-9A-Fa-f]{2})")->replace_g($auth, method : string ($re : Regex, $match : Regex::Match) {
+        return Fn->chr(Fn->hex($match->cap1));
+      });
+    }
+    
+    my $port = (string)undef;
+    
+    my $replace_info_ref = [(Regex::ReplaceInfo)undef];
+    if (Regex->new(":(\d*)\z")->replace($host, "", 0, -1, {info => $replace_info_ref})) {
+      my $match = $replace_info_ref->[0]->match;
+      $port = $match->cap1;
+    }
+    
+    unless ($port) {
+      if ($scheme eq "http") {
+        $port = "80";
       }
-      my $port = $host =~ s/:(\d*)\z// && length $1 ? $1
-               : $scheme eq 'http'                  ? 80
-               : $scheme eq 'https'                 ? 443
-               : undef;
-
-      return ($scheme, (length $host ? lc $host : "localhost") , $port, $path_query, $auth);
+      elsif ($scheme eq "https") {
+        $port = "443";
+      }
+    }
+    
+    if ($host) {
+      $host = Fn->lc($host);
+    }
+    else {
+      $host = "localhost";
+    }
+    
+    return [$scheme, $host, $port, $path_query, $auth];
   }
-
-=cut
-
 }
 
 =pod
