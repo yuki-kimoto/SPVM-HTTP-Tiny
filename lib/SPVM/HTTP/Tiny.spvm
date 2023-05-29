@@ -71,7 +71,7 @@ class HTTP::Tiny {
     }
   }
   
-  static method new : HTTP::Tiny ($options = undef : object[]) {
+  static method new : HTTP::Tiny ($options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
@@ -285,7 +285,7 @@ class HTTP::Tiny {
     return [$scheme, $host, $port, $auth];
   }
   
-  private static method substr_replacement : string ($string : string, $offset : int, $length = -1 : int, $replacement = undef : string) {
+  private static method substr_replacement : string ($string : string, $offset : int, $length : int = -1, $replacement : string = undef) {
     
     unless ($string) {
       die "The \$string must be defined.";
