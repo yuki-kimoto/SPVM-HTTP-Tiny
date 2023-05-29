@@ -377,6 +377,81 @@ class HTTP::Tiny {
     
     return [$scheme, $host, $port, $path_query, $auth];
   }
+  
+  method get : Hash ($url : string, $options : object[] = undef) {
+    my $response = $self->request("GET", $url, $options);
+    return $response;
+  }
+  
+  method head : Hash ($url : string, $options : object[] = undef) {
+    my $response = $self->request("HEAD", $url, $options);
+    return $response;
+  }
+  
+  method put : Hash ($url : string, $options : object[] = undef) {
+    my $response = $self->request("PUT", $url, $options);
+    return $response;
+  }
+  
+  method post : Hash ($url : string, $options : object[] = undef) {
+    my $response = $self->request("POST", $url, $options);
+    return $response;
+  }
+  
+  method patch : Hash ($url : string, $options : object[] = undef) {
+    my $response = $self->request("PATCH", $url, $options);
+    return $response;
+  }
+  
+  method delete : Hash ($url : string, $options : object[] = undef) {
+    my $response = $self->request("DELETE", $url, $options);
+    return $response;
+  }
+  
+  method request ($method : string, $url : string, $options : object[] = undef) {
+    
+    # RFC 2616 Section 8.1.4 mandates a single retry on broken socket
+    my $response = (Hash)undef;
+    my $exception = (string)undef;
+    for (my $i = 0; $i <= 1; $i++) {
+      eval {
+        $response = $self->_request($method, $url, $options)
+      };
+      
+      my $idempotent = Hash->new({GET => 1, HEAD => 1, PUT => 1, DELETE => 1, OPTIONS => 1, TRACE => 1});
+      
+      $exception = $@;
+      
+      unless ($exception && (int)$idempotent->get($method) && Regex->new("^(?:Socket closed|Unexpected end|SSL read error)")->match($idempotent)) {
+        last;
+      }
+    }
+    
+    if ($exception) {
+        # maybe we got a response hash thrown from somewhere deep
+        if ( ref $e eq 'HASH' && exists $e->{status} ) {
+            $e->{redirects} = delete $options->{_redirects} if @{ $options->{_redirects} || []};
+            return $e;
+        }
+        
+        # otherwise, stringify it
+        $e = "$e";
+        $response = {
+            url     => $url,
+            success => q{},
+            status  => 599,
+            reason  => 'Internal Exception',
+            content => $e,
+            headers => {
+                'content-type'   => 'text/plain',
+                'content-length' => length $e,
+            },
+            ( @{$options->{_redirects} || []} ? (redirects => delete $options->{_redirects}) : () ),
+        };
+    }
+    
+    return $response;
+  }
 }
 
 =pod
