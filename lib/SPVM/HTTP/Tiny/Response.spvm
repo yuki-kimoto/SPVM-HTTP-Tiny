@@ -1,0 +1,17 @@
+# Copyright (c) 2023 Yuki Kimoto
+# MIT License
+
+class HTTP::Tiny::Response {
+  allow HTTP::Tiny;
+  
+  use HTTP::Tiny::Headers;
+  
+  has success : byte;
+  has url : ro string;
+  has status : ro int;
+  has reason : ro string;
+  has content : ro string;
+  has headers : ro HTTP::Tiny::Headers;
+  has protocol : ro string;
+  has redirects : ro HTTP::Response[];
+}

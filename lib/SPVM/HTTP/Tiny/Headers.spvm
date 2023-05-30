@@ -1,0 +1,70 @@
+# Copyright (c) 2023 Yuki Kimoto
+# MIT License
+
+class HTTP::Tiny::Headers {
+  use StringList;
+  use Hash;
+  
+  has headers : Hash;
+  
+  static method new : HTTP::Tiny::Headers () {
+    my $self = new HTTP::Tiny::Headers;
+    
+    $self->{headers} = Hash->new;
+    
+    return $self;
+  }
+  
+  sub add : void ($name : string, $value : string) {
+    
+    unless ($name) {
+      die "The \$name must be defined";
+    }
+    
+    unless ($value) {
+      die "The \$value must be defined";
+    }
+    
+    my $name_lc = lc $name;
+    
+    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    
+    unless ($values_list) {
+      $values_list = StringList->new;
+    }
+    
+    $values_list->push($value);
+  }
+  
+  sub remove : void ($name : string) {
+    
+    unless ($name) {
+      die "The \$name must be defined";
+    }
+    
+    my $name_lc = lc $name;
+    
+    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    
+    if ($values_list) {
+      $self->{headers}->set(undef)
+    }
+  }
+  
+  method get : string ($name : string) {
+    
+    unless ($name) {
+      die "The \$name must be defined";
+    }
+    
+    my $headers = $self->{headers};
+    
+    my $name_lc = lc $name;
+    
+    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    
+    my $values = $values_list->to_array;
+    
+    return $values;
+  }
+}
