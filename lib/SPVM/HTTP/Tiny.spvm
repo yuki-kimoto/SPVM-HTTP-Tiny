@@ -17,8 +17,10 @@ class HTTP::Tiny {
   use Sys::Time::Tm;
   use Scope::Guard;
   use HTTP::Tiny::Error;
-  use HTTP::Tiny::PeerHandler;
-
+  use HTTP::Tiny::Response;
+  use HTTP::Tiny::Headers;
+  use HTTP::TIny::URL;
+  
   our $DefaultPort : Hash;
   
   our $DoW : string;
@@ -42,8 +44,6 @@ class HTTP::Tiny {
   has max_size : int;
   has proxy : string;
   has cookie_jar : HTTP::Tiny::CookieJar::Interface;
-  has SSL_options : Hash;
-  has verify_SSL : int;
   has agent : ro string;
   has timeout : ro int;
   has handle : HTTP::Tiny::Handle;
@@ -91,8 +91,6 @@ class HTTP::Tiny {
     
     $self->{keep_alive} = $options_h->delete_or_default_int("keep_alive", 1);
     
-    $self->{verify_SSL} = $options_h->delete_or_default_int("verify_SSL", 0);
-    
     my $env_no_proxy = Sys::Env->getenv("no_proxy");
     my $no_proxy_default = (string[])undef;
     if ($env_no_proxy) {
@@ -118,10 +116,6 @@ class HTTP::Tiny {
     $self->{max_size} = $options_h->delete_or_default_int("max_size", -1);
     
     $self->{proxy} = $options_h->delete_or_default_string("proxy", undef);
-    
-    $self->{SSL_options} = (Hash)$options_h->delete_or_default("SSL_options", undef);
-    
-    $self->{verify_SSL} = $options_h->delete_or_default_int("verify_SSL", 0);
     
     $self->{agent} = $options_h->delete_or_default_string("agent", &_agent);
     
@@ -391,31 +385,6 @@ class HTTP::Tiny {
     return $response;
   }
   
-  method head : Hash ($url : string, $options : object[] = undef) {
-    my $response = $self->request("HEAD", $url, $options);
-    return $response;
-  }
-  
-  method put : Hash ($url : string, $options : object[] = undef) {
-    my $response = $self->request("PUT", $url, $options);
-    return $response;
-  }
-  
-  method post : Hash ($url : string, $options : object[] = undef) {
-    my $response = $self->request("POST", $url, $options);
-    return $response;
-  }
-  
-  method patch : Hash ($url : string, $options : object[] = undef) {
-    my $response = $self->request("PATCH", $url, $options);
-    return $response;
-  }
-  
-  method delete : Hash ($url : string, $options : object[] = undef) {
-    my $response = $self->request("DELETE", $url, $options);
-    return $response;
-  }
-  
   method request : Hash ($method : string, $url : string, $options : object[] = undef) {
     
     my $options_h = Hash->new($options);
@@ -434,7 +403,7 @@ class HTTP::Tiny {
       $exception = $@;
       $error = error;
       
-      unless ($exception && (int)$idempotent->get($method) && Regex->new("^(?:Socket closed|Unexpected end|SSL read error)")->match($exception)) {
+      unless ($exception && (int)$idempotent->get($method) && Regex->new("^(?:Socket closed|Unexpected end)")->match($exception)) {
         last;
       }
     }
@@ -501,36 +470,20 @@ class HTTP::Tiny {
       $host_port = "$host:$port";
     }
     
-    my $request = Hash->new({
+    my $request = HTTP::Tiny::Message::Request->new({
         method    => $method,
-        scheme    => $scheme,
-        host      => $host,
-        port      => $port,
-        host_port => $host_port,
-        uri       => $path_query,
-        headers   => Hash->new({}),
+        url => HTTT::Tiny::URL->new;,
+        headers   => HTTP::Tiny::Headers->new,
     });
     
-    my $peer = (string)undef;
-    my $peer_option = $options_h->get("peer");
-    if ($peer_option) {
-      if ($peer_option isa HTTP::Tiny::PeerHandler) {
-        $peer = $peer_option->($host);
-      }
-      else {
-        $peer = (string)$peer_option;
-      }
-    }
-    else {
-      $peer = $host;
-    }
+    my $peer = $host;
     
     my $handle = $self->_open_handle( $request, $scheme, $host, $port, $peer );
 
     $self->_prepare_headers_and_cb($request, $options, $url, $auth);
     $handle->write_request($request);
 
-    my $response = (Hash)undef;
+    my $response = HTTP::Tiny::Message::Response->new;
     while (1) {
       $response = $handle->read_response_header
       if (substr($response->{status}, 0, 1) ne "1") {
@@ -588,8 +541,6 @@ class HTTP::Tiny {
     
     my $handle  = HTTP::Tiny::Handle->new({
       timeout         => $self->{timeout},
-      SSL_options     => $self->{SSL_options},
-      verify_SSL      => $self->{verify_SSL},
       local_address   => $self->{local_address},
       keep_alive      => $self->{keep_alive}
     });
@@ -602,57 +553,4 @@ class HTTP::Tiny {
     }
   }
   
-  method can_ssl : int ($why_ref : string[]) {
-
-    my $ok = 1;
-    my $reason = "";
-    
-    my $ok_io_socket_ssl = 0;
-    if (require IO::Socket::SSL) {
-       my $io_socket_ssl_version = Fn->get_version_number("IO::Socket::SSL");
-       if ($io_socket_ssl_version >= 1.42) {
-         $ok_io_socket_ssl = 1;
-       }
-    }
-    
-    if (!$ok_io_socket_ssl) {
-      $ok = 0;
-      $why_ref->[0] = "IO::Socket::SSL 1.42 must be installed for https support";
-      return $ok;
-    }
-    
-    my $ok_new_ssleay = 0;
-    if (require Net::SSLeay) {
-       my $new_ssleay_version = Fn->get_version_number("Net::SSLeay");
-       if ($new_ssleay_version >= 1.49) {
-         $ok_new_ssleay = 1;
-       }
-    }
-    
-    if (!$ok_new_ssleay) {
-      $ok = 0;
-      $why_ref->[0] = "Net::SSLeay 1.49 must be installed for https support";
-      return $ok;
-    }
-    
-    # If an object, check that SSL config lets us get a CA if necessary
-    my $SSL_verify_mode = (int)$self->{SSL_options}->get("SSL_verify_mode");
-    if ($self->{verify_SSL} || $self->{SSL_options}{SSL_verify_mode} ) ) {
-      my $handle = HTTP::Tiny::Handle->new({
-        SSL_options => $self->{SSL_options},
-        verify_SSL  => $self->{verify_SSL},
-      });
-      
-      eval {
-        $handle->_find_CA_file;
-      }
-      
-      if ($@) {
-        $ok = 0;
-        $why_ref->[0] = $@;
-      }
-    }
-    
-    return $ok;
-  }
 }

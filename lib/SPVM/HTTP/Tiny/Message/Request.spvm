@@ -1,0 +1,9 @@
+# Copyright (c) 2023 [--user-name]
+# MIT License
+
+class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
+  allow HTTP::Tiny;
+  
+  has url : HTTP::Tiny::URL;
+  has method : string;
+}

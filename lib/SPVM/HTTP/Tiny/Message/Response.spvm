@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Response {
+class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   allow HTTP::Tiny;
   
   use HTTP::Tiny::Headers;
