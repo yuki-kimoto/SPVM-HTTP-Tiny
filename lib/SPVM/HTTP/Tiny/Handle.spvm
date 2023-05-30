@@ -2,683 +2,119 @@
 # MIT License
 
 class HTTP::Tiny::Handle {
+  use Fn;
+  use IO::Socket::INET;
+  use Sys::Socket::Constatnt as SOCKET;
+  
   has timeout : rw int;
+  has rbuf : string;
+  has timeout : int;
+  has max_line_size : int;
+  has max_header_lines : int;
+  has verify_SSL : int;
+  has SSL_options : object[];
+  
+  static method new : HTTP::Tiny::Handle ($options : object[]) {
+    
+    my $self = new HTTP::Tiny::Handle;
+    
+    $options = Fn->merge_options(
+      {
+        rbuf             => "",
+        timeout          => 60,
+        max_line_size    => 16384,
+        max_header_lines => 64,
+        verify_SSL       => 0,
+        SSL_options      => {},
+      },
+      $options
+    );
+    
+    $self->{rbuf} = $options->{rbuf};
+    $self->{timeout} = $options->{timeout};
+    $self->{max_line_size} = $options->{max_line_size};
+    $self->{max_header_lines} = $options->{max_header_lines};
+    $self->{verify_SSL} = $options->{verify_SSL};
+    $self->{SSL_options} = $options->{SSL_options};
+    
+    return $self;
+  }
+
+  method connect ($scheme : string, $host : string, $port : string, $peer : string) {
+    
+    if ($scheme eq "https") {
+      $self->_assert_ssl;
+    }
+    
+    my $fh = IO::Socket::INET->new(
+        PeerHost  => $peer,
+        PeerPort  => $port,
+        LocalAddr => $self->{local_address},
+        Proto     => "tcp",
+        Type      => SOCK_STREAM,
+        Timeout   => $self->{timeout},
+    );
+    $self->{fh} = $fh;
+    
+    if ($self->{keep_alive}) {
+      unless ($self->{fh}->setsockopt(SOCKET->SOL_SOCKET, SOCKET->SO_KEEPALIVE, 1))) {
+        $self->{fh}->close;
+        die "Could not set SO_KEEPALIVE on socket: \"$!\"";
+      }
+    }
+    
+    if ($scheme eq "https") {
+      $self->start_ssl($host);
+    }
+    
+    $self->{scheme} = $scheme;
+    $self->{host} = $host;
+    $self->{peer} = $peer;
+    $self->{port} = $port;
+    $self->{pid} = $$;
+    
+    return $self;
+  }
+  
+  method _assert_ssl : void {
+    my $reason_ref = new string[1];
+    
+    my $ok = HTTP::Tiny->can_ssl($reason_ref);
+    unless ($ok) {
+      die $reason_ref->[0];
+    }
+  }
+
+  method start_ssl : void ($host : string) {
 
 =pod
 
-  package
-      HTTP::Tiny::Handle; # hide from PAUSE/indexers
-  use strict;
-  use warnings;
-
-  use Errno      qw[EINTR EPIPE];
-  use IO::Socket qw[SOCK_STREAM];
-  use Socket     qw[SOL_SOCKET SO_KEEPALIVE];
-
-  # PERL_HTTP_TINY_IPV4_ONLY is a private environment variable to force old
-  # behavior if someone is unable to boostrap CPAN from a new perl install; it is
-  # not intended for general, per-client use and may be removed in the future
-  my $SOCKET_CLASS =
-      $ENV{PERL_HTTP_TINY_IPV4_ONLY} ? 'IO::Socket::INET' :
-      eval { require IO::Socket::IP; IO::Socket::IP->VERSION(0.32) } ? 'IO::Socket::IP' :
-      'IO::Socket::INET';
-
-  method BUFSIZE () { 32768 } ## no critic
-
-  my $Printable = method {
-      local $_ = shift;
-      s/\r/\\r/g;
-      s/\n/\\n/g;
-      s/\t/\\t/g;
-      s/([^\x20-\x7E])/sprintf('\\x%.2X', ord($1))/ge;
-      $_;
-  };
-
-  my $Token = qr/[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7A\x7C\x7E]/;
-  my $Field_Content = qr/[[:print:]]+ (?: [\x20\x09]+ [[:print:]]+ )*/x;
-
-  method new {
-      my ($class, %args) = @_;
-      return bless {
-          rbuf             => '',
-          timeout          => 60,
-          max_line_size    => 16384,
-          max_header_lines => 64,
-          verify_SSL       => 0,
-          SSL_options      => {},
-          %args
-      }, $class;
-  }
-
-  method timeout {
-      my ($self, $timeout) = @_;
-      if ( @_ > 1 ) {
-          $self->{timeout} = $timeout;
-          if ( $self->{fh} && $self->{fh}->can('timeout') ) {
-              $self->{fh}->timeout($timeout);
-          }
-      }
-      return $self->{timeout};
-  }
-
-  method connect {
-      @_ == 5 || die(q/Usage: $handle->connect(scheme, host, port, peer)/ . "\n");
-      my ($self, $scheme, $host, $port, $peer) = @_;
-
-      if ( $scheme eq 'https' ) {
-          $self->_assert_ssl;
-      }
-
-      $self->{fh} = $SOCKET_CLASS->new(
-          PeerHost  => $peer,
-          PeerPort  => $port,
-          $self->{local_address} ?
-              ( LocalAddr => $self->{local_address} ) : (),
-          Proto     => 'tcp',
-          Type      => SOCK_STREAM,
-          Timeout   => $self->{timeout},
-      ) or die(qq/Could not connect to '$host:$port': $@\n/);
-
-      binmode($self->{fh})
-        or die(qq/Could not binmode() socket: '$!'\n/);
-
-      if ( $self->{keep_alive} ) {
-          unless ( defined( $self->{fh}->setsockopt( SOL_SOCKET, SO_KEEPALIVE, 1 ) ) ) {
-              CORE::close($self->{fh});
-              die(qq/Could not set SO_KEEPALIVE on socket: '$!'\n/);
-          }
-      }
-
-      $self->start_ssl($host) if $scheme eq 'https';
-
-      $self->{scheme} = $scheme;
-      $self->{host} = $host;
-      $self->{peer} = $peer;
-      $self->{port} = $port;
-      $self->{pid} = $$;
-      $self->{tid} = _get_tid();
-
-      return $self;
-  }
-
-  method connected {
-      my ($self) = @_;
-      if ( $self->{fh} && $self->{fh}->connected ) {
-          return wantarray
-            ? ( $self->{fh}->peerhost, $self->{fh}->peerport )
-            : join( ':', $self->{fh}->peerhost, $self->{fh}->peerport );
-      }
-      return;
-  }
-
-  method start_ssl {
-      my ($self, $host) = @_;
-
-      # As this might be used via CONNECT after an SSL session
-      # to a proxy, we shut down any existing SSL before attempting
-      # the handshake
-      if ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-          unless ( $self->{fh}->stop_SSL ) {
-              my $ssl_err = IO::Socket::SSL->errstr;
-              die(qq/Error halting prior SSL connection: $ssl_err/);
-          }
-      }
-
-      my $ssl_args = $self->_ssl_args($host);
-      IO::Socket::SSL->start_SSL(
-          $self->{fh},
-          %$ssl_args,
-          SSL_create_ctx_callback => method {
-              my $ctx = shift;
-              Net::SSLeay::CTX_set_mode($ctx, Net::SSLeay::MODE_AUTO_RETRY());
-          },
-      );
-
-      unless ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-          my $ssl_err = IO::Socket::SSL->errstr;
-          die(qq/SSL connection failed for $host: $ssl_err\n/);
-      }
-  }
-
-  method close {
-      @_ == 1 || die(q/Usage: $handle->close()/ . "\n");
-      my ($self) = @_;
-      CORE::close($self->{fh})
-        or die(qq/Could not close socket: '$!'\n/);
-  }
-
-  method write {
-      @_ == 2 || die(q/Usage: $handle->write(buf)/ . "\n");
-      my ($self, $buf) = @_;
-
-      if ( $] ge '5.008' ) {
-          utf8::downgrade($buf, 1)
-              or die(qq/Wide character in write()\n/);
-      }
-
-      my $len = length $buf;
-      my $off = 0;
-
-      local $SIG{PIPE} = 'IGNORE';
-
-      while () {
-          $self->can_write
-            or die(qq/Timed out while waiting for socket to become ready for writing\n/);
-          my $r = syswrite($self->{fh}, $buf, $len, $off);
-          if (defined $r) {
-              $len -= $r;
-              $off += $r;
-              last unless $len > 0;
-          }
-          elsif ($! == EPIPE) {
-              die(qq/Socket closed by remote server: $!\n/);
-          }
-          elsif ($! != EINTR) {
-              if ($self->{fh}->can('errstr')){
-                  my $err = $self->{fh}->errstr();
-                  die (qq/Could not write to SSL socket: '$err'\n /);
-              }
-              else {
-                  die(qq/Could not write to socket: '$!'\n/);
-              }
-
-          }
-      }
-      return $off;
-  }
-
-  method read {
-      @_ == 2 || @_ == 3 || die(q/Usage: $handle->read(len [, allow_partial])/ . "\n");
-      my ($self, $len, $allow_partial) = @_;
-
-      my $buf  = '';
-      my $got = length $self->{rbuf};
-
-      if ($got) {
-          my $take = ($got < $len) ? $got : $len;
-          $buf  = substr($self->{rbuf}, 0, $take, '');
-          $len -= $take;
-      }
-
-      # Ignore SIGPIPE because SSL reads can result in writes that might error.
-      # See "Expecting exactly the same behavior as plain sockets" in
-      # https://metacpan.org/dist/IO-Socket-SSL/view/lib/IO/Socket/SSL.pod#Common-Usage-Errors
-      local $SIG{PIPE} = 'IGNORE';
-
-      while ($len > 0) {
-          $self->can_read
-            or die(q/Timed out while waiting for socket to become ready for reading/ . "\n");
-          my $r = sysread($self->{fh}, $buf, $len, length $buf);
-          if (defined $r) {
-              last unless $r;
-              $len -= $r;
-          }
-          elsif ($! != EINTR) {
-              if ($self->{fh}->can('errstr')){
-                  my $err = $self->{fh}->errstr();
-                  die (qq/Could not read from SSL socket: '$err'\n /);
-              }
-              else {
-                  die(qq/Could not read from socket: '$!'\n/);
-              }
-          }
-      }
-      if ($len && !$allow_partial) {
-          die(qq/Unexpected end of stream\n/);
-      }
-      return $buf;
-  }
-
-  method readline {
-      @_ == 1 || die(q/Usage: $handle->readline()/ . "\n");
-      my ($self) = @_;
-
-      while () {
-          if ($self->{rbuf} =~ s/\A ([^\x0D\x0A]* \x0D?\x0A)//x) {
-              return $1;
-          }
-          if (length $self->{rbuf} >= $self->{max_line_size}) {
-              die(qq/Line size exceeds the maximum allowed size of $self->{max_line_size}\n/);
-          }
-          $self->can_read
-            or die(qq/Timed out while waiting for socket to become ready for reading\n/);
-          my $r = sysread($self->{fh}, $self->{rbuf}, BUFSIZE, length $self->{rbuf});
-          if (defined $r) {
-              last unless $r;
-          }
-          elsif ($! != EINTR) {
-              if ($self->{fh}->can('errstr')){
-                  my $err = $self->{fh}->errstr();
-                  die (qq/Could not read from SSL socket: '$err'\n /);
-              }
-              else {
-                  die(qq/Could not read from socket: '$!'\n/);
-              }
-          }
-      }
-      die(qq/Unexpected end of stream while looking for line\n/);
-  }
-
-  method read_header_lines {
-      @_ == 1 || @_ == 2 || die(q/Usage: $handle->read_header_lines([headers])/ . "\n");
-      my ($self, $headers) = @_;
-      $headers ||= {};
-      my $lines   = 0;
-      my $val;
-
-      while () {
-           my $line = $self->readline;
-
-           if (++$lines >= $self->{max_header_lines}) {
-               die(qq/Header lines exceeds maximum number allowed of $self->{max_header_lines}\n/);
-           }
-           elsif ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\x0D\x0A]*)/x) {
-               my ($field_name) = lc $1;
-               if (exists $headers->{$field_name}) {
-                   for ($headers->{$field_name}) {
-                       $_ = [$_] unless ref $_ eq "ARRAY";
-                       push @$_, $2;
-                       $val = \$_->[-1];
-                   }
-               }
-               else {
-                   $val = \($headers->{$field_name} = $2);
-               }
-           }
-           elsif ($line =~ /\A [\x09\x20]+ ([^\x0D\x0A]*)/x) {
-               $val
-                 or die(qq/Unexpected header continuation line\n/);
-               next unless length $1;
-               $$val .= ' ' if length $$val;
-               $$val .= $1;
-           }
-           elsif ($line =~ /\A \x0D?\x0A \z/x) {
-              last;
-           }
-           else {
-              die(q/Malformed header line: / . $Printable->($line) . "\n");
-           }
-      }
-      return $headers;
-  }
-
-  method write_request {
-      @_ == 2 || die(q/Usage: $handle->write_request(request)/ . "\n");
-      my($self, $request) = @_;
-      $self->write_request_header(@{$request}{qw/method uri headers header_case/});
-      $self->write_body($request) if $request->{cb};
-      return;
-  }
-
-  # Standard request header names/case from HTTP/1.1 RFCs
-  my @rfc_request_headers = qw(
-    Accept Accept-Charset Accept-Encoding Accept-Language Authorization
-    Cache-Control Connection Content-Length Expect From Host
-    If-Match If-Modified-Since If-None-Match If-Range If-Unmodified-Since
-    Max-Forwards Pragma Proxy-Authorization Range Referer TE Trailer
-    Transfer-Encoding Upgrade User-Agent Via
-  );
-
-  my @other_request_headers = qw(
-    Content-Encoding Content-MD5 Content-Type Cookie DNT Date Origin
-    X-XSS-Protection
-  );
-
-  my %HeaderCase = map { lc($_) => $_ } @rfc_request_headers, @other_request_headers;
-
-  # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
-  # combine writes.
-  method write_header_lines {
-      (@_ >= 2 && @_ <= 4 && ref $_[1] eq 'HASH') || die(q/Usage: $handle->write_header_lines(headers, [header_case, prefix])/ . "\n");
-      my($self, $headers, $header_case, $prefix_data) = @_;
-      $header_case ||= {};
-
-      my $buf = (defined $prefix_data ? $prefix_data : '');
-
-      # Per RFC, control fields should be listed first
-      my %seen;
-      for my $k ( qw/host cache-control expect max-forwards pragma range te/ ) {
-          next unless exists $headers->{$k};
-          $seen{$k}++;
-          my $field_name = $HeaderCase{$k};
-          my $v = $headers->{$k};
-          for (ref $v eq 'ARRAY' ? @$v : $v) {
-              $_ = '' unless defined $_;
-              $buf .= "$field_name: $_\x0D\x0A";
-          }
-      }
-
-      # Other headers sent in arbitrary order
-      while (my ($k, $v) = each %$headers) {
-          my $field_name = lc $k;
-          next if $seen{$field_name};
-          if (exists $HeaderCase{$field_name}) {
-              $field_name = $HeaderCase{$field_name};
-          }
-          else {
-              if (exists $header_case->{$field_name}) {
-                  $field_name = $header_case->{$field_name};
-              }
-              else {
-                  $field_name =~ s/\b(\w)/\u$1/g;
-              }
-              $field_name =~ /\A $Token+ \z/xo
-                or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
-              $HeaderCase{lc $field_name} = $field_name;
-          }
-          for (ref $v eq 'ARRAY' ? @$v : $v) {
-              # unwrap a field value if pre-wrapped by user
-              s/\x0D?\x0A\s+/ /g;
-              die(qq/Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
-                unless $_ eq '' || /\A $Field_Content \z/xo;
-              $_ = '' unless defined $_;
-              $buf .= "$field_name: $_\x0D\x0A";
-          }
-      }
-      $buf .= "\x0D\x0A";
-      return $self->write($buf);
-  }
-
-  # return value indicates whether message length was defined; this is generally
-  # true unless there was no content-length header and we just read until EOF.
-  # Other message length errors are thrown as exceptions
-  method read_body {
-      @_ == 3 || die(q/Usage: $handle->read_body(callback, response)/ . "\n");
-      my ($self, $cb, $response) = @_;
-      my $te = $response->{headers}{'transfer-encoding'} || '';
-      my $chunked = grep { /chunked/i } ( ref $te eq 'ARRAY' ? @$te : $te ) ;
-      return $chunked
-          ? $self->read_chunked_body($cb, $response)
-          : $self->read_content_body($cb, $response);
-  }
-
-  method write_body {
-      @_ == 2 || die(q/Usage: $handle->write_body(request)/ . "\n");
-      my ($self, $request) = @_;
-      if (exists $request->{headers}{'content-length'}) {
-          return unless $request->{headers}{'content-length'};
-          return $self->write_content_body($request);
-      }
-      else {
-          return $self->write_chunked_body($request);
-      }
-  }
-
-  method read_content_body {
-      @_ == 3 || @_ == 4 || die(q/Usage: $handle->read_content_body(callback, response, [read_length])/ . "\n");
-      my ($self, $cb, $response, $content_length) = @_;
-      $content_length ||= $response->{headers}{'content-length'};
-
-      if ( defined $content_length ) {
-          my $len = $content_length;
-          while ($len > 0) {
-              my $read = ($len > BUFSIZE) ? BUFSIZE : $len;
-              $cb->($self->read($read, 0), $response);
-              $len -= $read;
-          }
-          return length($self->{rbuf}) == 0;
-      }
-
-      my $chunk;
-      $cb->($chunk, $response) while length( $chunk = $self->read(BUFSIZE, 1) );
-
-      return;
-  }
-
-  method write_content_body {
-      @_ == 2 || die(q/Usage: $handle->write_content_body(request)/ . "\n");
-      my ($self, $request) = @_;
-
-      my ($len, $content_length) = (0, $request->{headers}{'content-length'});
-      while () {
-          my $data = $request->{cb}->();
-
-          defined $data && length $data
-            or last;
-
-          if ( $] ge '5.008' ) {
-              utf8::downgrade($data, 1)
-                  or die(qq/Wide character in write_content()\n/);
-          }
-
-          $len += $self->write($data);
-      }
-
-      $len == $content_length
-        or die(qq/Content-Length mismatch (got: $len expected: $content_length)\n/);
-
-      return $len;
-  }
-
-  method read_chunked_body {
-      @_ == 3 || die(q/Usage: $handle->read_chunked_body(callback, $response)/ . "\n");
-      my ($self, $cb, $response) = @_;
-
-      while () {
-          my $head = $self->readline;
-
-          $head =~ /\A ([A-Fa-f0-9]+)/x
-            or die(q/Malformed chunk head: / . $Printable->($head) . "\n");
-
-          my $len = hex($1)
-            or last;
-
-          $self->read_content_body($cb, $response, $len);
-
-          $self->read(2) eq "\x0D\x0A"
-            or die(qq/Malformed chunk: missing CRLF after chunk data\n/);
-      }
-      $self->read_header_lines($response->{headers});
-      return 1;
-  }
-
-  method write_chunked_body {
-      @_ == 2 || die(q/Usage: $handle->write_chunked_body(request)/ . "\n");
-      my ($self, $request) = @_;
-
-      my $len = 0;
-      while () {
-          my $data = $request->{cb}->();
-
-          defined $data && length $data
-            or last;
-
-          if ( $] ge '5.008' ) {
-              utf8::downgrade($data, 1)
-                  or die(qq/Wide character in write_chunked_body()\n/);
-          }
-
-          $len += length $data;
-
-          my $chunk  = sprintf '%X', length $data;
-             $chunk .= "\x0D\x0A";
-             $chunk .= $data;
-             $chunk .= "\x0D\x0A";
-
-          $self->write($chunk);
-      }
-      $self->write("0\x0D\x0A");
-      if ( ref $request->{trailer_cb} eq 'CODE' ) {
-          $self->write_header_lines($request->{trailer_cb}->())
-      }
-      else {
-          $self->write("\x0D\x0A");
-      }
-      return $len;
-  }
-
-  method read_response_header {
-      @_ == 1 || die(q/Usage: $handle->read_response_header()/ . "\n");
-      my ($self) = @_;
-
-      my $line = $self->readline;
-
-      $line =~ /\A (HTTP\/(0*\d+\.0*\d+)) [\x09\x20]+ ([0-9]{3}) (?: [\x09\x20]+ ([^\x0D\x0A]*) )? \x0D?\x0A/x
-        or die(q/Malformed Status-Line: / . $Printable->($line). "\n");
-
-      my ($protocol, $version, $status, $reason) = ($1, $2, $3, $4);
-      $reason = "" unless defined $reason;
-
-      die (qq/Unsupported HTTP protocol: $protocol\n/)
-          unless $version =~ /0*1\.0*[01]/;
-
-      return {
-          status       => $status,
-          reason       => $reason,
-          headers      => $self->read_header_lines,
-          protocol     => $protocol,
-      };
-  }
-
-  method write_request_header {
-      @_ == 5 || die(q/Usage: $handle->write_request_header(method, request_uri, headers, header_case)/ . "\n");
-      my ($self, $method, $request_uri, $headers, $header_case) = @_;
-
-      return $self->write_header_lines($headers, $header_case, "$method $request_uri HTTP/1.1\x0D\x0A");
-  }
-
-  method _do_timeout {
-      my ($self, $type, $timeout) = @_;
-      $timeout = $self->{timeout}
-          unless defined $timeout && $timeout >= 0;
-
-      my $fd = fileno $self->{fh};
-      defined $fd && $fd >= 0
-        or die(qq/select(2): 'Bad file descriptor'\n/);
-
-      my $initial = time;
-      my $pending = $timeout;
-      my $nfound;
-
-      vec(my $fdset = '', $fd, 1) = 1;
-
-      while () {
-          $nfound = ($type eq 'read')
-              ? select($fdset, undef, undef, $pending)
-              : select(undef, $fdset, undef, $pending) ;
-          if ($nfound == -1) {
-              $! == EINTR
-                or die(qq/select(2): '$!'\n/);
-              redo if !$timeout || ($pending = $timeout - (time - $initial)) > 0;
-              $nfound = 0;
-          }
-          last;
-      }
-      $! = 0;
-      return $nfound;
-  }
-
-  method can_read {
-      @_ == 1 || @_ == 2 || die(q/Usage: $handle->can_read([timeout])/ . "\n");
-      my $self = shift;
-      if ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-          return 1 if $self->{fh}->pending;
-      }
-      return $self->_do_timeout('read', @_)
-  }
-
-  method can_write {
-      @_ == 1 || @_ == 2 || die(q/Usage: $handle->can_write([timeout])/ . "\n");
-      my $self = shift;
-      return $self->_do_timeout('write', @_)
-  }
-
-  method _assert_ssl {
-      my($ok, $reason) = HTTP::Tiny->can_ssl();
-      die $reason unless $ok;
-  }
-
-  method can_reuse {
-      my ($self,$scheme,$host,$port,$peer) = @_;
-      return 0 if
-          $self->{pid} != $$
-          || $self->{tid} != _get_tid()
-          || length($self->{rbuf})
-          || $scheme ne $self->{scheme}
-          || $host ne $self->{host}
-          || $port ne $self->{port}
-          || $peer ne $self->{peer}
-          || eval { $self->can_read(0) }
-          || $@ ;
-          return 1;
-  }
-
-  # Try to find a CA bundle to validate the SSL cert,
-  # prefer Mozilla::CA or fallback to a system file
-  method _find_CA_file {
-      my $self = shift();
-
-      my $ca_file =
-        defined( $self->{SSL_options}->{SSL_ca_file} )
-        ? $self->{SSL_options}->{SSL_ca_file}
-        : $ENV{SSL_CERT_FILE};
-
-      if ( defined $ca_file ) {
-          unless ( -r $ca_file ) {
-              die qq/SSL_ca_file '$ca_file' not found or not readable\n/;
-          }
-          return $ca_file;
-      }
-
-      local @INC = @INC;
-      pop @INC if $INC[-1] eq '.';
-      return Mozilla::CA::SSL_ca_file()
-          if eval { require Mozilla::CA; 1 };
-
-      # cert list copied from golang src/crypto/x509/root_unix.go
-      foreach my $ca_bundle (
-          "/etc/ssl/certs/ca-certificates.crt",     # Debian/Ubuntu/Gentoo etc.
-          "/etc/pki/tls/certs/ca-bundle.crt",       # Fedora/RHEL
-          "/etc/ssl/ca-bundle.pem",                 # OpenSUSE
-          "/etc/openssl/certs/ca-certificates.crt", # NetBSD
-          "/etc/ssl/cert.pem",                      # OpenBSD
-          "/usr/local/share/certs/ca-root-nss.crt", # FreeBSD/DragonFly
-          "/etc/pki/tls/cacert.pem",                # OpenELEC
-          "/etc/certs/ca-certificates.crt",         # Solaris 11.2+
-      ) {
-          return $ca_bundle if -e $ca_bundle;
-      }
-
-      die qq/Couldn't find a CA bundle with which to verify the SSL certificate.\n/
-        . qq/Try installing Mozilla::CA from CPAN\n/;
-  }
-
-  # for thread safety, we need to know thread id if threads are loaded
-  method _get_tid {
-      no warnings 'reserved'; # for 'threads'
-      return threads->can("tid") ? threads->tid : 0;
-  }
-
-  method _ssl_args {
-      my ($self, $host) = @_;
-
-      my %ssl_args;
-
-      # This test reimplements IO::Socket::SSL::can_client_sni(), which wasn't
-      # added until IO::Socket::SSL 1.84
-      if ( Net::SSLeay::OPENSSL_VERSION_NUMBER() >= 0x01000000 ) {
-          $ssl_args{SSL_hostname} = $host,          # Sane SNI support
-      }
-
-      if ($self->{verify_SSL}) {
-          $ssl_args{SSL_verifycn_scheme}  = 'http'; # enable CN validation
-          $ssl_args{SSL_verifycn_name}    = $host;  # set validation hostname
-          $ssl_args{SSL_verify_mode}      = 0x01;   # enable cert validation
-          $ssl_args{SSL_ca_file}          = $self->_find_CA_file;
-      }
-      else {
-          $ssl_args{SSL_verifycn_scheme}  = 'none'; # disable CN validation
-          $ssl_args{SSL_verify_mode}      = 0x00;   # disable cert validation
-      }
-
-      # user options override settings from verify_SSL
-      for my $k ( keys %{$self->{SSL_options}} ) {
-          $ssl_args{$k} = $self->{SSL_options}{$k} if $k =~ m/^SSL_/;
-      }
-
-      return \%ssl_args;
-  }
+    # As this might be used via CONNECT after an SSL session
+    # to a proxy, we shut down any existing SSL before attempting
+    # the handshake
+    if ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
+        unless ( $self->{fh}->stop_SSL ) {
+            my $ssl_err = IO::Socket::SSL->errstr;
+            die(qq/Error halting prior SSL connection: $ssl_err/);
+        }
+    }
+
+    my $ssl_args = $self->_ssl_args($host);
+    IO::Socket::SSL->start_SSL(
+        $self->{fh},
+        %$ssl_args,
+        SSL_create_ctx_callback => sub {
+            my $ctx = shift;
+            Net::SSLeay::CTX_set_mode($ctx, Net::SSLeay::MODE_AUTO_RETRY());
+        },
+    );
+
+    unless ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
+        my $ssl_err = IO::Socket::SSL->errstr;
+        die(qq/SSL connection failed for $host: $ssl_err\n/);
+    }
 
 =cut
 
+  }
 }
