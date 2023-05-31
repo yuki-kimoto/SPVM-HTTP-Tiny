@@ -111,4 +111,8 @@ class HTTP::Tiny::URL {
     
     return $substring;
   }
+  
+  method to_string : string () {
+    
+  }
 }

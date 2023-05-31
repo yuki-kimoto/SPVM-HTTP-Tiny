@@ -4,15 +4,14 @@
 class HTTP::Tiny::Handle {
   use Fn;
   use IO::Socket::INET;
-  use Sys::Socket::Constatnt as SOCKET;
+  use Sys::Socket::Constant as SOCKET;
+  use Errno;
+  use Sys::Signal;
   
+  has fh : IO::Handle;
   has timeout : rw int;
   has rbuf : string;
   has timeout : int;
-  has max_line_size : int;
-  has max_header_lines : int;
-  has verify_SSL : int;
-  has SSL_options : object[];
   
   static method new : HTTP::Tiny::Handle ($options : object[]) {
     
@@ -22,29 +21,17 @@ class HTTP::Tiny::Handle {
       {
         rbuf             => "",
         timeout          => 60,
-        max_line_size    => 16384,
-        max_header_lines => 64,
-        verify_SSL       => 0,
-        SSL_options      => {},
       },
       $options
     );
     
     $self->{rbuf} = $options->{rbuf};
     $self->{timeout} = $options->{timeout};
-    $self->{max_line_size} = $options->{max_line_size};
-    $self->{max_header_lines} = $options->{max_header_lines};
-    $self->{verify_SSL} = $options->{verify_SSL};
-    $self->{SSL_options} = $options->{SSL_options};
     
     return $self;
   }
 
-  method connect ($scheme : string, $host : string, $port : string, $peer : string) {
-    
-    if ($scheme eq "https") {
-      $self->_assert_ssl;
-    }
+  method connect ($request : HTTP::Tiny::Request) {
     
     my $fh = IO::Socket::INET->new(
         PeerHost  => $peer,
@@ -56,65 +43,388 @@ class HTTP::Tiny::Handle {
     );
     $self->{fh} = $fh;
     
-    if ($self->{keep_alive}) {
-      unless ($self->{fh}->setsockopt(SOCKET->SOL_SOCKET, SOCKET->SO_KEEPALIVE, 1))) {
-        $self->{fh}->close;
-        die "Could not set SO_KEEPALIVE on socket: \"$!\"";
+    return $self;
+  }
+  
+  private enum {
+    BUFSIZE = 32768,
+  }
+
+  my $Printable = method {
+      local $_ = shift;
+      s/\r/\\r/g;
+      s/\n/\\n/g;
+      s/\t/\\t/g;
+      s/([^\x20-\x7E])/sprintf('\\x%.2X', ord($1))/ge;
+      $_;
+  };
+
+  my $Token = qr/[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7A\x7C\x7E]/;
+  my $Field_Content = qr/[[:print:]]+ (?: [\x20\x09]+ [[:print:]]+ )*/x;
+
+  method new {
+      my ($class, %args) = @_;
+      return bless {
+          rbuf             => '',
+          timeout          => 60,
+          %args
+      }, $class;
+  }
+
+  method timeout {
+      my ($self, $timeout) = @_;
+      if ( @_ > 1 ) {
+          $self->{timeout} = $timeout;
+          if ( $self->{fh} && $self->{fh}->can('timeout') ) {
+              $self->{fh}->timeout($timeout);
+          }
       }
-    }
-    
-    if ($scheme eq "https") {
-      $self->start_ssl($host);
-    }
-    
+      return $self->{timeout};
+  }
+
+  method connect ($url : HTTP::Tiny::URL) {
+
+    $self->{fh} = $SOCKET_CLASS->new(
+        PeerHost  => $peer,
+        PeerPort  => $port,
+        $self->{local_address} ?
+            ( LocalAddr => $self->{local_address} ) : (),
+        Proto     => 'tcp',
+        Type      => SOCK_STREAM,
+        Timeout   => $self->{timeout},
+    ) or die("Could not connect to '$host:$port': $@\n");
+
+    binmode($self->{fh})
+      or die("Could not binmode() socket: '$!'\n");
+
     $self->{scheme} = $scheme;
     $self->{host} = $host;
     $self->{peer} = $peer;
     $self->{port} = $port;
-    $self->{pid} = $$;
-    
+
     return $self;
   }
-  
-  method _assert_ssl : void {
-    my $reason_ref = new string[1];
-    
-    my $ok = HTTP::Tiny->can_ssl($reason_ref);
-    unless ($ok) {
-      die $reason_ref->[0];
+
+  method connected : int () {
+    if ( $self->{fh} && $self->{fh}->connected ) {
+      return wantarray
+        ? ( $self->{fh}->peerhost, $self->{fh}->peerport )
+        : join( ':', $self->{fh}->peerhost, $self->{fh}->peerport );
     }
+    return;
   }
 
-  method start_ssl : void ($host : string) {
+  method write : int ($buf : string) {
 
-=pod
+    my $len = length $buf;
+    my $off = 0;
 
-    # As this might be used via CONNECT after an SSL session
-    # to a proxy, we shut down any existing SSL before attempting
-    # the handshake
-    if ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-        unless ( $self->{fh}->stop_SSL ) {
-            my $ssl_err = IO::Socket::SSL->errstr;
-            die(qq/Error halting prior SSL connection: $ssl_err/);
+    local $SIG{PIPE} = 'IGNORE';
+
+    while () {
+        $self->can_write
+          or die("Timed out while waiting for socket to become ready for writing\n");
+        my $r = syswrite($self->{fh}, $buf, $len, $off);
+        if (defined $r) {
+            $len -= $r;
+            $off += $r;
+            last unless $len > 0;
+        }
+        elsif ($! == EPIPE) {
+            die("Socket closed by remote server: $!\n");
+        }
+        elsif ($! != EINTR) {
+          die("Could not write to socket: '$!'\n");
+        }
+    }
+    return $off;
+  }
+
+  method read ($len : int, $allow_partial : int) {
+
+    my $buf  = '';
+    my $got = length $self->{rbuf};
+
+    if ($got) {
+        my $take = ($got < $len) ? $got : $len;
+        $buf  = substr($self->{rbuf}, 0, $take, '');
+        $len -= $take;
+    }
+
+    local $SIG{PIPE} = 'IGNORE';
+
+    while ($len > 0) {
+        $self->can_read
+          or die(q/Timed out while waiting for socket to become ready for reading/ . "\n");
+        my $r = sysread($self->{fh}, $buf, $len, length $buf);
+        if (defined $r) {
+          last unless $r;
+          $len -= $r;
+        }
+        elsif ($! != EINTR) {
+          die("Could not read from socket: '$!'\n");
+        }
+    }
+    if ($len && !$allow_partial) {
+        die("Unexpected end of stream\n");
+    }
+    return $buf;
+  }
+
+  method readline {
+
+    while () {
+      if ($self->{rbuf} =~ s/\A ([^\x0D\x0A]* \x0D?\x0A)//x) {
+          return $1;
+      }
+      $self->can_read
+        or die("Timed out while waiting for socket to become ready for reading\n");
+      
+      my $r = sysread($self->{fh}, $self->{rbuf}, BUFSIZE, length $self->{rbuf});
+      if (defined $r) {
+        last unless $r;
+      }
+      elsif ($! != EINTR) {
+        die("Could not read from socket: '$!'\n");
+      }
+    }
+    die("Unexpected end of stream while looking for line\n");
+  }
+
+  method read_header_lines : HTTP::Tiny::Headers ($headers : HTTP::Tiny::Headers) {
+    $headers ||= {};
+    my $lines   = 0;
+    my $val;
+
+    while () {
+         my $line = $self->readline;
+
+         if ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\x0D\x0A]*)/x) {
+             my ($field_name) = lc $1;
+             if (exists $headers->{$field_name}) {
+                 for ($headers->{$field_name}) {
+                     $_ = [$_] unless ref $_ eq "ARRAY";
+                     push @$_, $2;
+                     $val = \$_->[-1];
+                 }
+             }
+             else {
+                 $val = \($headers->{$field_name} = $2);
+             }
+         }
+         elsif ($line =~ /\A [\x09\x20]+ ([^\x0D\x0A]*)/x) {
+             $val
+               or die("Unexpected header continuation line\n");
+             next unless length $1;
+             $$val .= ' ' if length $$val;
+             $$val .= $1;
+         }
+         elsif ($line =~ /\A \x0D?\x0A \z/x) {
+            last;
+         }
+         else {
+            die(q/Malformed header line: / . $Printable->($line) . "\n");
+         }
+    }
+    return $headers;
+  }
+
+  method write_request : void ($request : HTTP::Tiny::Request) {
+    $self->write_request_header($request);
+    $self->write_body($request);
+  }
+
+  # Standard request header names/case from HTTP/1.1 RFCs
+  my @rfc_request_headers = qw(
+    Accept Accept-Charset Accept-Encoding Accept-Language Authorization
+    Cache-Control Connection Content-Length Expect From Host
+    If-Match If-Modified-Since If-None-Match If-Range If-Unmodified-Since
+    Max-Forwards Pragma Proxy-Authorization Range Referer TE Trailer
+    Transfer-Encoding Upgrade User-Agent Via
+  );
+
+  my @other_request_headers = qw(
+    Content-Encoding Content-MD5 Content-Type Cookie DNT Date Origin
+    X-XSS-Protection
+  );
+
+  my %HeaderCase = map { lc($_) => $_ } @rfc_request_headers, @other_request_headers;
+
+  # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
+  # combine writes.
+  method write_header_lines : int ($headers, $header_case, $prefix_data) {
+    $header_case ||= {};
+
+    my $buf = (defined $prefix_data ? $prefix_data : '');
+
+    # Per RFC, control fields should be listed first
+    my %seen;
+    for my $k ( qw/host cache-control expect max-forwards pragma range te/ ) {
+        next unless exists $headers->{$k};
+        $seen{$k}++;
+        my $field_name = $HeaderCase{$k};
+        my $v = $headers->{$k};
+        for (ref $v eq 'ARRAY' ? @$v : $v) {
+            $_ = '' unless defined $_;
+            $buf .= "$field_name: $_\x0D\x0A";
         }
     }
 
-    my $ssl_args = $self->_ssl_args($host);
-    IO::Socket::SSL->start_SSL(
-        $self->{fh},
-        %$ssl_args,
-        SSL_create_ctx_callback => sub {
-            my $ctx = shift;
-            Net::SSLeay::CTX_set_mode($ctx, Net::SSLeay::MODE_AUTO_RETRY());
-        },
-    );
+    # Other headers sent in arbitrary order
+    while (my ($k, $v) = each %$headers) {
+        my $field_name = lc $k;
+        next if $seen{$field_name};
+        if (exists $HeaderCase{$field_name}) {
+            $field_name = $HeaderCase{$field_name};
+        }
+        else {
+            if (exists $header_case->{$field_name}) {
+                $field_name = $header_case->{$field_name};
+            }
+            else {
+                $field_name =~ s/\b(\w)/\u$1/g;
+            }
+            $field_name =~ /\A $Token+ \z/xo
+              or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
+            $HeaderCase{lc $field_name} = $field_name;
+        }
+        for (ref $v eq 'ARRAY' ? @$v : $v) {
+            # unwrap a field value if pre-wrapped by user
+            s/\x0D?\x0A\s+/ /g;
+            die("Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
+              unless $_ eq '' || /\A $Field_Content \z/xo;
+            $_ = '' unless defined $_;
+            $buf .= "$field_name: $_\x0D\x0A";
+        }
+    }
+    $buf .= "\x0D\x0A";
+    return $self->write($buf);
+  }
 
-    unless ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-        my $ssl_err = IO::Socket::SSL->errstr;
-        die(qq/SSL connection failed for $host: $ssl_err\n/);
+  # return value indicates whether message length was defined; this is generally
+  # true unless there was no content-length header and we just read until EOF.
+  # Other message length errors are thrown as exceptions
+  method read_body {
+      my ($self, $cb, $response) = @_;
+      my $te = $response->{headers}{'transfer-encoding'} || '';
+      my $chunked = grep { /chunked/i } ( ref $te eq 'ARRAY' ? @$te : $te ) ;
+      return $chunked
+          ? $self->read_chunked_body($cb, $response)
+          : $self->read_content_body($cb, $response);
+  }
+
+  method write_body {
+      my ($self, $request) = @_;
+      if (exists $request->{headers}{'content-length'}) {
+          return unless $request->{headers}{'content-length'};
+          return $self->write_content_body($request);
+      }
+      else {
+          return $self->write_chunked_body($request);
+      }
+  }
+
+  method read_content_body ($cb, $response : HTTP::Tiny::Response, $content_length : int) {
+    $content_length ||= $response->{headers}{'content-length'};
+
+    if ( defined $content_length ) {
+        my $len = $content_length;
+        while ($len > 0) {
+            my $read = ($len > BUFSIZE) ? BUFSIZE : $len;
+            $cb->($self->read($read, 0), $response);
+            $len -= $read;
+        }
+        return length($self->{rbuf}) == 0;
     }
 
-=cut
+    my $chunk;
+    $cb->($chunk, $response) while length( $chunk = $self->read(BUFSIZE, 1) );
 
+    return;
+  }
+
+  method write_content_body ($request : HTTP::Tiny::Request) {
+
+    my ($len, $content_length) = (0, $request->{headers}{'content-length'});
+    while () {
+      my $data = $request->{cb}->();
+
+      defined $data && length $data
+        or last;
+
+      $len += $self->write($data);
+    }
+
+    $len == $content_length
+      or die("Content-Length mismatch (got: $len expected: $content_length)\n");
+
+    return $len;
+  }
+
+  method read_response_header {
+
+    my $line = $self->readline;
+
+    $line =~ /\A (HTTP\/(0*\d+\.0*\d+)) [\x09\x20]+ ([0-9]{3}) (?: [\x09\x20]+ ([^\x0D\x0A]*) )? \x0D?\x0A/x
+      or die(q/Malformed Status-Line: / . $Printable->($line). "\n");
+
+    my ($protocol, $version, $status, $reason) = ($1, $2, $3, $4);
+    $reason = "" unless defined $reason;
+
+    die ("Unsupported HTTP protocol: $protocol\n/)
+        unless $version =~ /0*1\.0*[01]/;
+
+    return {
+        status       => $status,
+        reason       => $reason,
+        headers      => $self->read_header_lines,
+        protocol     => $protocol,
+    };
+  }
+
+  method write_request_header ($request : HTTP::Tiny::Request) {
+
+    return $self->write_header_lines($headers, $header_case, "$method $request_uri HTTP/1.1\x0D\x0A");
+  }
+
+  method _do_timeout {
+    my ($self, $type, $timeout) = @_;
+    $timeout = $self->{timeout}
+        unless defined $timeout && $timeout >= 0;
+    
+    my $fd = fileno $self->{fh};
+    defined $fd && $fd >= 0
+      or die("select(2): 'Bad file descriptor'\n");
+    
+    my $initial = time;
+    my $pending = $timeout;
+    my $nfound;
+    
+    vec(my $fdset = '', $fd, 1) = 1;
+    
+    while () {
+        $nfound = ($type eq 'read')
+            ? select($fdset, undef, undef, $pending)
+            : select(undef, $fdset, undef, $pending) ;
+        if ($nfound == -1) {
+            $! == EINTR
+              or die("select(2): '$!'\n");
+            redo if !$timeout || ($pending = $timeout - (time - $initial)) > 0;
+            $nfound = 0;
+        }
+        last;
+    }
+    $! = 0;
+    return $nfound;
+  }
+  
+  method can_read ($type : string, $timeout : int) {
+    my $can_read = $self->_do_timeout("read", $type, $timeout);
+    return $can_read;
+  }
+  
+  method can_write ($type : string, $timeout : int) {
+    my $can_write = $self->_do_timeout("write", $type, $timeout);
+    return $can_write;
   }
 }
