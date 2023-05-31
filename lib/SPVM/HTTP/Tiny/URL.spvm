@@ -74,4 +74,36 @@ class HTTP::Tiny::URL {
     
     return $url;
   }
+  
+  private static method substr_replacement : string ($string : string, $offset : int, $length : int = -1, $replacement : string = undef) {
+    
+    unless ($string) {
+      die "The \$string must be defined.";
+    }
+    
+    unless ($offset >= 0) {
+      die "The \$offset must be greater than or equal to 0.";
+    }
+    
+    my $string_length = length $string;
+    if ($length < 0) {
+      $length = $string_length - $offset;
+    }
+    
+    unless ($offset + $length <= $string_length) {
+      die "The \$offset + the \$length must be less than or equal to the length of the \$string.";
+    }
+    
+    my $substring = (string)undef;
+    if ($replacement) {
+      
+      $substring = Fn->substr($string, 0, $offset) . $replacement . Fn->substr($string, $length - $offset);
+    }
+    else {
+      $substring = (mutable string)new_string_len($length);
+      Fn->memcpy($substring, 0, $string, $offset, $length);
+    }
+    
+    return $substring;
+  }
 }

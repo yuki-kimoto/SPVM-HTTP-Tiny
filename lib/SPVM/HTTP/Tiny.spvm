@@ -6,78 +6,19 @@ class HTTP::Tiny {
   
   use Fn;
   use Regex;
-  use HTTP::Tiny::CookieJar::Interface;
-  use HTTP::Tiny::Handle;
   use Hash;
-  use Sys::Env;
-  use MIME::Base64;
   use Sys;
   use Format;
-  use Time::Local;
   use Sys::Time::Tm;
-  use Scope::Guard;
+  use HTTP::Tiny::Handle;
   use HTTP::Tiny::Error;
   use HTTP::Tiny::Response;
   use HTTP::Tiny::Headers;
   use HTTP::TIny::URL;
   
-  our $DefaultPort : Hash;
-  
-  our $DoW : string;
-  our $MoY : string;
-  
-  INIT {
-    $DoW = "Sun|Mon|Tue|Wed|Thu|Fri|Sat";
-    $MoY = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
-    $DefaultPort = Hash->new({
-      http => 80,
-      https => 443,
-    });
-  }
-  
-  has default_headers : string[];
-  has http_proxy : string;
-  has https_proxy : string;
-  has keep_alive : int;
-  has local_address : string;
-  has max_redirect : int;
-  has max_size : int;
-  has proxy : string;
-  has cookie_jar : HTTP::Tiny::CookieJar::Interface;
   has agent : ro string;
   has timeout : ro int;
   has handle : HTTP::Tiny::Handle;
-  has no_proxy : string[];
-  has _has_proxy : Hash;
-  has error_response : Hash;
-  
-
-  method set_agent : void ($agent : string) {
-    
-    if ($agent && Regex->new(" $")->match($agent)) {
-      $agent = $agent . &_agent;
-    }
-    
-    $self->{agent} = $agent;
-  }
-  
-  private static method _agent : string () {
-    
-    my $default_agent = "HTTP-Tiny";
-    
-    my $version = Fn->get_version_string("HTTP::Tiny");
-    
-    $default_agent .= "/$version";
-    
-    return $default_agent;
-  }
-  
-  method set_timeout : void ($timeout : int) {
-    $self->{timeout} = $timeout;
-    if ($self->{handle}) {
-      $self->{handle}->set_timeout($timeout);
-    }
-  }
   
   static method new : HTTP::Tiny ($options : object[] = undef) {
     
@@ -85,454 +26,60 @@ class HTTP::Tiny {
     
     my $self = new HTTP::Tiny;
     
-    $self->{max_redirect} = 5;
-    
+    # timeout
     $self->{timeout} = $options_h->delete_or_default_int("timeout", 60);
     
-    $self->{keep_alive} = $options_h->delete_or_default_int("keep_alive", 1);
-    
-    my $env_no_proxy = Sys::Env->getenv("no_proxy");
-    my $no_proxy_default = (string[])undef;
-    if ($env_no_proxy) {
-      $no_proxy_default = [$env_no_proxy];
+    # agent
+    my $agent = $options_h->delete_or_default_string("agent");
+    if ($agent) {
+      if (Regex->new(" $")->match($agent)) {
+        $agent .= $self->_create_default_agent;
+      }
     }
     else {
-      $no_proxy_default = new string [0];
+      $agent = $self->_create_default_agent;
     }
-    $self->{no_proxy} = (string[])$options_h->delete_or_default("no_proxy", $no_proxy_default);
     
-    $self->{cookie_jar} = (HTTP::Tiny::CookieJar::Interface)$options_h->delete_or_default("cookie_jar", undef);
-    
-    $self->{default_headers} = (string[])$options_h->delete_or_default("default_headers", undef);
-    
-    $self->{http_proxy} = $options_h->delete_or_default_string("http_proxy", undef);
-    
-    $self->{https_proxy} = $options_h->delete_or_default_string("https_proxy", undef);
-    
-    $self->{local_address} = $options_h->delete_or_default_string("local_address", undef);
-    
-    $self->{max_redirect} = $options_h->delete_or_default_int("max_redirect", -1);
-    
-    $self->{max_size} = $options_h->delete_or_default_int("max_size", -1);
-    
-    $self->{proxy} = $options_h->delete_or_default_string("proxy", undef);
-    
-    $self->{agent} = $options_h->delete_or_default_string("agent", &_agent);
-    
-    # $self->_set_proxies;
+    $self->{agent} = $agent;
     
     return $self;
   }
   
-  private method _uri_escape : string ($string : string) {
-    
-    my $regex = Regex->new("([^A-Za-z0-9\-\._~])");
-    my $escaped_string = $regex->replace_g($string, method : string ($re : Regex) {
-      my $bytes = $re->cap1;
-      
-      my $escaped_char_buffer = StringBuffer->new;
-      
-      for (my $i = 0; $i < length $bytes; $i++) {
-        my $byte = $bytes->[$i];
-        my $hex_string = Format->sprintf("%%%02X", [(object)($byte & 0xFF)]);
-        $escaped_char_buffer->push($hex_string);
-      }
-      
-      my $escaped_char = $escaped_char_buffer->to_string;
-      
-      return $escaped_char;
-    });
-    
-    return $escaped_string;
-  }
-  
-  private method _http_date : string ($time : long) {
-    
-    my $tm = Sys->gmtime($time);
-    
-    my $http_date = Format->sprintf("%s, %02d %s %04d %02d:%02d:%02d GMT",
-      [
-        (object)Fn->substr($DoW, $tm->tm_wday * 4, 3),
-        $tm->tm_mday, Fn->substr($MoY, $tm->tm_mon * 4, 3), $tm->tm_year + 1900,
-        $tm->tm_hour, $tm->tm_min, $tm->tm_sec,
-      ]
-    );
-    
-    return $http_date;
-  }
-  
-  private method _parse_http_date : long ($string : string) {
-    my $tm = Sys::Time::Tm->new;
-    
-    my $re1 = Regex->new("^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$");
-    my $re2 = Regex->new("^[SMTWF][a-z]+, +(\d\d)-($MoY)-(\d{2,4}) +(\d\d):(\d\d):(\d\d) +GMT$");
-    my $re3 = Regex->new("^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$");
-    if ($re1->match($string)) {
-      $tm->set_tm_sec(Fn->to_int($re1->cap6));
-      $tm->set_tm_min(Fn->to_int($re1->cap5));
-      $tm->set_tm_hour(Fn->to_int($re1->cap4));
-      $tm->set_tm_mday(Fn->to_int($re1->cap1));
-      $tm->set_tm_mon((Fn->index($MoY, $re1->cap2) / 4));
-      $tm->set_tm_year(Fn->to_int($re1->cap3));
-    }
-    elsif ($re2->match($string)) {
-      $tm->set_tm_sec(Fn->to_int($re1->cap6));
-      $tm->set_tm_min(Fn->to_int($re1->cap5));
-      $tm->set_tm_hour(Fn->to_int($re1->cap4));
-      $tm->set_tm_mday(Fn->to_int($re1->cap1));
-      $tm->set_tm_mon((Fn->index($MoY, $re1->cap2) / 4));
-      $tm->set_tm_year(Fn->to_int($re1->cap3));
-    }
-    elsif ($re3->match($string)) {
-      $tm->set_tm_sec(Fn->to_int($re1->cap5));
-      $tm->set_tm_min(Fn->to_int($re1->cap4));
-      $tm->set_tm_hour(Fn->to_int($re1->cap3));
-      $tm->set_tm_mday(Fn->to_int($re1->cap2));
-      $tm->set_tm_mon((Fn->index($MoY, $re1->cap1) / 4));
-      $tm->set_tm_year(Fn->to_int($re1->cap6));
-    }
-    
-    my $time = -1L;
-    eval { $time = Time::Local->timegm($tm); };
-    
-    return $time;
-  }
-
-  method _set_proxies : void () {
-    
-    # generic proxy
-    if (!$self->{proxy} ) {
-      $self->{proxy} = Sys::Env->getenv("all_proxy") || Sys::Env->getenv("ALL_PROXY");
-    }
-    
-    if ($self->{proxy} ) {
-      $self->_split_proxy("generic proxy", $self->{proxy}); # validate
-    }
-    else {
-      $self->{proxy} = undef;
-    }
-    
-    # http proxy
-    if (!$self->{http_proxy} ) {
-      # under CGI, bypass HTTP_PROXY as request sets it from Proxy header
-      my $old_http_proxy = Sys::Env->getenv("HTTP_PROXY");
-      my $resotre_http_proxy = Scope::Guard->new([has old_http_proxy : string = $old_http_proxy]method : void () {
-        Sys::Env->setenv("HTTP_PROXY", $self->{old_http_proxy}, 1);
-      });
-      if (Sys::Env->getenv("REQUEST_METHOD")) {
-        
-        my $http_proxy = Sys::Env->getenv("CGI_HTTP_PROXY");
-        unless ($http_proxy) {
-          $http_proxy = "";
-        }
-        Sys::Env->setenv("HTTP_PROXY", $http_proxy, 1);
-      }
-      
-      my $http_proxy = Sys::Env->getenv("http_proxy");
-      unless ($http_proxy) {
-        $http_proxy = Sys::Env->getenv("HTTP_PROXY");
-      }
-      unless ($http_proxy) {
-        $http_proxy = $self->{proxy};
-      }
-      
-      $self->{http_proxy} = $http_proxy;
-    }
-    
-    if ($self->{http_proxy} ) {
-      $self->_split_proxy("http_proxy", $self->{http_proxy}); # validate
-      $self->{_has_proxy}->set("http", 1);
-    }
-    else {
-      $self->{http_proxy} = undef;
-    }
-    
-    # https proxy
-    if (!$self->{https_proxy}) {
-      $self->{https_proxy} = Sys::Env->getenv("https_proxy") || Sys::Env->getenv("HTTPS_PROXY") || $self->{proxy};
-    }
-    
-    if ($self->{https_proxy}) {
-      $self->_split_proxy("https_proxy", $self->{https_proxy} ); # validate
-      $self->{_has_proxy}->set("https", 1);
-    }
-    else {
-      $self->{https_proxy} = undef;
-    }
-    
-    return;
-  }
-  
-  private method _split_proxy : string[] ($type : string, $proxy : string) {
-    
-    my $scheme = (string)undef;
-    my $host = (string)undef;
-    my $port = (string)undef;
-    my $path_query = (string)undef;
-    my $auth = (string)undef;
-    
-    {
-      my $ret = $self->_split_url($proxy);
-      $scheme = $ret->[0];
-      $host = $ret->[1];
-      $port = $ret->[2];
-      $path_query = $ret->[3];
-      $auth = $ret->[4];
-    }
-    
-    unless($scheme && $scheme && $host && $port && $path_query eq "/") {
-      die "$type URL must be in format http[s]://[auth@]<host>:<port>/\n";
-    }
-    
-    return [$scheme, $host, $port, $auth];
-  }
-  
-  private static method substr_replacement : string ($string : string, $offset : int, $length : int = -1, $replacement : string = undef) {
-    
-    unless ($string) {
-      die "The \$string must be defined.";
-    }
-    
-    unless ($offset >= 0) {
-      die "The \$offset must be greater than or equal to 0.";
-    }
-    
-    my $string_length = length $string;
-    if ($length < 0) {
-      $length = $string_length - $offset;
-    }
-    
-    unless ($offset + $length <= $string_length) {
-      die "The \$offset + the \$length must be less than or equal to the length of the \$string.";
-    }
-    
-    my $substring = (string)undef;
-    if ($replacement) {
-      
-      $substring = Fn->substr($string, 0, $offset) . $replacement . Fn->substr($string, $length - $offset);
-    }
-    else {
-      $substring = (mutable string)new_string_len($length);
-      Fn->memcpy($substring, 0, $string, $offset, $length);
-    }
-    
-    return $substring;
-  }
-  
-  private method _split_url : string[] ($url : string) {
-    
-    # URI regex adapted from the URI module
-    my $scheme = (string)undef;
-    my $host = (string)undef;
-    my $path_query = (string)undef;
-    
-    if (my $match = Regex->new("\A([^:/?#]+)://([^/?#]*)([^#]*)")->match($url)) {
-      $scheme = $match->cap1;
-      $host = $match->cap2;
-      $path_query = $match->cap3;
-    }
-    else {
-      die "Cannot parse URL: \"$url\"";
-    }
-    
-    $scheme = Fn->lc($scheme);
-    
-    unless (Regex->new("\A/")->match($path_query)) {
-      $path_query = "/$path_query";
-    }
-    
-    my $auth = "";
-    if ((my $i = Fn->index($host, '@')) != -1 ) {
-      # user:pass@host
-      $auth = &substr_replacement($host, 0, $i, ""); # take up to the @ for auth
-      &substr_replacement($host, 0, 1, "");          # knock the @ off the host
-      
-      # userinfo might be percent escaped, so recover real auth info
-      Regex->new("%([0-9A-Fa-f]{2})")->replace_g($auth, method : string ($re : Regex, $match : Regex::Match) {
-        return Fn->chr(Fn->hex($match->cap1));
-      });
-    }
-    
-    my $port = (string)undef;
-    
-    my $replace_info_ref = [(Regex::ReplaceInfo)undef];
-    if (Regex->new(":(\d*)\z")->replace($host, "", 0, -1, {info => $replace_info_ref})) {
-      my $match = $replace_info_ref->[0]->match;
-      $port = $match->cap1;
-    }
-    
-    unless ($port) {
-      if ($scheme eq "http") {
-        $port = "80";
-      }
-      elsif ($scheme eq "https") {
-        $port = "443";
-      }
-    }
-    
-    if ($host) {
-      $host = Fn->lc($host);
-    }
-    else {
-      $host = "localhost";
-    }
-    
-    return [$scheme, $host, $port, $path_query, $auth];
-  }
-  
-  method get : Hash ($url : string, $options : object[] = undef) {
+  method get : HTTP::Response ($url : string|HTTP::Tiny::URL, $options : object[] = undef) {
     my $response = $self->request("GET", $url, $options);
     return $response;
   }
   
-  method request : Hash ($method : string, $url : string, $options : object[] = undef) {
+  method request : Hash ($method : string, $url : string|HTTP::Tiny::URL, $options : object[])  {
     
-    my $options_h = Hash->new($options);
-    
-    # RFC 2616 Section 8.1.4 mandates a single retry on broken socket
-    my $response = (Hash)undef;
-    my $exception = (string)undef;
-    my $error = 0;
-    for (my $i = 0; $i <= 1; $i++) {
-      eval {
-        $response = $self->_request($method, $url, $options);
-      };
-      
-      my $idempotent = Hash->new({GET => 1, HEAD => 1, PUT => 1, DELETE => 1, OPTIONS => 1, TRACE => 1});
-      
-      $exception = $@;
-      $error = error;
-      
-      unless ($exception && (int)$idempotent->get($method) && Regex->new("^(?:Socket closed|Unexpected end)")->match($exception)) {
-        last;
-      }
+    unless ($url isa string || $url ias HTTP::Tiny::URL) {
+      die "The \$url msut be a string or HTTP::Tiny::URL object";
     }
     
-    if ($exception) {
-      # maybe we got a response hash thrown from somewhere deep
-      if (error == class_id HTTP::Tiny::Error) {
-        my $error_response = $self->{error_response};
-        
-        if (my $redirects = $options_h->delete("_redirects")) {
-          $error_response->set("redirects" => $redirects);
-        }
-        
-        return $error_response;
-      }
-      
-      # otherwise, stringify it
-      my $redirects = $options_h->delete("_redirects");
-      unless ($redirects) {
-        $redirects = new string[0];
-      }
-      $response = Hash->new({
-        url     => $url,
-        success => 0,
-        status  => 599,
-        reason  => "Internal Exception",
-        content => $exception,
-        headers => Hash->new({
-          "content-type"   => "text/plain",
-          "content-length" => length $exception,
-        }),
-        redirects => $redirects,
-      });
-    }
-    
-    return $response;
-  }
-
-  method _request : Hash ($method : string, $url : string, $options : object[])  {
-    
-    my $scheme = (string)undef;
-    my $host = (string)undef;
-    my $port = (string)undef;
-    my $path_query = (string)undef;
-    my $auth = (string)undef;
-    {
-      my $ret = $self->_split_url($url);
-      $scheme = $ret->[0];
-      $host = $ret->[1];
-      $port = $ret->[2];
-      $path_query = $ret->[3];
-      $auth = $ret->[4];
-    }
-
-    if ($scheme ne "http" && $scheme ne "https") {
-      die "Unsupported URL scheme \"$scheme\"";
-    }
-    
-    my $host_port = (string)undef;
-    if ($port == (int)$DefaultPort->get("$scheme")) {
-      $host_port = $host;
+    my $url_object = (HTTP::Tiny::URL)undef;
+    if ($url ias string) {
+      $url_object = HTTP::Tiny::URL->parse((string)$url);
     }
     else {
-      $host_port = "$host:$port";
+      $url_object = $url;
     }
     
     my $request = HTTP::Tiny::Message::Request->new({
-        method    => $method,
-        url => HTTT::Tiny::URL->new;,
-        headers   => HTTP::Tiny::Headers->new,
+      method    => $method,
+      url => $url_object;,
+      headers   => HTTP::Tiny::Headers->new,
     });
     
-    my $peer = $host;
-    
     my $handle = $self->_open_handle( $request, $scheme, $host, $port, $peer );
-
+    
     $self->_prepare_headers_and_cb($request, $options, $url, $auth);
+    
     $handle->write_request($request);
-
+    
     my $response = HTTP::Tiny::Message::Response->new;
-    while (1) {
-      $response = $handle->read_response_header
-      if (substr($response->{status}, 0, 1) ne "1") {
-        last;
-      }
-    }
     
-    if ($self->{cookie_jar}) {
-      $self->_update_cookie_jar($url, $response);
-    }
-    
-    my @redir_args = $self->_maybe_redirect($request, $response, $options);
-
-    my $known_message_length;
-    if ($method eq 'HEAD' || $response->{status} =~ /^[23]04/) {
-      # response has no message body
-      $known_message_length = 1;
-    }
-    else {
-      # Ignore any data callbacks during redirection.
-      my $cb_args = @redir_args ? +{} : $options;
-      my $data_cb = $self->_prepare_data_cb($response, $cb_args);
-      $known_message_length = $handle->read_body($data_cb, $response);
-    }
-
-    if ( $self->{keep_alive}
-        && $handle->connected
-        && $known_message_length
-        && $response->{protocol} eq "HTTP/1.1"
-        && ($response->{headers}{connection} || "") ne "close"
-    ) {
-      $self->{handle} = $handle;
-    }
-    else {
-      $handle->close;
-    }
-
     $response->{success} = substr( $response->{status}, 0, 1 ) eq '2';
     $response->{url} = $url;
-
-    # Push the current response onto the stack of redirects if redirecting.
-    if (@redir_args) {
-      push @{$options->{_redirects}}, $response;
-      return $self->_request(@redir_args, $options);
-    }
-    
-    if (my $redirects = (string[])$options_h->delete("_redirects")) {
-      $response->set(redirects => $redirects);
-    }
     
     return $response;
   }
@@ -553,4 +100,78 @@ class HTTP::Tiny {
     }
   }
   
+  private method _create_default_agent : string () {
+    
+    my $default_agent = "SPVM HTTP::Tiny";
+    
+    my $version = Fn->get_version_string("HTTP::Tiny");
+    
+    $default_agent .= "/$version";
+    
+    return $default_agent;
+  }
+  
+  method _prepare_headers_and_cb : void () {
+      my ($self, $request, $args, $url, $auth) = @_;
+
+      for ($self->{default_headers}, $args->{headers}) {
+          next unless defined;
+          while (my ($k, $v) = each %$_) {
+              $request->{headers}{lc $k} = $v;
+              $request->{header_case}{lc $k} = $k;
+          }
+      }
+
+      if (exists $request->{headers}{'host'}) {
+          die(qq/The 'Host' header must not be provided as header option\n/);
+      }
+
+      $request->{headers}{'host'}         = $request->{host_port};
+      $request->{headers}{'user-agent'} ||= $self->{agent};
+      $request->{headers}{'connection'}   = "close"
+          unless $self->{keep_alive};
+
+      # Some servers error on an empty-body PUT/POST without a content-length
+      if ( $request->{method} eq 'PUT' || $request->{method} eq 'POST' ) {
+          if (!defined($args->{content}) || !length($args->{content}) ) {
+              $request->{headers}{'content-length'} = 0;
+          }
+      }
+
+      if ( defined $args->{content} ) {
+          if ( ref $args->{content} eq 'CODE' ) {
+              if ( exists $request->{'content-length'} && $request->{'content-length'} == 0 ) {
+                  $request->{cb} = sub { "" };
+              }
+              else {
+                  $request->{headers}{'content-type'} ||= "application/octet-stream";
+                  $request->{headers}{'transfer-encoding'} = 'chunked'
+                    unless exists $request->{headers}{'content-length'}
+                    || $request->{headers}{'transfer-encoding'};
+                  $request->{cb} = $args->{content};
+              }
+          }
+          elsif ( length $args->{content} ) {
+              my $content = $args->{content};
+              if ( $] ge '5.008' ) {
+                  utf8::downgrade($content, 1)
+                      or die(qq/Wide character in request message body\n/);
+              }
+              $request->{headers}{'content-type'} ||= "application/octet-stream";
+              $request->{headers}{'content-length'} = length $content
+                unless $request->{headers}{'content-length'}
+                    || $request->{headers}{'transfer-encoding'};
+              $request->{cb} = sub { substr $content, 0, length $content, '' };
+          }
+          $request->{trailer_cb} = $args->{trailer_callback}
+              if ref $args->{trailer_callback} eq 'CODE';
+      }
+
+      # if we have Basic auth parameters, add them
+      if ( length $auth && ! defined $request->{headers}{authorization} ) {
+          $self->_add_basic_auth_header( $request, 'authorization' => $auth );
+      }
+
+      return;
+  }
 }
