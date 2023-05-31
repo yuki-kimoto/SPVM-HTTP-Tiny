@@ -131,13 +131,6 @@ class HTTP::Tiny {
       $request->{headers}{'connection'}   = "close"
           unless $self->{keep_alive};
 
-      # Some servers error on an empty-body PUT/POST without a content-length
-      if ( $request->{method} eq 'PUT' || $request->{method} eq 'POST' ) {
-          if (!defined($args->{content}) || !length($args->{content}) ) {
-              $request->{headers}{'content-length'} = 0;
-          }
-      }
-
       if ( defined $args->{content} ) {
           if ( ref $args->{content} eq 'CODE' ) {
               if ( exists $request->{'content-length'} && $request->{'content-length'} == 0 ) {
@@ -166,12 +159,28 @@ class HTTP::Tiny {
           $request->{trailer_cb} = $args->{trailer_callback}
               if ref $args->{trailer_callback} eq 'CODE';
       }
-
-      # if we have Basic auth parameters, add them
-      if ( length $auth && ! defined $request->{headers}{authorization} ) {
-          $self->_add_basic_auth_header( $request, 'authorization' => $auth );
-      }
-
+      
       return;
+  }
+  
+  private method _prepare_data_cb ($response : HTTP::Tiny::Response, $options_h : Hash) {
+    my $data_cb = $options_h->get("data_callback");
+    
+    $response->{content} = "";
+    
+    if (!$data_cb || $response->{status} !~ /^2/) {
+      if (defined $self->{max_size}) {
+        $data_cb = sub {
+          $_[1]->{content} .= $_[0];
+          die(qq/Size of response body exceeds the maximum allowed of $self->{max_size}\n/)
+            if length $_[1]->{content} > $self->{max_size};
+        };
+      }
+      else {
+        $data_cb = sub { $_[1]->{content} .= $_[0] };
+      }
+    }
+    
+    return $data_cb;
   }
 }

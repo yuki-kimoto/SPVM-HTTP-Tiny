@@ -10,7 +10,7 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   has url : ro string;
   has status : ro int;
   has reason : ro string;
-  has content : ro string;
+  has content : ro StringBuffer;
   has headers : ro HTTP::Tiny::Headers;
   has protocol : ro string;
   has redirects : ro HTTP::Response[];
