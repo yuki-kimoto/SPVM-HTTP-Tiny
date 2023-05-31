@@ -6,12 +6,17 @@ class HTTP::Tiny::URL {
   
   has scheme : string;
   has host : string;
-  has port : string;
+  has port : int;
   has path : string;
   has auth : string;
   
   static method new : HTTP::Tiny::URL ($options : object[]) {
     
+    my $self = new HTTP::Tiny::URL;
+    
+    $self->{port} = -1;
+    
+    return $self;
   }
   
   static method parse : HTTP::Tiny::URL ($string : string) {

@@ -52,6 +52,8 @@ class HTTP::Tiny {
   
   method request : Hash ($method : string, $url : string|HTTP::Tiny::URL, $options : object[])  {
     
+    my $options_h = Hash->new($options);
+    
     unless ($url isa string || $url ias HTTP::Tiny::URL) {
       die "The \$url msut be a string or HTTP::Tiny::URL object";
     }
@@ -64,42 +66,37 @@ class HTTP::Tiny {
       $url_object = $url;
     }
     
+    # HTTP Header
+    my $headers = HTTP::Tiny::Headers->new;
+    my $host = $url_object->host;
+    my $port = $url_object->port;
+    if ($port < 0) {
+      $port = 80;
+    }
+    $headers->add("Host" => "$host:$port");
+    $headers->add("User-Agent" => $self->{agent});
+    $headers->add("Connection" => "close");
+    
     my $request = HTTP::Tiny::Message::Request->new({
       method    => $method,
       url => $url_object;,
-      headers   => HTTP::Tiny::Headers->new,
+      headers   => $headers,
     });
     
-    my $handle = $self->_open_handle( $request, $scheme, $host, $port, $peer );
+    my $handle  = HTTP::Tiny::Handle->new({
+      timeout => $self->{timeout},
+      data_callback => $options_h->get("data_callback"),
+    });
     
-    $self->_prepare_headers_and_cb($request, $options, $url, $auth);
+    $handle->connect($request);
     
     $handle->write_request($request);
     
-    my $response = HTTP::Tiny::Message::Response->new;
-    
-    $response->{success} = substr( $response->{status}, 0, 1 ) eq '2';
-    $response->{url} = $url;
+    my $response = $handle->read_response;
     
     return $response;
   }
 
-  private method _open_handle : HTTP::Tiny::Handle ($request : string, $scheme : string, $host : string, $port : string, $peer : string) {
-    
-    my $handle  = HTTP::Tiny::Handle->new({
-      timeout         => $self->{timeout},
-      local_address   => $self->{local_address},
-      keep_alive      => $self->{keep_alive}
-    });
-    
-    if ($self->{_has_proxy}{$scheme} && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
-      return $self->_proxy_connect( $request, $handle );
-    }
-    else {
-      return $handle->connect($scheme, $host, $port, $peer);
-    }
-  }
-  
   private method _create_default_agent : string () {
     
     my $default_agent = "SPVM HTTP::Tiny";
@@ -109,78 +106,5 @@ class HTTP::Tiny {
     $default_agent .= "/$version";
     
     return $default_agent;
-  }
-  
-  method _prepare_headers_and_cb : void () {
-      my ($self, $request, $args, $url, $auth) = @_;
-
-      for ($self->{default_headers}, $args->{headers}) {
-          next unless defined;
-          while (my ($k, $v) = each %$_) {
-              $request->{headers}{lc $k} = $v;
-              $request->{header_case}{lc $k} = $k;
-          }
-      }
-
-      if (exists $request->{headers}{'host'}) {
-          die(qq/The 'Host' header must not be provided as header option\n/);
-      }
-
-      $request->{headers}{'host'}         = $request->{host_port};
-      $request->{headers}{'user-agent'} ||= $self->{agent};
-      $request->{headers}{'connection'}   = "close"
-          unless $self->{keep_alive};
-
-      if ( defined $args->{content} ) {
-          if ( ref $args->{content} eq 'CODE' ) {
-              if ( exists $request->{'content-length'} && $request->{'content-length'} == 0 ) {
-                  $request->{cb} = sub { "" };
-              }
-              else {
-                  $request->{headers}{'content-type'} ||= "application/octet-stream";
-                  $request->{headers}{'transfer-encoding'} = 'chunked'
-                    unless exists $request->{headers}{'content-length'}
-                    || $request->{headers}{'transfer-encoding'};
-                  $request->{cb} = $args->{content};
-              }
-          }
-          elsif ( length $args->{content} ) {
-              my $content = $args->{content};
-              if ( $] ge '5.008' ) {
-                  utf8::downgrade($content, 1)
-                      or die(qq/Wide character in request message body\n/);
-              }
-              $request->{headers}{'content-type'} ||= "application/octet-stream";
-              $request->{headers}{'content-length'} = length $content
-                unless $request->{headers}{'content-length'}
-                    || $request->{headers}{'transfer-encoding'};
-              $request->{cb} = sub { substr $content, 0, length $content, '' };
-          }
-          $request->{trailer_cb} = $args->{trailer_callback}
-              if ref $args->{trailer_callback} eq 'CODE';
-      }
-      
-      return;
-  }
-  
-  private method _prepare_data_cb ($response : HTTP::Tiny::Response, $options_h : Hash) {
-    my $data_cb = $options_h->get("data_callback");
-    
-    $response->{content} = "";
-    
-    if (!$data_cb || $response->{status} !~ /^2/) {
-      if (defined $self->{max_size}) {
-        $data_cb = sub {
-          $_[1]->{content} .= $_[0];
-          die(qq/Size of response body exceeds the maximum allowed of $self->{max_size}\n/)
-            if length $_[1]->{content} > $self->{max_size};
-        };
-      }
-      else {
-        $data_cb = sub { $_[1]->{content} .= $_[0] };
-      }
-    }
-    
-    return $data_cb;
   }
 }
