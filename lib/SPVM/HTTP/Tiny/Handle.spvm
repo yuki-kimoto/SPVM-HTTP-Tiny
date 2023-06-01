@@ -2,99 +2,129 @@
 # MIT License
 
 class HTTP::Tiny::Handle {
+  allow HTTP::Tiny;
+  
   use Fn;
+  use HTTP::Tiny::SocketInterface;
   use IO::Socket::INET;
   use Sys::Socket::Constant as SOCKET;
   use Errno;
   use Sys::Signal;
   
-  has fh : IO::Handle;
-  has timeout : rw int;
-  has rbuf : string;
+  private enum {
+    READ_BUFFER_SIZE = 32768,
+  }
+
+  has peer_host : int;
+  has peer_port : int;
+  has local_address : string;
+  has proto : string;
+  has type : int;
   has timeout : int;
+  
+  has socket_builder : HTTP::Tiny::SocketBuilder;
+  has timeout : int;
+  
+  has socket : HTTP::Tiny::SocketInterface;
+  has read_buffer : mutable string;
   
   static method new : HTTP::Tiny::Handle ($options : object[]) {
     
     my $self = new HTTP::Tiny::Handle;
     
-    $options = Fn->merge_options(
-      {
-        rbuf             => "",
-        timeout          => 60,
-      },
-      $options
-    );
+    # The read_buffer field
+    my $read_buffer = (mutable string)new_string &READ_BUFFER_SIZE();
+    $self->{read_buffer} = $read_buffer;
     
-    $self->{rbuf} = $options->{rbuf};
-    $self->{timeout} = $options->{timeout};
+    # The timeout field
+    my $timeout = $options->delete_or_default_int("timeout", 60);
+    $self->{timeout} = $timeout;
     
-    return $self;
-  }
-
-  method connect ($request : HTTP::Tiny::Request) {
-    
-    my $fh = IO::Socket::INET->new(
-        PeerHost  => $peer,
-        PeerPort  => $port,
-        LocalAddr => $self->{local_address},
-        Proto     => "tcp",
-        Type      => SOCK_STREAM,
-        Timeout   => $self->{timeout},
-    );
-    $self->{fh} = $fh;
+    # The socket_builder field
+    my $socket_builder = (HTTP::Tiny::SocketBuilder)$options->delete_or_default("socket_builder");
+    unless ($socket_builder) {
+      my $socket_builder =
+        [
+          has peer_host : int = $peer_host,
+          has peer_port : int = $peer_port,
+          has local_address : string = $local_address,
+          has proto : string = "tcp",
+          has type : int = SOCKET->SOCK_STREAM,
+          has timeout : int = $timeout,
+        ]
+        method : HTTP::Tiny::SocketInterface () {
+          my $socket = (HTTP::Tiny::SocketInterface)IO::Socket::INET->new(
+            PeerHost  => $self->{peer_host},
+            PeerPort  => $self->{peer_port},
+            LocalAddr => $self->{local_address},
+            Proto     => $self->{proto},
+            Type      => $self->{type},
+            Timeout   => $self->{timeout},
+          );
+          
+          return $socket;
+        };
+    }
+    $self->{socket_builder} = $socket_builder;
     
     return $self;
   }
   
-  private enum {
-    BUFSIZE = 32768,
+  private method connect ($request : HTTP::Tiny::Request) {
+    
+    my $socket_builder = $self->{socket_builder};
+    
+    my $socket = $socket_builder->();
+    $self->{socket} = $socket;
+    
+    return $self;
   }
-
+  
   my $Printable = method {
-      local $_ = shift;
-      s/\r/\\r/g;
-      s/\n/\\n/g;
-      s/\t/\\t/g;
-      s/([^\x20-\x7E])/sprintf('\\x%.2X', ord($1))/ge;
-      $_;
+    local $_ = shift;
+    s/\r/\\r/g;
+    s/\n/\\n/g;
+    s/\t/\\t/g;
+    s/([^\x20-\x7E])/sprintf('\\x%.2X', ord($1))/ge;
+    $_;
   };
 
   my $Token = qr/[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7A\x7C\x7E]/;
   my $Field_Content = qr/[[:print:]]+ (?: [\x20\x09]+ [[:print:]]+ )*/x;
 
-  method new {
-      my ($class, %args) = @_;
-      return bless {
-          rbuf             => '',
-          timeout          => 60,
-          %args
-      }, $class;
+  private method new {
+    my ($class, %args) = @_;
+    return bless {
+      read_buffer             => '',
+      timeout          => 60,
+      %args
+    }, $class;
   }
 
-  method timeout {
-      my ($self, $timeout) = @_;
-      if ( @_ > 1 ) {
-          $self->{timeout} = $timeout;
-          if ( $self->{fh} && $self->{fh}->can('timeout') ) {
-              $self->{fh}->timeout($timeout);
-          }
+  private method timeout {
+    my ($self, $timeout) = @_;
+    if ( @_ > 1 ) {
+      $self->{timeout} = $timeout;
+      if ( $self->{socket} && $self->{socket}->can('timeout') ) {
+        $self->{socket}->timeout($timeout);
       }
-      return $self->{timeout};
+    }
+    return $self->{timeout};
   }
 
-  method connect ($url : HTTP::Tiny::URL) {
+  private method connect ($url : HTTP::Tiny::URL) {
 
-    $self->{fh} = $SOCKET_CLASS->new(
-        PeerHost  => $peer,
-        PeerPort  => $port,
-        $self->{local_address} ?
-            ( LocalAddr => $self->{local_address} ) : (),
-        Proto     => 'tcp',
-        Type      => SOCK_STREAM,
-        Timeout   => $self->{timeout},
+    $self->{socket} = $SOCKET_CLASS->new(
+      PeerHost  => $peer,
+      PeerPort  => $port,
+      $self->{local_address} ?
+          ( LocalAddr => $self->{local_address} ) : (),
+      Proto     => 'tcp',
+      Type      => SOCK_STREAM,
+      Timeout   => $self->{timeout},
     ) or die("Could not connect to '$host:$port': $@\n");
 
-    binmode($self->{fh})
+    binmode($self->{socket})
       or die("Could not binmode() socket: '$!'\n");
 
     $self->{scheme} = $scheme;
@@ -105,16 +135,16 @@ class HTTP::Tiny::Handle {
     return $self;
   }
 
-  method connected : int () {
-    if ( $self->{fh} && $self->{fh}->connected ) {
+  private method connected : int () {
+    if ( $self->{socket} && $self->{socket}->connected ) {
       return wantarray
-        ? ( $self->{fh}->peerhost, $self->{fh}->peerport )
-        : join( ':', $self->{fh}->peerhost, $self->{fh}->peerport );
+        ? ( $self->{socket}->peerhost, $self->{socket}->peerport )
+        : join( ':', $self->{socket}->peerhost, $self->{socket}->peerport );
     }
     return;
   }
 
-  method write : int ($buf : string) {
+  private method write : int ($buf : string) {
 
     my $len = length $buf;
     my $off = 0;
@@ -122,48 +152,48 @@ class HTTP::Tiny::Handle {
     local $SIG{PIPE} = 'IGNORE';
 
     while () {
-        $self->can_write
-          or die("Timed out while waiting for socket to become ready for writing\n");
-        my $r = syswrite($self->{fh}, $buf, $len, $off);
-        if (defined $r) {
-            $len -= $r;
-            $off += $r;
-            last unless $len > 0;
-        }
-        elsif ($! == EPIPE) {
-            die("Socket closed by remote server: $!\n");
-        }
-        elsif ($! != EINTR) {
-          die("Could not write to socket: '$!'\n");
-        }
+      $self->can_write
+        or die("Timed out while waiting for socket to become ready for writing\n");
+      my $r = syswrite($self->{socket}, $buf, $len, $off);
+      if (defined $r) {
+        $len -= $r;
+        $off += $r;
+        last unless $len > 0;
+      }
+      elsif ($! == EPIPE) {
+        die("Socket closed by remote server: $!\n");
+      }
+      elsif ($! != EINTR) {
+        die("Could not write to socket: '$!'\n");
+      }
     }
     return $off;
   }
 
-  method read ($len : int, $allow_partial : int) {
+  private method read ($len : int, $allow_partial : int) {
 
     my $buf  = '';
-    my $got = length $self->{rbuf};
+    my $got = length $self->{read_buffer};
 
     if ($got) {
-        my $take = ($got < $len) ? $got : $len;
-        $buf  = substr($self->{rbuf}, 0, $take, '');
-        $len -= $take;
+      my $take = ($got < $len) ? $got : $len;
+      $buf  = substr($self->{read_buffer}, 0, $take, '');
+      $len -= $take;
     }
 
     local $SIG{PIPE} = 'IGNORE';
 
     while ($len > 0) {
-        $self->can_read
-          or die(q/Timed out while waiting for socket to become ready for reading/ . "\n");
-        my $r = sysread($self->{fh}, $buf, $len, length $buf);
-        if (defined $r) {
-          last unless $r;
-          $len -= $r;
-        }
-        elsif ($! != EINTR) {
-          die("Could not read from socket: '$!'\n");
-        }
+      $self->can_read
+        or die(q/Timed out while waiting for socket to become ready for reading/ . "\n");
+      my $r = sysread($self->{socket}, $buf, $len, length $buf);
+      if (defined $r) {
+        last unless $r;
+        $len -= $r;
+      }
+      elsif ($! != EINTR) {
+        die("Could not read from socket: '$!'\n");
+      }
     }
     if ($len && !$allow_partial) {
         die("Unexpected end of stream\n");
@@ -171,16 +201,16 @@ class HTTP::Tiny::Handle {
     return $buf;
   }
 
-  method readline {
+  private method readline {
 
     while () {
-      if ($self->{rbuf} =~ s/\A ([^\x0D\x0A]* \x0D?\x0A)//x) {
-          return $1;
+      if ($self->{read_buffer} =~ s/\A ([^\x0D\x0A]* \x0D?\x0A)//x) {
+        return $1;
       }
       $self->can_read
         or die("Timed out while waiting for socket to become ready for reading\n");
       
-      my $r = sysread($self->{fh}, $self->{rbuf}, BUFSIZE, length $self->{rbuf});
+      my $r = sysread($self->{socket}, $self->{read_buffer}, BUFSIZE, length $self->{read_buffer});
       if (defined $r) {
         last unless $r;
       }
@@ -191,45 +221,45 @@ class HTTP::Tiny::Handle {
     die("Unexpected end of stream while looking for line\n");
   }
 
-  method read_header_lines : HTTP::Tiny::Headers ($headers : HTTP::Tiny::Headers) {
+  private method read_header_lines : HTTP::Tiny::Headers ($headers : HTTP::Tiny::Headers) {
     $headers ||= {};
     my $lines   = 0;
     my $val;
 
     while () {
-         my $line = $self->readline;
+       my $line = $self->readline;
 
-         if ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\x0D\x0A]*)/x) {
-             my ($field_name) = lc $1;
-             if (exists $headers->{$field_name}) {
-                 for ($headers->{$field_name}) {
-                     $_ = [$_] unless ref $_ eq "ARRAY";
-                     push @$_, $2;
-                     $val = \$_->[-1];
-                 }
-             }
-             else {
-                 $val = \($headers->{$field_name} = $2);
-             }
-         }
-         elsif ($line =~ /\A [\x09\x20]+ ([^\x0D\x0A]*)/x) {
-             $val
-               or die("Unexpected header continuation line\n");
-             next unless length $1;
-             $$val .= ' ' if length $$val;
-             $$val .= $1;
-         }
-         elsif ($line =~ /\A \x0D?\x0A \z/x) {
-            last;
+       if ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\x0D\x0A]*)/x) {
+         my ($field_name) = lc $1;
+         if (exists $headers->{$field_name}) {
+           for ($headers->{$field_name}) {
+             $_ = [$_] unless ref $_ eq "ARRAY";
+             push @$_, $2;
+             $val = \$_->[-1];
+           }
          }
          else {
-            die(q/Malformed header line: / . $Printable->($line) . "\n");
+             $val = \($headers->{$field_name} = $2);
          }
+       }
+       elsif ($line =~ /\A [\x09\x20]+ ([^\x0D\x0A]*)/x) {
+         $val
+           or die("Unexpected header continuation line\n");
+         next unless length $1;
+         $$val .= ' ' if length $$val;
+         $$val .= $1;
+       }
+       elsif ($line =~ /\A \x0D?\x0A \z/x) {
+          last;
+       }
+       else {
+          die(q/Malformed header line: / . $Printable->($line) . "\n");
+       }
     }
     return $headers;
   }
 
-  method write_request : void ($request : HTTP::Tiny::Request) {
+  private method write_request : void ($request : HTTP::Tiny::Request) {
     $self->write_request_header($request);
     $self->write_body($request);
   }
@@ -252,7 +282,7 @@ class HTTP::Tiny::Handle {
 
   # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
   # combine writes.
-  method write_header_lines : int ($headers, $header_case, $prefix_data) {
+  private method write_header_lines : int ($headers, $header_case, $prefix_data) {
     $header_case ||= {};
 
     my $buf = (defined $prefix_data ? $prefix_data : '');
@@ -260,42 +290,42 @@ class HTTP::Tiny::Handle {
     # Per RFC, control fields should be listed first
     my %seen;
     for my $k ( qw/host cache-control expect max-forwards pragma range te/ ) {
-        next unless exists $headers->{$k};
-        $seen{$k}++;
-        my $field_name = $HeaderCase{$k};
-        my $v = $headers->{$k};
-        for (ref $v eq 'ARRAY' ? @$v : $v) {
-            $_ = '' unless defined $_;
-            $buf .= "$field_name: $_\x0D\x0A";
-        }
+      next unless exists $headers->{$k};
+      $seen{$k}++;
+      my $field_name = $HeaderCase{$k};
+      my $v = $headers->{$k};
+      for (ref $v eq 'ARRAY' ? @$v : $v) {
+        $_ = '' unless defined $_;
+        $buf .= "$field_name: $_\x0D\x0A";
+      }
     }
 
     # Other headers sent in arbitrary order
     while (my ($k, $v) = each %$headers) {
-        my $field_name = lc $k;
-        next if $seen{$field_name};
-        if (exists $HeaderCase{$field_name}) {
-            $field_name = $HeaderCase{$field_name};
+      my $field_name = lc $k;
+      next if $seen{$field_name};
+      if (exists $HeaderCase{$field_name}) {
+          $field_name = $HeaderCase{$field_name};
+      }
+      else {
+        if (exists $header_case->{$field_name}) {
+            $field_name = $header_case->{$field_name};
         }
         else {
-            if (exists $header_case->{$field_name}) {
-                $field_name = $header_case->{$field_name};
-            }
-            else {
-                $field_name =~ s/\b(\w)/\u$1/g;
-            }
-            $field_name =~ /\A $Token+ \z/xo
-              or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
-            $HeaderCase{lc $field_name} = $field_name;
+            $field_name =~ s/\b(\w)/\u$1/g;
         }
-        for (ref $v eq 'ARRAY' ? @$v : $v) {
-            # unwrap a field value if pre-wrapped by user
-            s/\x0D?\x0A\s+/ /g;
-            die("Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
-              unless $_ eq '' || /\A $Field_Content \z/xo;
-            $_ = '' unless defined $_;
-            $buf .= "$field_name: $_\x0D\x0A";
-        }
+        $field_name =~ /\A $Token+ \z/xo
+          or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
+        $HeaderCase{lc $field_name} = $field_name;
+      }
+      for (ref $v eq 'ARRAY' ? @$v : $v) {
+        # unwrap a field value if pre-wrapped by user
+        s/\x0D?\x0A\s+/ /g;
+        die("Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
+          unless $_ eq '' || /\A $Field_Content \z/xo;
+        $_ = '' unless defined $_;
+        $buf .= "$field_name: $_\x0D\x0A";
+      }
     }
     $buf .= "\x0D\x0A";
     return $self->write($buf);
@@ -304,46 +334,19 @@ class HTTP::Tiny::Handle {
   # return value indicates whether message length was defined; this is generally
   # true unless there was no content-length header and we just read until EOF.
   # Other message length errors are thrown as exceptions
-  method read_body {
+  private method read_body {
       my ($self, $cb, $response) = @_;
       my $te = $response->{headers}{'transfer-encoding'} || '';
-      my $chunked = grep { /chunked/i } ( ref $te eq 'ARRAY' ? @$te : $te ) ;
-      return $chunked
-          ? $self->read_chunked_body($cb, $response)
-          : $self->read_content_body($cb, $response);
+      return $self->read_content_body($cb, $response);
   }
 
-  method write_body {
+  private method write_body {
       my ($self, $request) = @_;
-      if (exists $request->{headers}{'content-length'}) {
-          return unless $request->{headers}{'content-length'};
-          return $self->write_content_body($request);
-      }
-      else {
-          return $self->write_chunked_body($request);
-      }
+      return unless $request->{headers}{'content-length'};
+      return $self->write_content_body($request);
   }
 
-  method read_content_body ($cb, $response : HTTP::Tiny::Response, $content_length : int) {
-    $content_length ||= $response->{headers}{'content-length'};
-
-    if ( defined $content_length ) {
-        my $len = $content_length;
-        while ($len > 0) {
-            my $read = ($len > BUFSIZE) ? BUFSIZE : $len;
-            $cb->($self->read($read, 0), $response);
-            $len -= $read;
-        }
-        return length($self->{rbuf}) == 0;
-    }
-
-    my $chunk;
-    $cb->($chunk, $response) while length( $chunk = $self->read(BUFSIZE, 1) );
-
-    return;
-  }
-
-  method write_content_body ($request : HTTP::Tiny::Request) {
+  private method write_content_body ($request : HTTP::Tiny::Request) {
 
     my ($len, $content_length) = (0, $request->{headers}{'content-length'});
     while () {
@@ -361,7 +364,26 @@ class HTTP::Tiny::Handle {
     return $len;
   }
 
-  method read_response_header {
+  private method read_content_body ($cb, $response : HTTP::Tiny::Response, $content_length : int) {
+    $content_length ||= $response->{headers}{'content-length'};
+
+    if ( defined $content_length ) {
+        my $len = $content_length;
+        while ($len > 0) {
+            my $read = ($len > BUFSIZE) ? BUFSIZE : $len;
+            $cb->($self->read($read, 0), $response);
+            $len -= $read;
+        }
+        return length($self->{read_buffer}) == 0;
+    }
+
+    my $chunk;
+    $cb->($chunk, $response) while length( $chunk = $self->read(BUFSIZE, 1) );
+
+    return;
+  }
+
+  private method read_response_header {
 
     my $line = $self->readline;
 
@@ -382,17 +404,17 @@ class HTTP::Tiny::Handle {
     };
   }
 
-  method write_request_header ($request : HTTP::Tiny::Request) {
+  private method write_request_header ($request : HTTP::Tiny::Request) {
 
     return $self->write_header_lines($headers, $header_case, "$method $request_uri HTTP/1.1\x0D\x0A");
   }
 
-  method _do_timeout {
+  private method _do_timeout {
     my ($self, $type, $timeout) = @_;
     $timeout = $self->{timeout}
         unless defined $timeout && $timeout >= 0;
     
-    my $fd = fileno $self->{fh};
+    my $fd = fileno $self->{socket};
     defined $fd && $fd >= 0
       or die("select(2): 'Bad file descriptor'\n");
     
@@ -418,12 +440,12 @@ class HTTP::Tiny::Handle {
     return $nfound;
   }
   
-  method can_read ($type : string, $timeout : int) {
+  private method can_read ($type : string, $timeout : int) {
     my $can_read = $self->_do_timeout("read", $type, $timeout);
     return $can_read;
   }
   
-  method can_write ($type : string, $timeout : int) {
+  private method can_write ($type : string, $timeout : int) {
     my $can_write = $self->_do_timeout("write", $type, $timeout);
     return $can_write;
   }
