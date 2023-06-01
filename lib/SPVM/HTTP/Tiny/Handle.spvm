@@ -149,26 +149,41 @@ class HTTP::Tiny::Handle {
       $length -= $take;
     }
     
-    local $SIG{PIPE} = 'IGNORE';
+    my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
+    my $restore_signal = Scope::Guard->new([old_pipe_signal : int = $old_signal] method : void () {
+      Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
+    }):
     
     while ($length > 0) {
-      $self->can_read
-        or die(q/Timed out while waiting for socket to become ready for reading/ . "\n");
-      my $r = sysread($self->{socket}, $buffer, $length, length $buffer);
-      if (defined $r) {
-        last unless $r;
-        $length -= $r;
+      my $can_read = $self->can_read;
+      
+      unless ($can_read) {
+        die "Timed out while waiting for socket to become ready for reading";
       }
-      elsif ($! != EINTR) {
-        die("Could not read from socket: '$!'\n");
+      
+      my $socket = $self->{socket};
+      
+      Errno->set_errno(0);
+      my $read_length = $socket->sysread($buffer, $length, length $buffer);
+      my $errno = Errno->errno;
+      
+      if ($read_length >= 0) {
+        if ($read_length == 0) {
+          last;
+        }
+        $length -= $read_length;
+      }
+      elsif ($errno != EINTR) {
+        die "Could not read from socket: \"$!\"";
       }
     }
     if ($length && !$allow_partial) {
-        die("Unexpected end of stream\n");
+      die "Unexpected end of stream";
     }
+    
     return $buffer;
   }
-
+  
   private method readline {
 
     while () {
@@ -299,19 +314,10 @@ class HTTP::Tiny::Handle {
     return $self->write($buffer);
   }
 
-  # return value indicates whether message length was defined; this is generally
-  # true unless there was no content-length header and we just read until EOF.
-  # Other message length errors are thrown as exceptions
-  private method read_body {
-      my ($self, $cb, $response) = @_;
-      my $te = $response->{headers}{'transfer-encoding'} || '';
-      return $self->read_content_body($cb, $response);
-  }
-
   private method write_body {
-      my ($self, $request) = @_;
-      return unless $request->{headers}{'content-length'};
-      return $self->write_content_body($request);
+    my ($self, $request) = @_;
+    return unless $request->{headers}{'content-length'};
+    return $self->write_content_body($request);
   }
 
   private method write_content_body ($request : HTTP::Tiny::Request) {
@@ -332,23 +338,31 @@ class HTTP::Tiny::Handle {
     return $length;
   }
 
-  private method read_content_body ($cb, $response : HTTP::Tiny::Response, $content_length : int) {
-    $content_length ||= $response->{headers}{'content-length'};
+  # return value indicates whether message length was defined; this is generally
+  # true unless there was no content-length header and we just read until EOF.
+  # Other message length errors are thrown as exceptions
+  private method read_body {
+    my ($self, $cb, $response) = @_;
+    my $te = $response->{headers}{'transfer-encoding'} || '';
+    return $self->read_content_body($cb, $response);
+  }
 
-    if ( defined $content_length ) {
-        my $length = $content_length;
-        while ($length > 0) {
-            my $read = ($length > BUFSIZE) ? BUFSIZE : $length;
-            $cb->($self->read($read, 0), $response);
-            $length -= $read;
-        }
-        return length($self->{read_buffer}) == 0;
+  private method read_content_body ($cb, $response : HTTP::Tiny::Response) {
+    my $content_length = $response->headers->header("Content-Length");
+    
+    if ($content_length >= 0) {
+      my $length = $content_length;
+      while ($length > 0) {
+        my $read = ($length > BUFSIZE) ? BUFSIZE : $length;
+        $cb->($self->read($read, 0), $response);
+        $length -= $read;
+      }
     }
-
-    my $chunk;
-    $cb->($chunk, $response) while length( $chunk = $self->read(BUFSIZE, 1) );
-
-    return;
+    else {
+      die "[Unexpected Error]";
+    }
+    
+    return length($self->{read_buffer}) == 0;
   }
 
   private method read_response_header {
@@ -373,7 +387,6 @@ class HTTP::Tiny::Handle {
   }
 
   private method write_request_header ($request : HTTP::Tiny::Request) {
-
     return $self->write_header_lines($headers, $header_case, "$method $request_uri HTTP/1.1\x0D\x0A");
   }
 
@@ -393,16 +406,16 @@ class HTTP::Tiny::Handle {
     vec(my $fdset = '', $fd, 1) = 1;
     
     while () {
-        $nfound = ($type eq 'read')
-            ? select($fdset, undef, undef, $pending)
-            : select(undef, $fdset, undef, $pending) ;
-        if ($nfound == -1) {
-            $! == EINTR
-              or die("select(2): '$!'\n");
-            redo if !$timeout || ($pending = $timeout - (time - $initial)) > 0;
-            $nfound = 0;
-        }
-        last;
+      $nfound = ($type eq 'read')
+        ? select($fdset, undef, undef, $pending)
+        : select(undef, $fdset, undef, $pending) ;
+      if ($nfound == -1) {
+        $! == EINTR
+          or die("select(2): '$!'\n");
+        redo if !$timeout || ($pending = $timeout - (time - $initial)) > 0;
+        $nfound = 0;
+      }
+      last;
     }
     $! = 0;
     return $nfound;

@@ -63,8 +63,43 @@ class HTTP::Tiny::Headers {
     
     my $values_list = (StringList)$self->{headers}->get($name_lc);
     
-    my $values = $values_list->to_array;
+    my $values = (string)undef;
+    if ($values_list) {
+      $values = $values_list->to_array;
+    }
     
     return $values;
+  }
+
+  method get : string ($name : string) {
+    
+    unless ($name) {
+      die "The \$name must be defined";
+    }
+    
+    my $headers = $self->{headers};
+    
+    my $name_lc = lc $name;
+    
+    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    
+    my $values = (string)undef;
+    if ($values_list) {
+      $values = $values_list->to_array;
+    }
+    
+    return $values;
+  }
+  
+  sub header : string ($name : string) {
+    
+    my $header_values = $self->get($name);
+    
+    my $header = (string)undef;
+    if ($header_values) {
+      $header = Fn->join(", ", $header_values);
+    }
+    
+    return $header;
   }
 }
