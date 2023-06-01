@@ -4,6 +4,9 @@
 class HTTP::Tiny::Headers {
   use StringList;
   use Hash;
+  use Sort;
+  use Regex;
+  use StringBuffer;
   
   has headers : Hash;
   
@@ -23,6 +26,14 @@ class HTTP::Tiny::Headers {
     
     unless ($value) {
       die "The \$value must be defined";
+    }
+    
+    if (Regex->new("[\x0d\x0a]")->match($name)) {
+      die "Invalid characters in the $name header";
+    }
+    
+    if (Regex->new("[\x0d\x0a]")->match($value)) {
+      die "Invalid characters in the value of the $name header";
     }
     
     my $name_lc = lc $name;
@@ -70,28 +81,8 @@ class HTTP::Tiny::Headers {
     
     return $values;
   }
-
-  method get : string ($name : string) {
-    
-    unless ($name) {
-      die "The \$name must be defined";
-    }
-    
-    my $headers = $self->{headers};
-    
-    my $name_lc = lc $name;
-    
-    my $values_list = (StringList)$self->{headers}->get($name_lc);
-    
-    my $values = (string)undef;
-    if ($values_list) {
-      $values = $values_list->to_array;
-    }
-    
-    return $values;
-  }
   
-  sub header : string ($name : string) {
+  method header : string ($name : string) {
     
     my $header_values = $self->get($name);
     
@@ -101,5 +92,29 @@ class HTTP::Tiny::Headers {
     }
     
     return $header;
+  }
+  
+  method names : string[] () {
+    my $names = $self->{headers}->keys;
+    
+    Sort->sort_string_asc($names);
+    
+    return $names;
+  }
+  
+  method to_string : string () {
+    
+    my $names = $self->names;
+    
+    my $buffer = StringBuffer->new;
+    for my $name (@$names) {
+      my $value = $self->header($name);
+      $buffer->push($value);
+      $buffer->push("\r\n");
+    }
+    
+    my $string = $buffer->to_string;
+    
+    return $string;
   }
 }
