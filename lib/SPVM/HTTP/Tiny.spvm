@@ -14,12 +14,12 @@ class HTTP::Tiny {
   use HTTP::Tiny::Error;
   use HTTP::Tiny::Response;
   use HTTP::Tiny::Headers;
-  use HTTP::TIny::URL;
+  use HTTP::Tiny::URL;
   use HTTP::Tiny::HostPort;
   
   has agent : ro string;
   has timeout : ro int;
-  has handle : HTTP::Tiny::Socket;
+  has socket : HTTP::Tiny::Socket;
   
   static method new : HTTP::Tiny ($options : object[] = undef) {
     
@@ -47,11 +47,11 @@ class HTTP::Tiny {
   }
   
   method get : HTTP::Response ($url : string|HTTP::Tiny::URL, $options : object[] = undef) {
-    my $response = $self->request("GET", $url, $options);
+    my $response = $self->_request("GET", $url, $options);
     return $response;
   }
   
-  method request : Hash ($method : string, $url : string|HTTP::Tiny::URL, $options : object[])  {
+  private method _request : Hash ($method : string, $url : string|HTTP::Tiny::URL, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
@@ -84,20 +84,20 @@ class HTTP::Tiny {
       headers   => $headers,
     });
     
-    my $handle  = HTTP::Tiny::Socket->new({
+    my $socket  = HTTP::Tiny::Socket->new({
       timeout => $self->{timeout},
       data_callback => $options_h->get("data_callback"),
     });
     
-    $handle->connect($request);
+    $socket->connect($request);
     
-    $handle->write_request($request);
+    $socket->write_request($request);
     
-    my $response = $handle->read_response;
+    my $response = $socket->read_response;
     
     return $response;
   }
-
+  
   private method _create_default_agent : string () {
     
     my $default_agent = "SPVM HTTP::Tiny";

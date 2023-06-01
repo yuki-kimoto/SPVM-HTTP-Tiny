@@ -119,6 +119,12 @@ class HTTP::Tiny::Socket {
     my $header_lines = $headers->to_string;
     
     $self->write($header_lines);
+    
+    my $content_length_header = $request->headers->get("content-length");
+    unless ($content_length_header) {
+      my $content = $request->{content};
+      
+    }
   }
   
   private method write_body {

@@ -4,6 +4,10 @@
 class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   allow HTTP::Tiny;
   
-  has url : HTTP::Tiny::URL;
+  use HTTP::Tiny::Headers;
+  
   has method : string;
+  has url : HTTP::Tiny::URL;
+  has headers : HTTP::Tiny::Headers;
+  has content : string;
 }
