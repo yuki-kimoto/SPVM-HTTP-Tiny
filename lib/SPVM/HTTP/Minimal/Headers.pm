@@ -1,4 +1,4 @@
-package SPVM::HTTP::Tiny::SocketInterface;
+package SPVM::HTTP::Minimal::Headers;
 
 
 
@@ -6,15 +6,15 @@ package SPVM::HTTP::Tiny::SocketInterface;
 
 =head1 Name
 
-SPVM::HTTP::Tiny::SocketInterface - Short Description
+SPVM::HTTP::Minimal::Headers - Short Description
 
 =head1 Description
 
-The HTTP::Tiny::SocketInterface interface of L<SPVM> has interface methods for someting.
+The HTTP::Minimal::Headers interface of L<SPVM> has interface methods for someting.
 
 =head1 Usage
 
-  interface HTTP::Tiny::SocketInterface;
+  interface HTTP::Minimal::Headers;
 
 =head1 Interface Methods
 

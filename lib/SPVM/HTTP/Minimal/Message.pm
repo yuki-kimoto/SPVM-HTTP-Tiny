@@ -1,4 +1,4 @@
-package SPVM::HTTP::Tiny::Message;
+package SPVM::HTTP::Minimal::Message;
 
 
 
@@ -6,15 +6,15 @@ package SPVM::HTTP::Tiny::Message;
 
 =head1 Name
 
-SPVM::HTTP::Tiny::Message - Short Description
+SPVM::HTTP::Minimal::Message - Short Description
 
 =head1 Description
 
-The HTTP::Tiny::Message class of L<SPVM> has methods for someting.
+The HTTP::Minimal::Message class of L<SPVM> has methods for someting.
 
 =head1 Usage
 
-  use HTTP::Tiny::Message;
+  use HTTP::Minimal::Message;
 
 =head1 Fields
 

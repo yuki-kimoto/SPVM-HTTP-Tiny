@@ -1,20 +1,18 @@
-package SPVM::HTTP::Tiny::Error;
-
-
+package SPVM::HTTP::Minimal;
 
 1;
 
 =head1 Name
 
-SPVM::HTTP::Tiny::Error - Short Description
+SPVM::HTTP::Minimal - Short Description
 
 =head1 Description
 
-The HTTP::Tiny::Error class of L<SPVM> has methods for someting.
+The HTTP::Minimal class of L<SPVM> has methods for someting.
 
 =head1 Usage
 
-  use HTTP::Tiny::Error;
+  use HTTP::Minimal;
 
 =head1 Fields
 

@@ -1,6 +1,6 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Error {
+class HTTP::Minimal::SocketBuilder : interface_t {
   
 }

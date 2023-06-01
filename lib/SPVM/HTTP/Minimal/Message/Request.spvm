@@ -1,0 +1,13 @@
+# Copyright (c) 2023 [--user-name]
+# MIT License
+
+class HTTP::Minimal::Message::Request extends HTTP::Minimal::Message {
+  allow HTTP::Minimal;
+  
+  use HTTP::Minimal::Headers;
+  
+  has method : string;
+  has url : HTTP::Minimal::URL;
+  has headers : HTTP::Minimal::Headers;
+  has content : string;
+}

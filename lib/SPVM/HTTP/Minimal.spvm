@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny {
+class HTTP::Minimal {
   version "0.001_001";
   
   use Fn;
@@ -10,22 +10,22 @@ class HTTP::Tiny {
   use Sys;
   use Format;
   use Sys::Time::Tm;
-  use HTTP::Tiny::Socket;
-  use HTTP::Tiny::Error;
-  use HTTP::Tiny::Response;
-  use HTTP::Tiny::Headers;
-  use HTTP::Tiny::URL;
-  use HTTP::Tiny::HostPort;
+  use HTTP::Minimal::Socket;
+  use HTTP::Minimal::Error;
+  use HTTP::Minimal::Response;
+  use HTTP::Minimal::Headers;
+  use HTTP::Minimal::URL;
+  use HTTP::Minimal::HostPort;
   
   has agent : ro string;
   has timeout : ro int;
-  has socket : HTTP::Tiny::Socket;
+  has socket : HTTP::Minimal::Socket;
   
-  static method new : HTTP::Tiny ($options : object[] = undef) {
+  static method new : HTTP::Minimal ($options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
-    my $self = new HTTP::Tiny;
+    my $self = new HTTP::Minimal;
     
     # timeout
     $self->{timeout} = $options_h->delete_or_default_int("timeout", 60);
@@ -46,29 +46,29 @@ class HTTP::Tiny {
     return $self;
   }
   
-  method get : HTTP::Response ($url : string|HTTP::Tiny::URL, $options : object[] = undef) {
+  method get : HTTP::Response ($url : string|HTTP::Minimal::URL, $options : object[] = undef) {
     my $response = $self->_request("GET", $url, $options);
     return $response;
   }
   
-  private method _request : Hash ($method : string, $url : string|HTTP::Tiny::URL, $options : object[])  {
+  private method _request : Hash ($method : string, $url : string|HTTP::Minimal::URL, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
-    unless ($url isa string || $url ias HTTP::Tiny::URL) {
-      die "The \$url msut be a string or HTTP::Tiny::URL object";
+    unless ($url isa string || $url ias HTTP::Minimal::URL) {
+      die "The \$url msut be a string or HTTP::Minimal::URL object";
     }
     
-    my $url_object = (HTTP::Tiny::URL)undef;
+    my $url_object = (HTTP::Minimal::URL)undef;
     if ($url ias string) {
-      $url_object = HTTP::Tiny::URL->parse((string)$url);
+      $url_object = HTTP::Minimal::URL->parse((string)$url);
     }
     else {
       $url_object = $url;
     }
     
     # HTTP Header
-    my $headers = HTTP::Tiny::Headers->new;
+    my $headers = HTTP::Minimal::Headers->new;
     my $host = $url_object->host;
     my $port = $url_object->port;
     if ($port < 0) {
@@ -78,13 +78,13 @@ class HTTP::Tiny {
     $headers->add("User-Agent" => $self->{agent});
     $headers->add("Connection" => "close");
     
-    my $request = HTTP::Tiny::Message::Request->new({
+    my $request = HTTP::Minimal::Message::Request->new({
       method    => $method,
       url => $url_object;,
       headers   => $headers,
     });
     
-    my $socket  = HTTP::Tiny::Socket->new({
+    my $socket  = HTTP::Minimal::Socket->new({
       timeout => $self->{timeout},
       data_callback => $options_h->get("data_callback"),
     });
@@ -100,9 +100,9 @@ class HTTP::Tiny {
   
   private method _create_default_agent : string () {
     
-    my $default_agent = "SPVM HTTP::Tiny";
+    my $default_agent = "SPVM HTTP::Minimal";
     
-    my $version = Fn->get_version_string("HTTP::Tiny");
+    my $version = Fn->get_version_string("HTTP::Minimal");
     
     $default_agent .= "/$version";
     

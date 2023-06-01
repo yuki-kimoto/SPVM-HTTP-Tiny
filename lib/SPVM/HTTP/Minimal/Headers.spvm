@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Headers {
+class HTTP::Minimal::Headers {
   use StringList;
   use Hash;
   use Sort;
@@ -10,8 +10,8 @@ class HTTP::Tiny::Headers {
   
   has headers : Hash;
   
-  static method new : HTTP::Tiny::Headers () {
-    my $self = new HTTP::Tiny::Headers;
+  static method new : HTTP::Minimal::Headers () {
+    my $self = new HTTP::Minimal::Headers;
     
     $self->{headers} = Hash->new;
     

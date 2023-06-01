@@ -1,12 +1,12 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Socket {
-  allow HTTP::Tiny;
+class HTTP::Minimal::Socket {
+  allow HTTP::Minimal;
   
   use Fn;
   use Format;
-  use HTTP::Tiny::SocketInterface;
+  use HTTP::Minimal::SocketInterface;
   use IO::Socket::INET;
   use Sys::Socket::Constant as SOCKET;
   use Errno;
@@ -32,15 +32,15 @@ class HTTP::Tiny::Socket {
   has type : int;
   has timeout : int;
   
-  has socket_builder : HTTP::Tiny::SocketBuilder;
+  has socket_builder : HTTP::Minimal::SocketBuilder;
   has timeout : int;
   
-  has handle : HTTP::Tiny::SocketInterface;
+  has handle : HTTP::Minimal::SocketInterface;
   has read_buffer : mutable string;
   
-  static method new : HTTP::Tiny::Socket ($options : object[]) {
+  static method new : HTTP::Minimal::Socket ($options : object[]) {
     
-    my $self = new HTTP::Tiny::Socket;
+    my $self = new HTTP::Minimal::Socket;
     
     # The read_buffer field
     my $read_buffer = (mutable string)new_string &READ_BUFFER_SIZE();
@@ -51,7 +51,7 @@ class HTTP::Tiny::Socket {
     $self->{timeout} = $timeout;
     
     # The socket_builder field
-    my $socket_builder = (HTTP::Tiny::SocketBuilder)$options->delete_or_default("socket_builder");
+    my $socket_builder = (HTTP::Minimal::SocketBuilder)$options->delete_or_default("socket_builder");
     unless ($socket_builder) {
       my $socket_builder =
         [
@@ -62,8 +62,8 @@ class HTTP::Tiny::Socket {
           has type : int = SOCKET->SOCK_STREAM,
           has timeout : int = $timeout,
         ]
-        method : HTTP::Tiny::SocketInterface () {
-          my $socket = (HTTP::Tiny::SocketInterface)IO::Socket::INET->new(
+        method : HTTP::Minimal::SocketInterface () {
+          my $socket = (HTTP::Minimal::SocketInterface)IO::Socket::INET->new(
             PeerHost  => $self->{peer_host},
             PeerPort  => $self->{peer_port},
             LocalAddr => $self->{local_address},
@@ -80,7 +80,7 @@ class HTTP::Tiny::Socket {
     return $self;
   }
   
-  private method connect ($request : HTTP::Tiny::Request) {
+  private method connect ($request : HTTP::Minimal::Request) {
     
     my $socket_builder = $self->{socket_builder};
     
@@ -90,23 +90,23 @@ class HTTP::Tiny::Socket {
     return $self;
   }
   
-  private method connected : HTTP::Tiny::HostPort () {
-    my $connected = (HTTP::Tiny::HostPort)undef;
+  private method connected : HTTP::Minimal::HostPort () {
+    my $connected = (HTTP::Minimal::HostPort)undef;
     if ($self->{handle} && $self->{handle}->connected) {
       my $peer_host = $self->{handle}->peerhost;
       my $peer_port = $self->{handle}->peerport;
-      $connected = HTTP::Tiny::HostPort->new($peer_host, $peer_port);
+      $connected = HTTP::Minimal::HostPort->new($peer_host, $peer_port);
     }
     
     return $connected;
   }
   
-  private method write_request : void ($request : HTTP::Tiny::Request) {
+  private method write_request : void ($request : HTTP::Minimal::Request) {
     $self->write_request_header($request);
     $self->write_body($request);
   }
   
-  private method write_request_header : void ($request : HTTP::Tiny::Request) {
+  private method write_request_header : void ($request : HTTP::Minimal::Request) {
     
     my $method = $request->{method};
     my $url = $request->{url}->to_string;
@@ -254,7 +254,7 @@ class HTTP::Tiny::Socket {
     die("Unexpected end of stream while looking for line\n");
   }
 
-  private method read_header_lines : HTTP::Tiny::Headers ($headers : HTTP::Tiny::Headers) {
+  private method read_header_lines : HTTP::Minimal::Headers ($headers : HTTP::Minimal::Headers) {
     $headers ||= {};
     my $lines   = 0;
     my $val;
@@ -301,7 +301,7 @@ class HTTP::Tiny::Socket {
     return $self->read_content_body($cb, $response);
   }
 
-  private method read_content_body ($cb, $response : HTTP::Tiny::Response) {
+  private method read_content_body ($cb, $response : HTTP::Minimal::Response) {
     my $content_length = $response->headers->header("Content-Length");
     
     if ($content_length >= 0) {

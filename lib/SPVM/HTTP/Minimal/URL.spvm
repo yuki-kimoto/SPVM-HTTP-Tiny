@@ -1,8 +1,8 @@
 # Copyright (c) 2023 [--user-name]
 # MIT License
 
-class HTTP::Tiny::URL {
-  allow HTTP::Tiny;
+class HTTP::Minimal::URL {
+  allow HTTP::Minimal;
   
   has scheme : string;
   has host : string;
@@ -10,16 +10,16 @@ class HTTP::Tiny::URL {
   has path : string;
   has auth : string;
   
-  static method new : HTTP::Tiny::URL ($options : object[]) {
+  static method new : HTTP::Minimal::URL ($options : object[]) {
     
-    my $self = new HTTP::Tiny::URL;
+    my $self = new HTTP::Minimal::URL;
     
     $self->{port} = -1;
     
     return $self;
   }
   
-  static method parse : HTTP::Tiny::URL ($string : string) {
+  static method parse : HTTP::Minimal::URL ($string : string) {
     
     # URI regex adapted from the URI module
     my $scheme = (string)undef;

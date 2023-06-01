@@ -1,17 +1,17 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
-  allow HTTP::Tiny;
+class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
+  allow HTTP::Minimal;
   
-  use HTTP::Tiny::Headers;
+  use HTTP::Minimal::Headers;
   
   has success : byte;
   has url : ro string;
   has status : ro int;
   has reason : ro string;
   has content : ro StringBuffer;
-  has headers : ro HTTP::Tiny::Headers;
+  has headers : ro HTTP::Minimal::Headers;
   has protocol : ro string;
   has redirects : ro HTTP::Response[];
 }

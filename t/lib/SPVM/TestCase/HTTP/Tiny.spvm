@@ -1,5 +1,5 @@
-class TestCase::HTTP::Tiny {
-  use HTTP::Tiny;
+class TestCase::HTTP::Minimal {
+  use HTTP::Minimal;
   static method test : int () {
     
     return 1;

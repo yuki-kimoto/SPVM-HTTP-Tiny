@@ -1,4 +1,4 @@
-package SPVM::HTTP::Tiny::HostPort;
+package SPVM::HTTP::Minimal::Error;
 
 
 
@@ -6,15 +6,15 @@ package SPVM::HTTP::Tiny::HostPort;
 
 =head1 Name
 
-SPVM::HTTP::Tiny::HostPort - Short Description
+SPVM::HTTP::Minimal::Error - Short Description
 
 =head1 Description
 
-The HTTP::Tiny::HostPort class of L<SPVM> has methods for someting.
+The HTTP::Minimal::Error class of L<SPVM> has methods for someting.
 
 =head1 Usage
 
-  use HTTP::Tiny::HostPort;
+  use HTTP::Minimal::Error;
 
 =head1 Fields
 

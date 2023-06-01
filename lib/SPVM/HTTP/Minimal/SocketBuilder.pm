@@ -1,4 +1,4 @@
-package SPVM::HTTP::Tiny::SocketBuilder;
+package SPVM::HTTP::Minimal::SocketBuilder;
 
 
 
@@ -6,15 +6,15 @@ package SPVM::HTTP::Tiny::SocketBuilder;
 
 =head1 Name
 
-SPVM::HTTP::Tiny::SocketBuilder - Short Description
+SPVM::HTTP::Minimal::SocketBuilder - Short Description
 
 =head1 Description
 
-The HTTP::Tiny::SocketBuilder interface of L<SPVM> has interface methods for someting.
+The HTTP::Minimal::SocketBuilder interface of L<SPVM> has interface methods for someting.
 
 =head1 Usage
 
-  interface HTTP::Tiny::SocketBuilder;
+  interface HTTP::Minimal::SocketBuilder;
 
 =head1 Interface Methods
 

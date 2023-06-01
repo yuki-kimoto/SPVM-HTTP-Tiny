@@ -1,18 +1,18 @@
-package SPVM::HTTP::Tiny;
+package SPVM::HTTP::Minimal::Handle;
 
 1;
 
 =head1 Name
 
-SPVM::HTTP::Tiny - Short Description
+SPVM::HTTP::Minimal::Handle - Short Description
 
 =head1 Description
 
-The HTTP::Tiny class of L<SPVM> has methods for someting.
+The HTTP::Minimal::Handle class of L<SPVM> has methods for someting.
 
 =head1 Usage
 
-  use HTTP::Tiny;
+  use HTTP::Minimal::Handle;
 
 =head1 Fields
 

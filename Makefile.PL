@@ -18,16 +18,14 @@ unless ($meta) {
   # Do something such as environment check.
 }
 
-my $version_string = &get_version_string('lib/SPVM/HTTP/Tiny.spvm');
-
 my %configure_and_runtime_requires = ('SPVM' => '0.9706');
 WriteMakefile(
-  NAME              => 'SPVM::HTTP::Tiny',
-  VERSION           => $version_string,
+  NAME              => 'SPVM::HTTP::Minimal',
+  VERSION_FROM           => 'lib/SPVM/HTTP/Minimal.pm',
   LICENSE           => 'mit',
   ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-    (ABSTRACT_FROM  => 'lib/SPVM/HTTP/Tiny.pm',
-     AUTHOR         => 'USER_NAME<USER_MAIL>') : ()),
+    (ABSTRACT_FROM  => 'lib/SPVM/HTTP/Minimal.pm',
+     AUTHOR         => 'Yuki Kimoto<kimoto.yuki@gmail.com') : ()),
   test => {TESTS => 't/*.t t/*/*.t t/*/*/*.t'},
   clean => {FILES => ['.spvm_build', 't/.spvm_build']},
   META_MERGE => {
@@ -70,20 +68,6 @@ sub MY::postamble {
   }
   
   return $make_rule;
-}
-
-sub get_version_string {
-  my ($spvm_class_file) = @_;
-  
-  open my $spvm_class_fh, '<', $spvm_class_file or die "Can't open the file \"$spvm_class_file\": $!";
-  local $/;
-  my $content = <$spvm_class_fh>;
-  my $version_string;
-  if ($content =~ /\bversion\s*"([\d\._]+)"\s*;/) {
-    $version_string = $1;
-  }
-  
-  return $version_string;
 }
 
 1;

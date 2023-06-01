@@ -1,4 +1,4 @@
-package SPVM::HTTP::Tiny::URL;
+package SPVM::HTTP::Minimal::URL;
 
 
 
@@ -6,15 +6,15 @@ package SPVM::HTTP::Tiny::URL;
 
 =head1 Name
 
-SPVM::HTTP::Tiny::URL - Short Description
+SPVM::HTTP::Minimal::URL - Short Description
 
 =head1 Description
 
-The HTTP::Tiny::URL class of L<SPVM> has methods for someting.
+The HTTP::Minimal::URL class of L<SPVM> has methods for someting.
 
 =head1 Usage
 
-  use HTTP::Tiny::URL;
+  use HTTP::Minimal::URL;
 
 =head1 Fields
 
