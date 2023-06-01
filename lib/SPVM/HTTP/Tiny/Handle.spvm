@@ -5,16 +5,25 @@ class HTTP::Tiny::Handle {
   allow HTTP::Tiny;
   
   use Fn;
+  use Format;
   use HTTP::Tiny::SocketInterface;
   use IO::Socket::INET;
   use Sys::Socket::Constant as SOCKET;
   use Errno;
   use Sys::Signal;
   
+  our $TOKEN : string;
+  our $FIELD_CONTENT : string;
+  
+  INIT {
+    $TOKEN = "[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7A\x7C\x7E]";
+    $FIELD_CONTENT = "[[:print:]]+(?:[\x20\x09]+[[:print:]]+)*";
+  }
+  
   private enum {
     READ_BUFFER_SIZE = 32768,
   }
-
+  
   has peer_host : int;
   has peer_port : int;
   has local_address : string;
@@ -80,18 +89,6 @@ class HTTP::Tiny::Handle {
     return $self;
   }
   
-  my $Printable = method {
-    local $_ = shift;
-    s/\r/\\r/g;
-    s/\n/\\n/g;
-    s/\t/\\t/g;
-    s/([^\x20-\x7E])/sprintf('\\x%.2X', ord($1))/ge;
-    $_;
-  };
-
-  my $Token = qr/[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7A\x7C\x7E]/;
-  my $Field_Content = qr/[[:print:]]+ (?: [\x20\x09]+ [[:print:]]+ )*/x;
-
   private method new {
     my ($class, %args) = @_;
     return bless {
@@ -449,4 +446,20 @@ class HTTP::Tiny::Handle {
     my $can_write = $self->_do_timeout("write", $type, $timeout);
     return $can_write;
   }
+  
+  private method to_printable = method ($string : string) {
+    
+    $string = Regex->new("\r")->replace_g($string, "\\r");
+    $string = Regex->new("\n")->replace_g($string, "\\n");
+    $string = Regex->new("\t")->replace_g($string, "\\t");
+    $string = Regex->new("([^\x20-\x7E])")->replace_g($string, method : string ($re : Regex, $match : Regex::Match) {
+      
+      my $replaced = Format->sprintf("\\x%.2X", [(object)Fn->ord($match->cap1)]);
+      
+      return $replaced;
+    });
+    
+    return $string;
+  }
+  
 }
