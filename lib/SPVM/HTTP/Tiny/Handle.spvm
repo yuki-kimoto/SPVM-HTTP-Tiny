@@ -89,58 +89,17 @@ class HTTP::Tiny::Handle {
     return $self;
   }
   
-  private method new {
-    my ($class, %args) = @_;
-    return bless {
-      read_buffer             => '',
-      timeout          => 60,
-      %args
-    }, $class;
-  }
-
-  private method timeout {
-    my ($self, $timeout) = @_;
-    if ( @_ > 1 ) {
-      $self->{timeout} = $timeout;
-      if ( $self->{socket} && $self->{socket}->can('timeout') ) {
-        $self->{socket}->timeout($timeout);
-      }
+  private method connected : HTTP::Tiny::HostPort () {
+    my $connected = (HTTP::Tiny::HostPort)undef;
+    if ($self->{socket} && $self->{socket}->connected) {
+      my $peer_host = $self->{socket}->peerhost;
+      my $peer_port = $self->{socket}->peerport;
+      $connected = HTTP::Tiny::HostPort->new($peer_host, $peer_port);
     }
-    return $self->{timeout};
+    
+    return $connected;
   }
-
-  private method connect ($url : HTTP::Tiny::URL) {
-
-    $self->{socket} = $SOCKET_CLASS->new(
-      PeerHost  => $peer,
-      PeerPort  => $port,
-      $self->{local_address} ?
-          ( LocalAddr => $self->{local_address} ) : (),
-      Proto     => 'tcp',
-      Type      => SOCK_STREAM,
-      Timeout   => $self->{timeout},
-    ) or die("Could not connect to '$host:$port': $@\n");
-
-    binmode($self->{socket})
-      or die("Could not binmode() socket: '$!'\n");
-
-    $self->{scheme} = $scheme;
-    $self->{host} = $host;
-    $self->{peer} = $peer;
-    $self->{port} = $port;
-
-    return $self;
-  }
-
-  private method connected : int () {
-    if ( $self->{socket} && $self->{socket}->connected ) {
-      return wantarray
-        ? ( $self->{socket}->peerhost, $self->{socket}->peerport )
-        : join( ':', $self->{socket}->peerhost, $self->{socket}->peerport );
-    }
-    return;
-  }
-
+  
   private method write : int ($buf : string) {
 
     my $len = length $buf;

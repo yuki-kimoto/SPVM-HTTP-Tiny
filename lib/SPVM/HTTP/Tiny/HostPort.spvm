@@ -1,0 +1,19 @@
+# Copyright (c) 2023 Yuki Kimoto
+# MIT License
+
+class HTTP::Tiny::HostPort {
+  allow HTTP::Tiny;
+  allow HTTP::Tiny::Handle;
+  
+  has host : string;
+  has port : int;
+  
+  static method new : HTTP::Tiny::HostPort ($host : string, $port : int) {
+    $self->{host} = $host;
+    $self->{port} = $port;
+  }
+  
+  method to_string : string () {
+    my $string = "$self->{host}:$self->{port}";
+  }
+}

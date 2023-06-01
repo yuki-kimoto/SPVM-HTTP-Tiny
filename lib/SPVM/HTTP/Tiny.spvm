@@ -15,6 +15,7 @@ class HTTP::Tiny {
   use HTTP::Tiny::Response;
   use HTTP::Tiny::Headers;
   use HTTP::TIny::URL;
+  use HTTP::Tiny::HostPort;
   
   has agent : ro string;
   has timeout : ro int;

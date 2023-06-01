@@ -2,5 +2,5 @@
 # MIT License
 
 class HTTP::Tiny::SocketInterface : interface_t {
-  
+  method connected : int ();
 }
