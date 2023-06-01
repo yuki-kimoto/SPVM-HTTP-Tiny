@@ -3,4 +3,5 @@
 
 class HTTP::Tiny::SocketInterface : interface_t {
   method connected : int ();
+  method syswrite : int ($buffer : length);
 }

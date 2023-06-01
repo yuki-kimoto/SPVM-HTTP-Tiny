@@ -11,7 +11,8 @@ class HTTP::Tiny::Handle {
   use Sys::Socket::Constant as SOCKET;
   use Errno;
   use Sys::Signal;
-  
+  use SYS::Signal::Constant as SIGNAL;
+
   our $TOKEN : string;
   our $FIELD_CONTENT : string;
   
@@ -100,61 +101,72 @@ class HTTP::Tiny::Handle {
     return $connected;
   }
   
-  private method write : int ($buf : string) {
-
-    my $len = length $buf;
-    my $off = 0;
-
-    local $SIG{PIPE} = 'IGNORE';
-
-    while () {
-      $self->can_write
-        or die("Timed out while waiting for socket to become ready for writing\n");
-      my $r = syswrite($self->{socket}, $buf, $len, $off);
-      if (defined $r) {
-        $len -= $r;
-        $off += $r;
-        last unless $len > 0;
+  private method write : int ($buffer : string) {
+    
+    my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
+    my $restore_signal = Scope::Guard->new([old_pipe_signal : int = $old_signal] method : void () {
+      Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
+    }):
+    
+    my $length = length $buffer;
+    my $offset = 0;
+    while (1) {
+      my $can_write = $self->can_write;
+      unless ($can_write) {
+        die "Timed out while waiting for socket to become ready for writing";
       }
-      elsif ($! == EPIPE) {
+      
+      my $socket = $self->{socket};
+      
+      Errno->set_errno(0);
+      my $read_length = $socket->syswrite($buffer, $length, $offset);
+      my $errno = Errno->errno;
+      
+      if ($read_length >= 0) {
+        $length -= $read_length;
+        $offset += $read_length;
+        last unless $length > 0;
+      }
+      elsif ($errno == Errno->EPIPE) {
         die("Socket closed by remote server: $!\n");
       }
-      elsif ($! != EINTR) {
+      elsif ($errno != Errno->EINTR) {
         die("Could not write to socket: '$!'\n");
       }
     }
-    return $off;
+    
+    return $offset;
   }
-
-  private method read ($len : int, $allow_partial : int) {
-
-    my $buf  = '';
+  
+  private method read ($length : int, $allow_partial : int) {
+    
+    my $buffer  = '';
     my $got = length $self->{read_buffer};
-
+    
     if ($got) {
-      my $take = ($got < $len) ? $got : $len;
-      $buf  = substr($self->{read_buffer}, 0, $take, '');
-      $len -= $take;
+      my $take = ($got < $length) ? $got : $length;
+      $buffer  = substr($self->{read_buffer}, 0, $take, '');
+      $length -= $take;
     }
-
+    
     local $SIG{PIPE} = 'IGNORE';
-
-    while ($len > 0) {
+    
+    while ($length > 0) {
       $self->can_read
         or die(q/Timed out while waiting for socket to become ready for reading/ . "\n");
-      my $r = sysread($self->{socket}, $buf, $len, length $buf);
+      my $r = sysread($self->{socket}, $buffer, $length, length $buffer);
       if (defined $r) {
         last unless $r;
-        $len -= $r;
+        $length -= $r;
       }
       elsif ($! != EINTR) {
         die("Could not read from socket: '$!'\n");
       }
     }
-    if ($len && !$allow_partial) {
+    if ($length && !$allow_partial) {
         die("Unexpected end of stream\n");
     }
-    return $buf;
+    return $buffer;
   }
 
   private method readline {
@@ -241,7 +253,7 @@ class HTTP::Tiny::Handle {
   private method write_header_lines : int ($headers, $header_case, $prefix_data) {
     $header_case ||= {};
 
-    my $buf = (defined $prefix_data ? $prefix_data : '');
+    my $buffer = (defined $prefix_data ? $prefix_data : '');
 
     # Per RFC, control fields should be listed first
     my %seen;
@@ -252,7 +264,7 @@ class HTTP::Tiny::Handle {
       my $v = $headers->{$k};
       for (ref $v eq 'ARRAY' ? @$v : $v) {
         $_ = '' unless defined $_;
-        $buf .= "$field_name: $_\x0D\x0A";
+        $buffer .= "$field_name: $_\x0D\x0A";
       }
     }
 
@@ -280,11 +292,11 @@ class HTTP::Tiny::Handle {
         die("Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
           unless $_ eq '' || /\A $Field_Content \z/xo;
         $_ = '' unless defined $_;
-        $buf .= "$field_name: $_\x0D\x0A";
+        $buffer .= "$field_name: $_\x0D\x0A";
       }
     }
-    $buf .= "\x0D\x0A";
-    return $self->write($buf);
+    $buffer .= "\x0D\x0A";
+    return $self->write($buffer);
   }
 
   # return value indicates whether message length was defined; this is generally
@@ -304,31 +316,31 @@ class HTTP::Tiny::Handle {
 
   private method write_content_body ($request : HTTP::Tiny::Request) {
 
-    my ($len, $content_length) = (0, $request->{headers}{'content-length'});
+    my ($length, $content_length) = (0, $request->{headers}{'content-length'});
     while () {
       my $data = $request->{cb}->();
 
       defined $data && length $data
         or last;
 
-      $len += $self->write($data);
+      $length += $self->write($data);
     }
 
-    $len == $content_length
-      or die("Content-Length mismatch (got: $len expected: $content_length)\n");
+    $length == $content_length
+      or die("Content-Length mismatch (got: $length expected: $content_length)\n");
 
-    return $len;
+    return $length;
   }
 
   private method read_content_body ($cb, $response : HTTP::Tiny::Response, $content_length : int) {
     $content_length ||= $response->{headers}{'content-length'};
 
     if ( defined $content_length ) {
-        my $len = $content_length;
-        while ($len > 0) {
-            my $read = ($len > BUFSIZE) ? BUFSIZE : $len;
+        my $length = $content_length;
+        while ($length > 0) {
+            my $read = ($length > BUFSIZE) ? BUFSIZE : $length;
             $cb->($self->read($read, 0), $response);
-            $len -= $read;
+            $length -= $read;
         }
         return length($self->{read_buffer}) == 0;
     }
