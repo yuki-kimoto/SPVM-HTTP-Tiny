@@ -10,7 +10,7 @@ class HTTP::Tiny {
   use Sys;
   use Format;
   use Sys::Time::Tm;
-  use HTTP::Tiny::Handle;
+  use HTTP::Tiny::Socket;
   use HTTP::Tiny::Error;
   use HTTP::Tiny::Response;
   use HTTP::Tiny::Headers;
@@ -19,7 +19,7 @@ class HTTP::Tiny {
   
   has agent : ro string;
   has timeout : ro int;
-  has handle : HTTP::Tiny::Handle;
+  has handle : HTTP::Tiny::Socket;
   
   static method new : HTTP::Tiny ($options : object[] = undef) {
     
@@ -84,7 +84,7 @@ class HTTP::Tiny {
       headers   => $headers,
     });
     
-    my $handle  = HTTP::Tiny::Handle->new({
+    my $handle  = HTTP::Tiny::Socket->new({
       timeout => $self->{timeout},
       data_callback => $options_h->get("data_callback"),
     });

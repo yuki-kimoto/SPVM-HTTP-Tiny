@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Handle {
+class HTTP::Tiny::Socket {
   allow HTTP::Tiny;
   
   use Fn;
@@ -12,7 +12,7 @@ class HTTP::Tiny::Handle {
   use Errno;
   use Sys::Signal;
   use SYS::Signal::Constant as SIGNAL;
-
+  
   our $TOKEN : string;
   our $FIELD_CONTENT : string;
   
@@ -38,9 +38,9 @@ class HTTP::Tiny::Handle {
   has socket : HTTP::Tiny::SocketInterface;
   has read_buffer : mutable string;
   
-  static method new : HTTP::Tiny::Handle ($options : object[]) {
+  static method new : HTTP::Tiny::Socket ($options : object[]) {
     
-    my $self = new HTTP::Tiny::Handle;
+    my $self = new HTTP::Tiny::Socket;
     
     # The read_buffer field
     my $read_buffer = (mutable string)new_string &READ_BUFFER_SIZE();
@@ -138,6 +138,86 @@ class HTTP::Tiny::Handle {
     return $offset;
   }
   
+  private method write_request : void ($request : HTTP::Tiny::Request) {
+    $self->write_request_header($request);
+    $self->write_body($request);
+  }
+
+  # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
+  # combine writes.
+  private method write_header_lines : int ($headers, $header_case, $prefix_data) {
+    $header_case ||= {};
+
+    my $buffer = (defined $prefix_data ? $prefix_data : '');
+
+    # Per RFC, control fields should be listed first
+    my %seen;
+    for my $k ( qw/host cache-control expect max-forwards pragma range te/ ) {
+      next unless exists $headers->{$k};
+      $seen{$k}++;
+      my $field_name = $HeaderCase{$k};
+      my $v = $headers->{$k};
+      for (ref $v eq 'ARRAY' ? @$v : $v) {
+        $_ = '' unless defined $_;
+        $buffer .= "$field_name: $_\x0D\x0A";
+      }
+    }
+
+    # Other headers sent in arbitrary order
+    while (my ($k, $v) = each %$headers) {
+      my $field_name = lc $k;
+      next if $seen{$field_name};
+      if (exists $HeaderCase{$field_name}) {
+          $field_name = $HeaderCase{$field_name};
+      }
+      else {
+        if (exists $header_case->{$field_name}) {
+            $field_name = $header_case->{$field_name};
+        }
+        else {
+            $field_name =~ s/\b(\w)/\u$1/g;
+        }
+        $field_name =~ /\A $Token+ \z/xo
+          or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
+        $HeaderCase{lc $field_name} = $field_name;
+      }
+      for (ref $v eq 'ARRAY' ? @$v : $v) {
+        # unwrap a field value if pre-wrapped by user
+        s/\x0D?\x0A\s+/ /g;
+        die("Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
+          unless $_ eq '' || /\A $Field_Content \z/xo;
+        $_ = '' unless defined $_;
+        $buffer .= "$field_name: $_\x0D\x0A";
+      }
+    }
+    $buffer .= "\x0D\x0A";
+    return $self->write($buffer);
+  }
+
+  private method write_body {
+    my ($self, $request) = @_;
+    return unless $request->{headers}{'content-length'};
+    return $self->write_content_body($request);
+  }
+
+  private method write_content_body ($request : HTTP::Tiny::Request) {
+
+    my ($length, $content_length) = (0, $request->{headers}{'content-length'});
+    while () {
+      my $data = $request->{cb}->();
+
+      defined $data && length $data
+        or last;
+
+      $length += $self->write($data);
+    }
+
+    $length == $content_length
+      or die("Content-Length mismatch (got: $length expected: $content_length)\n");
+
+    return $length;
+  }
+
   private method read ($length : int, $allow_partial : int) {
     
     my $buffer  = '';
@@ -242,11 +322,6 @@ class HTTP::Tiny::Handle {
     return $headers;
   }
 
-  private method write_request : void ($request : HTTP::Tiny::Request) {
-    $self->write_request_header($request);
-    $self->write_body($request);
-  }
-
   # Standard request header names/case from HTTP/1.1 RFCs
   my @rfc_request_headers = qw(
     Accept Accept-Charset Accept-Encoding Accept-Language Authorization
@@ -262,81 +337,6 @@ class HTTP::Tiny::Handle {
   );
 
   my %HeaderCase = map { lc($_) => $_ } @rfc_request_headers, @other_request_headers;
-
-  # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
-  # combine writes.
-  private method write_header_lines : int ($headers, $header_case, $prefix_data) {
-    $header_case ||= {};
-
-    my $buffer = (defined $prefix_data ? $prefix_data : '');
-
-    # Per RFC, control fields should be listed first
-    my %seen;
-    for my $k ( qw/host cache-control expect max-forwards pragma range te/ ) {
-      next unless exists $headers->{$k};
-      $seen{$k}++;
-      my $field_name = $HeaderCase{$k};
-      my $v = $headers->{$k};
-      for (ref $v eq 'ARRAY' ? @$v : $v) {
-        $_ = '' unless defined $_;
-        $buffer .= "$field_name: $_\x0D\x0A";
-      }
-    }
-
-    # Other headers sent in arbitrary order
-    while (my ($k, $v) = each %$headers) {
-      my $field_name = lc $k;
-      next if $seen{$field_name};
-      if (exists $HeaderCase{$field_name}) {
-          $field_name = $HeaderCase{$field_name};
-      }
-      else {
-        if (exists $header_case->{$field_name}) {
-            $field_name = $header_case->{$field_name};
-        }
-        else {
-            $field_name =~ s/\b(\w)/\u$1/g;
-        }
-        $field_name =~ /\A $Token+ \z/xo
-          or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
-        $HeaderCase{lc $field_name} = $field_name;
-      }
-      for (ref $v eq 'ARRAY' ? @$v : $v) {
-        # unwrap a field value if pre-wrapped by user
-        s/\x0D?\x0A\s+/ /g;
-        die("Invalid HTTP header field value ($field_name): / . $Printable->($_). "\n")
-          unless $_ eq '' || /\A $Field_Content \z/xo;
-        $_ = '' unless defined $_;
-        $buffer .= "$field_name: $_\x0D\x0A";
-      }
-    }
-    $buffer .= "\x0D\x0A";
-    return $self->write($buffer);
-  }
-
-  private method write_body {
-    my ($self, $request) = @_;
-    return unless $request->{headers}{'content-length'};
-    return $self->write_content_body($request);
-  }
-
-  private method write_content_body ($request : HTTP::Tiny::Request) {
-
-    my ($length, $content_length) = (0, $request->{headers}{'content-length'});
-    while () {
-      my $data = $request->{cb}->();
-
-      defined $data && length $data
-        or last;
-
-      $length += $self->write($data);
-    }
-
-    $length == $content_length
-      or die("Content-Length mismatch (got: $length expected: $content_length)\n");
-
-    return $length;
-  }
 
   # return value indicates whether message length was defined; this is generally
   # true unless there was no content-length header and we just read until EOF.
