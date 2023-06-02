@@ -9,5 +9,4 @@ class HTTP::Minimal::Message::Request extends HTTP::Minimal::Message {
   has method : string;
   has url : HTTP::Minimal::URL;
   has headers : HTTP::Minimal::Headers;
-  has content : string;
 }

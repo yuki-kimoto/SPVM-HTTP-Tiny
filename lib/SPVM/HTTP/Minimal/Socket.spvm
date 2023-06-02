@@ -13,6 +13,7 @@ class HTTP::Minimal::Socket {
   use Sys::Signal;
   use SYS::Signal::Constant as SIGNAL;
   
+  # Class Variables
   our $TOKEN : string;
   our $FIELD_CONTENT : string;
   
@@ -21,10 +22,12 @@ class HTTP::Minimal::Socket {
     $FIELD_CONTENT = "[[:print:]]+(?:[\x20\x09]+[[:print:]]+)*";
   }
   
+  # Enumerations
   private enum {
     READ_BUFFER_SIZE = 32768,
   }
   
+  # Fields
   has peer_host : int;
   has peer_port : int;
   has local_address : string;
@@ -38,7 +41,7 @@ class HTTP::Minimal::Socket {
   has handle : HTTP::Minimal::SocketInterface;
   has read_buffer : mutable string;
   
-  static method new : HTTP::Minimal::Socket ($options : object[]) {
+  private static method new : HTTP::Minimal::Socket ($options : object[]) {
     
     my $self = new HTTP::Minimal::Socket;
     
@@ -103,7 +106,6 @@ class HTTP::Minimal::Socket {
   
   private method write_request : void ($request : HTTP::Minimal::Request) {
     $self->write_request_header($request);
-    $self->write_body($request);
   }
   
   private method write_request_header : void ($request : HTTP::Minimal::Request) {
@@ -152,26 +154,18 @@ class HTTP::Minimal::Socket {
       Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
     }):
     
-    my $length = length $buffer;
-    my $offset = 0;
-    while (1) {
-      my $can_write = $self->can_write;
-      unless ($can_write) {
-        die "Timed out while waiting for socket to become ready for writing";
-      }
-      
-      my $socket = $self->{handle};
-      
-      Errno->set_errno(0);
-      my $read_length = $socket->syswrite($buffer, $length, $offset);
+    my $can_write = $self->can_write;
+    unless ($can_write) {
+      die "Timed out while waiting for socket to become ready for writing";
+    }
+    
+    my $socket = $self->{handle};
+    
+    my $read_length = $socket->write($buffer);
+    
+    if ($read_length < 0) {
       my $errno = Errno->errno;
-      
-      if ($read_length >= 0) {
-        $length -= $read_length;
-        $offset += $read_length;
-        last unless $length > 0;
-      }
-      elsif ($errno == Errno->EPIPE) {
+      if ($errno == Errno->EPIPE) {
         die("Socket closed by remote server: $!\n");
       }
       elsif ($errno != Errno->EINTR) {
@@ -180,6 +174,115 @@ class HTTP::Minimal::Socket {
     }
     
     return $offset;
+  }
+  
+  private method readline {
+
+    while () {
+      if ($self->{read_buffer} =~ s/\A ([^\r\n]* \r?\n)//x) {
+        return $1;
+      }
+      $self->can_read
+        or die("Timed out while waiting for socket to become ready for reading\n");
+      
+      my $r = sysread($self->{handle}, $self->{read_buffer}, BUFSIZE, length $self->{read_buffer});
+      if (defined $r) {
+        last unless $r;
+      }
+      elsif ($! != EINTR) {
+        die("Could not read from socket: '$!'\n");
+      }
+    }
+    die("Unexpected end of stream while looking for line\n");
+  }
+  
+  private method read_header_lines : HTTP::Minimal::Headers ($headers : HTTP::Minimal::Headers) {
+    $headers ||= {};
+    my $lines   = 0;
+    my $val;
+    
+    while () {
+      my $line = $self->readline;
+      
+      if ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\r\n]*)/x) {
+        my ($field_name) = lc $1;
+        if (exists $headers->{$field_name}) {
+          for ($headers->{$field_name}) {
+            $_ = [$_] unless ref $_ eq "ARRAY";
+            push @$_, $2;
+            $val = \$_->[-1];
+          }
+        }
+        else {
+            $val = \($headers->{$field_name} = $2);
+        }
+      }
+      elsif ($line =~ /\A [\x09\x20]+ ([^\r\n]*)/x) {
+        $val
+          or die("Unexpected header continuation line\n");
+        next unless length $1;
+        $$val .= ' ' if length $$val;
+        $$val .= $1;
+      }
+      elsif ($line =~ /\A \r?\n \z/x) {
+         last;
+      }
+      else {
+         die(q/Malformed header line: / . $line . "\n");
+      }
+    }
+    
+    return $headers;
+  }
+
+  private method read_response : HTTP::Minimal::Message::Response {
+    
+    my $response = HTTP::Minimal::Message::Response->new;
+    
+    $self->read_response_header($response);
+    
+    $self->read_response_body($response);
+    
+    return $response;
+  }
+  
+  private method read_response_header {
+    
+    my $line = $self->readline;
+    
+    $line =~ /\A (HTTP\/(0*\d+\.0*\d+)) [\x09\x20]+ ([0-9]{3}) (?: [\x09\x20]+ ([^\r\n]*) )? \r?\n/x
+      or die(q/Malformed Status-Line: / . $line. "\n");
+    
+    my ($protocol, $version, $status, $reason) = ($1, $2, $3, $4);
+    $reason = "" unless defined $reason;
+    
+    die ("Unsupported HTTP protocol: $protocol\n/)
+      unless $version =~ /0*1\.0*[01]/;
+    
+    return {
+      status       => $status,
+      reason       => $reason,
+      headers      => $self->read_header_lines,
+      protocol     => $protocol,
+    };
+  }
+  
+  private method read_response_body ($cb, $response) {
+    my $content_length = $response->headers->header("Content-Length");
+    
+    if ($content_length >= 0) {
+      my $length = $content_length;
+      while ($length > 0) {
+        my $read = ($length > BUFSIZE) ? BUFSIZE : $length;
+        $cb->($self->read($read, 0), $response);
+        $length -= $read;
+      }
+    }
+    else {
+      die "[Unexpected Error]";
+    }
+    
+    return length($self->{read_buffer}) == 0;
   }
   
   private method read ($length : int, $allow_partial : int) {
@@ -228,116 +331,26 @@ class HTTP::Minimal::Socket {
     return $buffer;
   }
   
-  private method readline {
-
-    while () {
-      if ($self->{read_buffer} =~ s/\A ([^\r\n]* \r?\n)//x) {
-        return $1;
-      }
-      $self->can_read
-        or die("Timed out while waiting for socket to become ready for reading\n");
-      
-      my $r = sysread($self->{handle}, $self->{read_buffer}, BUFSIZE, length $self->{read_buffer});
-      if (defined $r) {
-        last unless $r;
-      }
-      elsif ($! != EINTR) {
-        die("Could not read from socket: '$!'\n");
-      }
-    }
-    die("Unexpected end of stream while looking for line\n");
-  }
-
-  private method read_header_lines : HTTP::Minimal::Headers ($headers : HTTP::Minimal::Headers) {
-    $headers ||= {};
-    my $lines   = 0;
-    my $val;
-
-    while () {
-       my $line = $self->readline;
-
-       if ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\r\n]*)/x) {
-         my ($field_name) = lc $1;
-         if (exists $headers->{$field_name}) {
-           for ($headers->{$field_name}) {
-             $_ = [$_] unless ref $_ eq "ARRAY";
-             push @$_, $2;
-             $val = \$_->[-1];
-           }
-         }
-         else {
-             $val = \($headers->{$field_name} = $2);
-         }
-       }
-       elsif ($line =~ /\A [\x09\x20]+ ([^\r\n]*)/x) {
-         $val
-           or die("Unexpected header continuation line\n");
-         next unless length $1;
-         $$val .= ' ' if length $$val;
-         $$val .= $1;
-       }
-       elsif ($line =~ /\A \r?\n \z/x) {
-          last;
-       }
-       else {
-          die(q/Malformed header line: / . $line . "\n");
-       }
-    }
-    return $headers;
-  }
-
-  # return value indicates whether message length was defined; this is generally
-  # true unless there was no content-length header and we just read until EOF.
-  # Other message length errors are thrown as exceptions
-  private method read_body {
-    my ($self, $cb, $response) = @_;
-    my $te = $response->{headers}{'transfer-encoding'} || '';
-    return $self->read_content_body($cb, $response);
-  }
-
-  private method read_content_body ($cb, $response : HTTP::Minimal::Response) {
-    my $content_length = $response->headers->header("Content-Length");
+  private method can_read ($type : string, $timeout : int = -1) {
     
-    if ($content_length >= 0) {
-      my $length = $content_length;
-      while ($length > 0) {
-        my $read = ($length > BUFSIZE) ? BUFSIZE : $length;
-        $cb->($self->read($read, 0), $response);
-        $length -= $read;
-      }
-    }
-    else {
-      die "[Unexpected Error]";
-    }
+    my $can_read = $self->do_timeout("read", $timeout);
     
-    return length($self->{read_buffer}) == 0;
+    return $can_read;
   }
-
-  private method read_response_header {
-
-    my $line = $self->readline;
-
-    $line =~ /\A (HTTP\/(0*\d+\.0*\d+)) [\x09\x20]+ ([0-9]{3}) (?: [\x09\x20]+ ([^\r\n]*) )? \r?\n/x
-      or die(q/Malformed Status-Line: / . $line. "\n");
-
-    my ($protocol, $version, $status, $reason) = ($1, $2, $3, $4);
-    $reason = "" unless defined $reason;
-
-    die ("Unsupported HTTP protocol: $protocol\n/)
-        unless $version =~ /0*1\.0*[01]/;
-
-    return {
-        status       => $status,
-        reason       => $reason,
-        headers      => $self->read_header_lines,
-        protocol     => $protocol,
-    };
+  
+  private method can_write ($type : string, $timeout : int = -1) {
+    
+    my $can_write = $self->do_timeout("write", $timeout);
+    
+    return $can_write;
   }
-
-  private method _do_timeout {
+  
+  private method do_timeout {
     my ($self, $type, $timeout) = @_;
-    $timeout = $self->{timeout}
-        unless defined $timeout && $timeout >= 0;
+    
+    if ($timeout < 0) {
+      $timeout = $self->{timeout};
+    }
     
     my $handle = fileno $self->{handle};
     defined $handle && $handle >= 0
@@ -363,19 +376,5 @@ class HTTP::Minimal::Socket {
     }
     $! = 0;
     return $nfound;
-  }
-  
-  private method can_read ($type : string, $timeout : int = -1) {
-    
-    my $can_read = $self->_do_timeout("read", $timeout);
-    
-    return $can_read;
-  }
-  
-  private method can_write ($type : string, $timeout : int = -1) {
-    
-    my $can_write = $self->_do_timeout("write", $timeout);
-    
-    return $can_write;
   }
 }
