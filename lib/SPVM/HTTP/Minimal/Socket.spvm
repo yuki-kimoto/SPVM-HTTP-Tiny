@@ -365,13 +365,17 @@ class HTTP::Minimal::Socket {
     return $nfound;
   }
   
-  private method can_read ($type : string, $timeout : int) {
-    my $can_read = $self->_do_timeout("read", $type, $timeout);
+  private method can_read ($type : string, $timeout : int = -1) {
+    
+    my $can_read = $self->_do_timeout("read", $timeout);
+    
     return $can_read;
   }
   
-  private method can_write ($type : string, $timeout : int) {
-    my $can_write = $self->_do_timeout("write", $type, $timeout);
+  private method can_write ($type : string, $timeout : int = -1) {
+    
+    my $can_write = $self->_do_timeout("write", $timeout);
+    
     return $can_write;
   }
 }

@@ -17,9 +17,11 @@ class HTTP::Minimal {
   use HTTP::Minimal::URL;
   use HTTP::Minimal::HostPort;
   
+  # Fields
   has agent : ro string;
   has timeout : ro int;
   
+  # Class Methods
   static method new : HTTP::Minimal ($options : object[] = undef) {
     
     my $options_h = Hash->new($options);
@@ -27,8 +29,11 @@ class HTTP::Minimal {
     my $self = new HTTP::Minimal;
     
     # timeout
-    my $timeout = $options_h->delete_or_default_int("timeout", 60)
+    my $timeout = $options_h->delete_or_default_int("timeout", 60);
     $self->{timeout} = $timeout;
+    unless ($timeout >= 0) {
+      die "The timeout option must be greater than or equal to 0";
+    }
     
     # agent
     my $default_agent = $self->create_default_agent;
@@ -38,6 +43,7 @@ class HTTP::Minimal {
     return $self;
   }
   
+  # Instance Methods
   method create_default_agent : string () {
     
     my $default_agent = "SPVM HTTP::Minimal";
@@ -51,12 +57,13 @@ class HTTP::Minimal {
   
   method get : HTTP::Minimal::Message::Response ($url_ : string|HTTP::Minimal::URL, $options : object[] = undef) {
     
-    my $response = $self->_request("GET", $url_, $options);
+    my $response = $self->request("GET", $url_, $options);
     
     return $response;
   }
   
-  private method _request : HTTP::Minimal::Message::Response ($method : string, $url_ : string|HTTP::Minimal::URL, $options : object[])  {
+  # Private Instance Methods
+  private method request : HTTP::Minimal::Message::Response ($method : string, $url_ : string|HTTP::Minimal::URL, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
