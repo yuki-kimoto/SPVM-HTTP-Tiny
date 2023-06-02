@@ -112,6 +112,30 @@ class HTTP::Minimal::Socket {
     my $url = $request->{url}->to_string;
     my $headers = $request->{headers};
     
+    # HTTP Headers
+    {
+      # host
+      unless ($headers->get("host")) {
+        my $host = $url->host;
+        my $port = $url->port;
+        if ($port < 0) {
+          $port = 80;
+        }
+        my $host_port = "$host:$port";
+        $headers->add("host" => $host_port);
+      }
+      
+      # connection
+      unless ($headers->get("connection")) {
+        $headers->add("connection" => "close");
+      }
+      
+      # content-length
+      unless ($headers->get("content-length")) {
+        $headers->add("content-length" => "0");
+      }
+    }
+    
     my $request_line = "$method $url HTTP/1.1\r\n";
     
     $self->write($request_line);
@@ -119,36 +143,6 @@ class HTTP::Minimal::Socket {
     my $header_lines = $headers->to_string;
     
     $self->write($header_lines);
-    
-    my $content_length_header = $request->headers->get("content-length");
-    unless ($content_length_header) {
-      my $content = $request->{content};
-      
-    }
-  }
-  
-  private method write_body {
-    my ($self, $request) = @_;
-    
-    my $content_length = $request->headers->get("content-length");
-    
-    unless ($content_length) {
-      return;
-    }
-    
-    while () {
-      my $data = $request->{cb}->();
-      
-      defined $data && length $data
-        or last;
-      
-      $length += $self->write($data);
-    }
-    
-    $length == $content_length
-      or die("Content-Length mismatch (got: $length expected: $content_length)\n");
-    
-    return $length;
   }
   
   private method write : int ($buffer : string) {

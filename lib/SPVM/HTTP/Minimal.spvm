@@ -19,7 +19,6 @@ class HTTP::Minimal {
   
   has agent : ro string;
   has timeout : ro int;
-  has socket : HTTP::Minimal::Socket;
   
   static method new : HTTP::Minimal ($options : object[] = undef) {
     
@@ -28,65 +27,74 @@ class HTTP::Minimal {
     my $self = new HTTP::Minimal;
     
     # timeout
-    $self->{timeout} = $options_h->delete_or_default_int("timeout", 60);
+    my $timeout = $options_h->delete_or_default_int("timeout", 60)
+    $self->{timeout} = $timeout;
     
     # agent
-    my $agent = $options_h->delete_or_default_string("agent");
-    if ($agent) {
-      if (Regex->new(" $")->match($agent)) {
-        $agent .= $self->_create_default_agent;
-      }
-    }
-    else {
-      $agent = $self->_create_default_agent;
-    }
-    
+    my $default_agent = $self->create_default_agent;
+    my $agent = $options_h->delete_or_default_string("agent", $default_agent);
     $self->{agent} = $agent;
     
     return $self;
   }
   
-  method get : HTTP::Response ($url : string|HTTP::Minimal::URL, $options : object[] = undef) {
-    my $response = $self->_request("GET", $url, $options);
+  method create_default_agent : string () {
+    
+    my $default_agent = "SPVM HTTP::Minimal";
+    
+    my $version = Fn->get_version_string("HTTP::Minimal");
+    
+    $default_agent .= "/$version";
+    
+    return $default_agent;
+  }
+  
+  method get : HTTP::Minimal::Message::Response ($url_ : string|HTTP::Minimal::URL, $options : object[] = undef) {
+    
+    my $response = $self->_request("GET", $url_, $options);
+    
     return $response;
   }
   
-  private method _request : Hash ($method : string, $url : string|HTTP::Minimal::URL, $options : object[])  {
+  private method _request : HTTP::Minimal::Message::Response ($method : string, $url_ : string|HTTP::Minimal::URL, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
-    unless ($url isa string || $url ias HTTP::Minimal::URL) {
-      die "The \$url msut be a string or HTTP::Minimal::URL object";
-    }
+    my $data_callback = $options_h->delete_or_default("data_callback", undef);
     
-    my $url_object = (HTTP::Minimal::URL)undef;
-    if ($url ias string) {
-      $url_object = HTTP::Minimal::URL->parse((string)$url);
+    my $headers = $options_h->delete_or_default("headers", undef);
+    
+    my $url = (HTTP::Minimal::URL)undef;
+    if ($url_ isa string) {
+      $url = HTTP::Minimal::URL->parse((string)$url_);
+    }
+    elsif ($url_ isa HTTP::Minimal::URL) {
+      $url = $url_;
     }
     else {
-      $url_object = $url;
+      die "The \$url_ msut be a string or HTTP::Minimal::URL object";
     }
     
-    # HTTP Header
+    # The default HTTP headers
     my $headers = HTTP::Minimal::Headers->new;
-    my $host = $url_object->host;
-    my $port = $url_object->port;
-    if ($port < 0) {
-      $port = 80;
+    {
+      # user-agent
+      unless ($headers->get("user-agent")) {
+        my $agent = $self->{agent};
+        $headers->add("user-agent" => $agent);
+      }
     }
-    $headers->add("Host" => "$host:$port");
-    $headers->add("User-Agent" => $self->{agent});
-    $headers->add("Connection" => "close");
     
     my $request = HTTP::Minimal::Message::Request->new({
       method    => $method,
-      url => $url_object;,
+      url => $url,
       headers   => $headers,
     });
     
+    my $timeout = $self->{timeout};
     my $socket  = HTTP::Minimal::Socket->new({
-      timeout => $self->{timeout},
-      data_callback => $options_h->get("data_callback"),
+      timeout => $timeout,
+      data_callback => $data_callback,
     });
     
     $socket->connect($request);
@@ -98,14 +106,4 @@ class HTTP::Minimal {
     return $response;
   }
   
-  private method _create_default_agent : string () {
-    
-    my $default_agent = "SPVM HTTP::Minimal";
-    
-    my $version = Fn->get_version_string("HTTP::Minimal");
-    
-    $default_agent .= "/$version";
-    
-    return $default_agent;
-  }
 }
