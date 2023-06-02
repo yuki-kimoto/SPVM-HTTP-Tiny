@@ -12,6 +12,8 @@ class HTTP::Minimal::Socket {
   use Errno;
   use Sys::Signal;
   use SYS::Signal::Constant as SIGNAL;
+  use StringBuffer;
+  use Regex::ReplaceInfo;
   
   # Class Variables
   our $TOKEN : string;
@@ -24,7 +26,7 @@ class HTTP::Minimal::Socket {
   
   # Enumerations
   private enum {
-    READ_BUFFER_SIZE = 32768,
+    response_buffer_SIZE = 32768,
   }
   
   # Fields
@@ -39,15 +41,15 @@ class HTTP::Minimal::Socket {
   has timeout : int;
   
   has handle : HTTP::Minimal::SocketInterface;
-  has read_buffer : mutable string;
+  has response_buffer : mutable string;
   
   private static method new : HTTP::Minimal::Socket ($options : object[]) {
     
     my $self = new HTTP::Minimal::Socket;
     
-    # The read_buffer field
-    my $read_buffer = (mutable string)new_string &READ_BUFFER_SIZE();
-    $self->{read_buffer} = $read_buffer;
+    # The response_buffer field
+    my $response_buffer = StringBuffer->new;
+    $self->{response_buffer} = $response_buffer;
     
     # The timeout field
     my $timeout = $options->delete_or_default_int("timeout", 60);
@@ -161,39 +163,20 @@ class HTTP::Minimal::Socket {
     
     my $socket = $self->{handle};
     
-    my $read_length = $socket->write($buffer);
+    my $write_length = -1;
+    eval { $socket->write($buffer) };
     
-    if ($read_length < 0) {
+    if (my $exception = $@) {
       my $errno = Errno->errno;
       if ($errno == Errno->EPIPE) {
-        die("Socket closed by remote server: $!\n");
+        die "Socket closed by remote server: $exception";
       }
       elsif ($errno != Errno->EINTR) {
-        die("Could not write to socket: '$!'\n");
+        die "Could not write to socket: $exception";
       }
     }
     
     return $offset;
-  }
-  
-  private method readline {
-
-    while () {
-      if ($self->{read_buffer} =~ s/\A ([^\r\n]* \r?\n)//x) {
-        return $1;
-      }
-      $self->can_read
-        or die("Timed out while waiting for socket to become ready for reading\n");
-      
-      my $r = sysread($self->{handle}, $self->{read_buffer}, BUFSIZE, length $self->{read_buffer});
-      if (defined $r) {
-        last unless $r;
-      }
-      elsif ($! != EINTR) {
-        die("Could not read from socket: '$!'\n");
-      }
-    }
-    die("Unexpected end of stream while looking for line\n");
   }
   
   private method read_header_lines : HTTP::Minimal::Headers ($headers : HTTP::Minimal::Headers) {
@@ -256,7 +239,7 @@ class HTTP::Minimal::Socket {
     my ($protocol, $version, $status, $reason) = ($1, $2, $3, $4);
     $reason = "" unless defined $reason;
     
-    die ("Unsupported HTTP protocol: $protocol\n/)
+    die "Unsupported HTTP protocol: $protocol\n";
       unless $version =~ /0*1\.0*[01]/;
     
     return {
@@ -273,7 +256,7 @@ class HTTP::Minimal::Socket {
     if ($content_length >= 0) {
       my $length = $content_length;
       while ($length > 0) {
-        my $read = ($length > BUFSIZE) ? BUFSIZE : $length;
+        my $read = ($length > READ_BUFFER_SIZE) ? READ_BUFFER_SIZE : $length;
         $cb->($self->read($read, 0), $response);
         $length -= $read;
       }
@@ -282,17 +265,66 @@ class HTTP::Minimal::Socket {
       die "[Unexpected Error]";
     }
     
-    return length($self->{read_buffer}) == 0;
+    return length($self->{response_buffer}) == 0;
+  }
+  
+  private method readline {
+    
+    my $handle = $self->{handle};
+    
+    my $read_buffer = new_string_buffer &READ_BUFFER_SIZE;
+    
+    my $line_re = Regex->new("\A([^\r\n]*\r?\n)");
+    my $line = (string)undef;
+    while (1) {
+      my $response_content = $self->{response_buffer}->to_string;
+      
+      my $replace_info_ref = new Regex::ReplaceInfo[1];
+      $response_content = $line_re->replace($response_content, 0, -1, {info => $replace_info_ref});
+      $self->{response_buffer} = StringBuffer->new($response_content);
+      if ($replace_info_ref->[0]->match) {
+        $line = $match->cap1;
+        last;
+      }
+      
+      my $can_read = $self->can_read;
+      unless ($can_read) {
+        die "Timed out while waiting for socket to become ready for reading";
+      }
+      
+      my $read_length = -1;
+      eval { $read_length = $handle->read($read_buffer, &READ_BUFFER_SIZE); }
+      
+      if ($@) {
+        my $errno = Errno->errno;
+        if (errno != EINTR) {
+          die "Could not read from socket: \"$@\"";
+        }
+      }
+      
+      if ($read_length == 0) {
+        last;
+      }
+      else if ($read_length > 0) {
+        $self->{response_buffer}->push($read_buffer, 0, $read_length);
+      }
+    }
+    
+    unless ($line) {
+      die "Unexpected end of stream while looking for line";
+    }
+    
+    return $line;
   }
   
   private method read ($length : int, $allow_partial : int) {
     
     my $buffer  = '';
-    my $got = length $self->{read_buffer};
+    my $got = length $self->{response_buffer};
     
     if ($got) {
       my $take = ($got < $length) ? $got : $length;
-      $buffer  = substr($self->{read_buffer}, 0, $take, '');
+      $buffer  = substr($self->{response_buffer}, 0, $take, '');
       $length -= $take;
     }
     
