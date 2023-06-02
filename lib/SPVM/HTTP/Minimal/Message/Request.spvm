@@ -3,10 +3,11 @@
 
 class HTTP::Minimal::Message::Request extends HTTP::Minimal::Message {
   allow HTTP::Minimal;
+  allow HTTP::Minimal::Socket;
   
   use HTTP::Minimal::Headers;
   
-  has method : string;
-  has url : HTTP::Minimal::URL;
-  has headers : HTTP::Minimal::Headers;
+  has method : ro string;
+  has url : ro HTTP::Minimal::URL;
+  has headers : ro HTTP::Minimal::Headers;
 }

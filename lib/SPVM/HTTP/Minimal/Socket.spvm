@@ -107,10 +107,23 @@ class HTTP::Minimal::Socket {
   }
   
   private method write_request : void ($request : HTTP::Minimal::Request) {
-    $self->write_request_header($request);
+    
+    $self->write_request_line($request);
+    
+    $self->write_request_header_lines($request);
   }
   
-  private method write_request_header : void ($request : HTTP::Minimal::Request) {
+  private method write_request_line : void ($request : HTTP::Minimal::Request) {
+    
+    my $method = $request->{method};
+    my $url = $request->{url}->to_string;
+    
+    my $request_line = "$method $url HTTP/1.1\r\n";
+    
+    $self->write($request_line);
+  }
+  
+  private method write_request_header_lines : void ($request : HTTP::Minimal::Request) {
     
     my $method = $request->{method};
     my $url = $request->{url}->to_string;
@@ -179,75 +192,73 @@ class HTTP::Minimal::Socket {
     return $offset;
   }
   
-  private method read_header_lines : HTTP::Minimal::Headers ($headers : HTTP::Minimal::Headers) {
-    $headers ||= {};
-    my $lines   = 0;
-    my $val;
-    
-    while () {
-      my $line = $self->readline;
-      
-      if ($line =~ /\A ([^\x00-\x1F\x7F:]+) : [\x09\x20]* ([^\r\n]*)/x) {
-        my ($field_name) = lc $1;
-        if (exists $headers->{$field_name}) {
-          for ($headers->{$field_name}) {
-            $_ = [$_] unless ref $_ eq "ARRAY";
-            push @$_, $2;
-            $val = \$_->[-1];
-          }
-        }
-        else {
-            $val = \($headers->{$field_name} = $2);
-        }
-      }
-      elsif ($line =~ /\A [\x09\x20]+ ([^\r\n]*)/x) {
-        $val
-          or die("Unexpected header continuation line\n");
-        next unless length $1;
-        $$val .= ' ' if length $$val;
-        $$val .= $1;
-      }
-      elsif ($line =~ /\A \r?\n \z/x) {
-         last;
-      }
-      else {
-         die(q/Malformed header line: / . $line . "\n");
-      }
-    }
-    
-    return $headers;
-  }
-
   private method read_response : HTTP::Minimal::Message::Response {
     
     my $response = HTTP::Minimal::Message::Response->new;
     
-    $self->read_response_header($response);
+    $self->read_status_line($response);
+    
+    $self->read_response_header_lines($response);
     
     $self->read_response_body($response);
     
     return $response;
   }
   
-  private method read_response_header {
+  private method read_status_line : void ($response : HTTP::Minimal::Message::Response) {
     
     my $line = $self->readline;
     
-    $line =~ /\A (HTTP\/(0*\d+\.0*\d+)) [\x09\x20]+ ([0-9]{3}) (?: [\x09\x20]+ ([^\r\n]*) )? \r?\n/x
-      or die(q/Malformed Status-Line: / . $line. "\n");
+    my $status_line_re = Regex->new("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n");
     
-    my ($protocol, $version, $status, $reason) = ($1, $2, $3, $4);
-    $reason = "" unless defined $reason;
+    my $protocol = (string)undef;
+    my $version = (string)undef;
+    my $status = (string)undef;
+    my $reason = (string)undef;
+    if (my $match = $status_line_re->match("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n") {
+      $protocol = $match->cap1;
+      $version = $match->cap2;
+      $status = $match->cap3;
+      $reason = $match->cap4;
+      unless ($reason) {
+        $reason = "";
+      }
+    }
+    else {
+      die "Malformed Status-Line: " . $self->to_printable($line);
+    }
     
-    die "Unsupported HTTP protocol: $protocol\n";
-      unless $version =~ /0*1\.0*[01]/;
+    if (Regex->new("0*1\.0*[01]")->match($version)) {
+      die "Unsupported HTTP protocol: $protocol";
+    }
     
-    return {
-      status       => $status,
-      reason       => $reason,
-      headers      => $self->read_header_lines,
-      protocol     => $protocol,
-    };
+    $response->{protocol} = $protocol;
+    $response->{status} = $status;
+    $response->{reason} = $reason;
+  }
+  
+  private method read_response_header_lines : HTTP::Minimal::Headers ($response : HTTP::Minimal::Message::Response) {
+    my $headers = HTTP::Headers->new;
+    
+    my $empty_line_re = Regex->new("\A\r?\n\z");
+    my $header_line_re = Regex->new("\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)");
+    while (1) {
+      my $line = $self->readline;
+      
+      if (my $match = $header_line_re->match($line)){
+        my $name = Fn->lc($match->cap1);
+        my $value = $match->cap2;
+        $headers->add($name, $value);
+      }
+      elsif ($empty_line_re->match($line)) {
+        last;
+      }
+      else {
+        die "Malformed header line: " . $self->to_printable($line);
+      }
+    }
+    
+    $response->{headers} = $headers;
   }
   
   private method read_response_body ($cb, $response) {
@@ -408,5 +419,16 @@ class HTTP::Minimal::Socket {
     }
     $! = 0;
     return $nfound;
+  }
+  
+  private method to_printable : string ($string : string) {
+    my $printable_string = Regex->new("([^\x20-\x7E])")->replace($string, method : string ($re : Regex, $match : Regex::Match) {
+      
+      my $replaced = Format->sprintf("\\x%.2X", Fn->ord($match->cap1));
+      
+      return $replaced;
+    })
+    
+    return $printable_string;
   }
 }

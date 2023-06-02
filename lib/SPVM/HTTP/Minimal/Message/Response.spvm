@@ -3,10 +3,13 @@
 
 class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
   allow HTTP::Minimal;
+  allow HTTP::Minimal::Socket;
   
   use HTTP::Minimal::Headers;
   
+  has protocol : ro string;
   has status : ro string;
+  has reason : ro string;
   has headers : ro HTTP::Minimal::Headers;
   has content : ro StringBuffer;
   
