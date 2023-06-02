@@ -261,24 +261,6 @@ class HTTP::Minimal::Socket {
     $response->{headers} = $headers;
   }
   
-  private method read_response_body ($cb, $response) {
-    my $content_length = $response->headers->header("Content-Length");
-    
-    if ($content_length >= 0) {
-      my $length = $content_length;
-      while ($length > 0) {
-        my $read = ($length > READ_BUFFER_SIZE) ? READ_BUFFER_SIZE : $length;
-        $cb->($self->read($read, 0), $response);
-        $length -= $read;
-      }
-    }
-    else {
-      die "[Unexpected Error]";
-    }
-    
-    return length($self->{response_buffer}) == 0;
-  }
-  
   private method readline {
     
     my $handle = $self->{handle};
@@ -326,6 +308,24 @@ class HTTP::Minimal::Socket {
     }
     
     return $line;
+  }
+  
+  private method read_response_body ($cb, $response) {
+    my $content_length = $response->headers->header("Content-Length");
+    
+    if ($content_length >= 0) {
+      my $length = $content_length;
+      while ($length > 0) {
+        my $read = ($length > READ_BUFFER_SIZE) ? READ_BUFFER_SIZE : $length;
+        $cb->($self->read($read, 0), $response);
+        $length -= $read;
+      }
+    }
+    else {
+      die "[Unexpected Error]";
+    }
+    
+    return length($self->{response_buffer}) == 0;
   }
   
   private method read ($length : int, $allow_partial : int) {

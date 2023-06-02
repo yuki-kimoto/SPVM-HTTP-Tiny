@@ -2,14 +2,18 @@
 # MIT License
 
 class HTTP::Minimal::Headers {
+  allow HTTP::Minimal::Socket;
+  
   use StringList;
   use Hash;
   use Sort;
   use Regex;
   use StringBuffer;
   
+  # Fields
   has headers : Hash;
   
+  # Class Methods
   static method new : HTTP::Minimal::Headers () {
     my $self = new HTTP::Minimal::Headers;
     
@@ -18,6 +22,7 @@ class HTTP::Minimal::Headers {
     return $self;
   }
   
+  # Instance Methods
   sub add : void ($name : string, $value : string) {
     
     unless ($name) {
