@@ -1,0 +1,8 @@
+# Copyright (c) 2023 Yuki Kimoto
+# MIT License
+
+class HTTP::Minimal::DataCallback : interface_t {
+  use HTTP::Minimal::Message::Response;
+  
+  required method : void ($data : string, $response : HTTP::Minimal::Message::Response);
+}

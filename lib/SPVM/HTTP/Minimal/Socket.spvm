@@ -4,16 +4,22 @@
 class HTTP::Minimal::Socket {
   allow HTTP::Minimal;
   
-  use Fn;
-  use Format;
+  use HTTP::Minimal::SocketBuilder;
   use HTTP::Minimal::SocketInterface;
-  use IO::Socket::INET;
-  use Sys::Socket::Constant as SOCKET;
+  use HTTP::Minimal::DataCallback;
+  use HTTP::Minimal::Message::Request;
+  use HTTP::Minimal::Message::Response;
+  
+  use Fn;
+  use StringBuffer;
+  use Format;
+  use Regex;
+  use Regex::ReplaceInfo;
   use Errno;
+  use Sys::Socket::Constant as SOCKET;
   use Sys::Signal;
   use SYS::Signal::Constant as SIGNAL;
-  use StringBuffer;
-  use Regex::ReplaceInfo;
+  use IO::Socket::INET;
   
   # Class Variables
   our $TOKEN : string;
@@ -311,13 +317,25 @@ class HTTP::Minimal::Socket {
   }
   
   private method read_response_body ($cb, $response) {
-    my $content_length = $response->headers->header("Content-Length");
+    
+    my $content_length_string = $response->headers->header("Content-Length");
+    my $content_length = Fn->to_long($content_length_string);
     
     if ($content_length >= 0) {
       my $length = $content_length;
       while ($length > 0) {
-        my $read = ($length > READ_BUFFER_SIZE) ? READ_BUFFER_SIZE : $length;
-        $cb->($self->read($read, 0), $response);
+        my $read_length = -1;
+        if ($length > &READ_BUFFER_SIZE) {
+          $read_length = &READ_BUFFER_SIZE;
+        }
+        else {
+          $read_length = $length;
+        }
+        
+        my $buffer = $self->read($read_length);
+        
+        $cb->($buffer, $response);
+        
         $length -= $read;
       }
     }
@@ -325,7 +343,7 @@ class HTTP::Minimal::Socket {
       die "[Unexpected Error]";
     }
     
-    return length($self->{response_buffer}) == 0;
+    return $self->{response_buffer}->length == 0;
   }
   
   private method read ($length : int, $allow_partial : int) {
