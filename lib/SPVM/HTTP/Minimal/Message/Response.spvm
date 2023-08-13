@@ -16,7 +16,7 @@ class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
   # Class Methods
   static method new : HTTP::Minimal::Message::Response () {
     
-    my $self = HTTP::Minimal::Message::Response;
+    my $self = new HTTP::Minimal::Message::Response;
     
     return $self;
   }
