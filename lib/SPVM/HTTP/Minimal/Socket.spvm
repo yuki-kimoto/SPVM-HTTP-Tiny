@@ -46,7 +46,6 @@ class HTTP::Minimal::Socket {
   has timeout : int;
   
   has socket_builder : HTTP::Minimal::SocketBuilder;
-  has timeout : int;
   
   has handle : HTTP::Minimal::SocketInterface;
   has response_buffer : mutable string;
