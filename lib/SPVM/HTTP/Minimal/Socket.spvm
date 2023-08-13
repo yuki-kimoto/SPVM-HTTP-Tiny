@@ -20,6 +20,7 @@ class HTTP::Minimal::Socket {
   use Sys::Signal;
   use SYS::Signal::Constant as SIGNAL;
   use IO::Socket::INET;
+  use IO::Select;
   
   # Class Variables
   our $TOKEN : string;
@@ -32,7 +33,8 @@ class HTTP::Minimal::Socket {
   
   # Enumerations
   private enum {
-    response_buffer_SIZE = 32768,
+    RESPONSE_BUFFER_SIZE = 32768,
+    READ_BUFFER_SIZE = 4086,
   }
   
   # Fields
@@ -91,7 +93,7 @@ class HTTP::Minimal::Socket {
     return $self;
   }
   
-  private method connect ($request : HTTP::Minimal::Request) {
+  private method connect : HTTP::Minimal::Socket ($request : HTTP::Minimal::Request) {
     
     my $socket_builder = $self->{socket_builder};
     
@@ -171,9 +173,9 @@ class HTTP::Minimal::Socket {
   private method write : int ($buffer : string) {
     
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([old_pipe_signal : int = $old_signal] method : void () {
+    my $restore_signal = Scope::Guard->new([has old_pipe_signal : int = $old_signal] method : void () {
       Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
-    }):
+    });
     
     my $can_write = $self->can_write;
     unless ($can_write) {
@@ -183,7 +185,7 @@ class HTTP::Minimal::Socket {
     my $socket = $self->{handle};
     
     my $write_length = -1;
-    eval { $socket->write($buffer) };
+    eval { $socket->write($buffer); }
     
     if (my $exception = $@) {
       my $errno = Errno->errno;
@@ -198,7 +200,7 @@ class HTTP::Minimal::Socket {
     return $offset;
   }
   
-  private method read_response : HTTP::Minimal::Message::Response {
+  private method read_response : HTTP::Minimal::Message::Response () {
     
     my $response = HTTP::Minimal::Message::Response->new;
     
@@ -221,7 +223,7 @@ class HTTP::Minimal::Socket {
     my $version = (string)undef;
     my $status = (string)undef;
     my $reason = (string)undef;
-    if (my $match = $status_line_re->match("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n") {
+    if (my $match = $status_line_re->match("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n")) {
       $protocol = $match->cap1;
       $version = $match->cap2;
       $status = $match->cap3;
@@ -267,11 +269,11 @@ class HTTP::Minimal::Socket {
     $response->{headers} = $headers;
   }
   
-  private method readline {
+  private method readline : string () {
     
     my $handle = $self->{handle};
     
-    my $read_buffer = new_string_buffer &READ_BUFFER_SIZE;
+    my $read_buffer = new_string_len &READ_BUFFER_SIZE;
     
     my $line_re = Regex->new("\A([^\r\n]*\r?\n)");
     my $line = (string)undef;
@@ -296,7 +298,7 @@ class HTTP::Minimal::Socket {
       
       if ($@) {
         my $errno = Errno->errno;
-        if (errno != EINTR) {
+        if ($errno != Errno->EINTR) {
           die "Could not read from socket: \"$@\"";
         }
       }
@@ -304,7 +306,7 @@ class HTTP::Minimal::Socket {
       if ($read_length == 0) {
         last;
       }
-      else if ($read_length > 0) {
+      elsif ($read_length > 0) {
         $self->{response_buffer}->push($read_buffer, 0, $read_length);
       }
     }
@@ -316,7 +318,7 @@ class HTTP::Minimal::Socket {
     return $line;
   }
   
-  private method read_response_body ($cb, $response) {
+  private method read_response_body : int ($cb : HTTP::Minimal::DataCallback, $response : HTTP::Minimal::Response) {
     
     my $content_length_string = $response->headers->header("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
@@ -346,21 +348,27 @@ class HTTP::Minimal::Socket {
     return $self->{response_buffer}->length == 0;
   }
   
-  private method read ($length : int, $allow_partial : int) {
+  private method read : string ($length : int, $allow_partial : int) {
     
-    my $buffer  = '';
+    my $buffer  = "";
     my $got = length $self->{response_buffer};
     
     if ($got) {
-      my $take = ($got < $length) ? $got : $length;
-      $buffer  = substr($self->{response_buffer}, 0, $take, '');
+      my $take = 0;
+      if ($got < $length) {
+        $take = $got;
+      }
+      else {
+        $take = $length;
+      }
+      $buffer  = Fn->substr($self->{response_buffer}, 0, $take, "");
       $length -= $take;
     }
     
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([old_pipe_signal : int = $old_signal] method : void () {
+    my $restore_signal = Scope::Guard->new([has old_pipe_signal : int = $old_signal] method : void () {
       Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
-    }):
+    });
     
     while ($length > 0) {
       my $can_read = $self->can_read;
@@ -381,7 +389,7 @@ class HTTP::Minimal::Socket {
         }
         $length -= $read_length;
       }
-      elsif ($errno != EINTR) {
+      elsif ($errno != Errno->EINTR) {
         die "Could not read from socket: \"$!\"";
       }
     }
@@ -392,50 +400,71 @@ class HTTP::Minimal::Socket {
     return $buffer;
   }
   
-  private method can_read ($type : string, $timeout : int = -1) {
+  private method can_read : int ($type : string, $timeout : int = -1) {
     
     my $can_read = $self->do_timeout("read", $timeout);
     
     return $can_read;
   }
   
-  private method can_write ($type : string, $timeout : int = -1) {
+  private method can_write : int ($type : string, $timeout : int = -1) {
     
     my $can_write = $self->do_timeout("write", $timeout);
     
     return $can_write;
   }
   
-  private method do_timeout {
-    my ($self, $type, $timeout) = @_;
+  private method do_timeout : int ($type : string, $timeout : int) {
     
     if ($timeout < 0) {
       $timeout = $self->{timeout};
     }
     
-    my $handle = fileno $self->{handle};
-    defined $handle && $handle >= 0
-      or die("select(2): 'Bad file descriptor'\n");
+    my $handle = $self->{handle}->fileno;
     
-    my $initial = time;
+    if ($handle >= 0) {
+      die("select(2): Bad file descriptor");
+    }
+    
+    my $initial = Sys::Time->time;
     my $pending = $timeout;
-    my $nfound;
+    my $nfound = 0;
     
-    vec(my $fdset = '', $handle, 1) = 1;
+    my $select = IO::Select->new;
     
-    while () {
-      $nfound = ($type eq 'read')
-        ? select($fdset, undef, undef, $pending)
-        : select(undef, $fdset, undef, $pending) ;
-      if ($nfound == -1) {
-        $! == EINTR
-          or die("select(2): '$!'\n");
-        redo if !$timeout || ($pending = $timeout - (time - $initial)) > 0;
+    $select->add($handle);
+    
+    while (1) {
+      my $nfound = 0;
+      eval {
+        if ($type eq "read") {
+          my $readable_handles = $select->can_read;
+          if (@$readable_handles) {
+            $nfound = 1;
+          }
+        }
+        else {
+          my $writable_handles = $select->can_write;
+          if (@$writable_handles) {
+            $nfound = 1;
+          }
+        }
+      }
+      
+      if ($@) {
+        my $errno = Errno->errno;
+        unless ($errno == Errno->EINTR) {
+          die $@;
+        }
+        
+        if ($timeout < 0 || ($pending = $timeout - (Sys::Time->time - $initial)) > 0) {
+          next;
+        }
+        
         $nfound = 0;
       }
-      last;
     }
-    $! = 0;
+    
     return $nfound;
   }
   
@@ -445,7 +474,7 @@ class HTTP::Minimal::Socket {
       my $replaced = Format->sprintf("\\x%.2X", Fn->ord($match->cap1));
       
       return $replaced;
-    })
+    });
     
     return $printable_string;
   }

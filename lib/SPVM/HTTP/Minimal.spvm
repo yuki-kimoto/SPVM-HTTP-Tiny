@@ -2,7 +2,7 @@
 # MIT License
 
 class HTTP::Minimal {
-  version "0.001_001";
+  version "0.001";
   
   use Fn;
   use Regex;
@@ -55,15 +55,15 @@ class HTTP::Minimal {
     return $default_agent;
   }
   
-  method get : HTTP::Minimal::Message::Response ($url_ : string|HTTP::Minimal::URL, $options : object[] = undef) {
+  method get : HTTP::Minimal::Message::Response ($url_object : object of string|HTTP::Minimal::URL, $options : object[] = undef) {
     
-    my $response = $self->request("GET", $url_, $options);
+    my $response = $self->request("GET", $url_object, $options);
     
     return $response;
   }
   
   # Private Instance Methods
-  private method request : HTTP::Minimal::Message::Response ($method : string, $url_ : string|HTTP::Minimal::URL, $options : object[])  {
+  private method request : HTTP::Minimal::Message::Response ($method : string, $url_object : object of string|HTTP::Minimal::URL, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
@@ -73,10 +73,10 @@ class HTTP::Minimal {
     
     my $url = (HTTP::Minimal::URL)undef;
     if ($url_ isa string) {
-      $url = HTTP::Minimal::URL->parse((string)$url_);
+      $url = HTTP::Minimal::URL->parse((string)$url_object);
     }
     elsif ($url_ isa HTTP::Minimal::URL) {
-      $url = $url_;
+      $url = $url_object;
     }
     else {
       die "The \$url_ msut be a string or HTTP::Minimal::URL object";
