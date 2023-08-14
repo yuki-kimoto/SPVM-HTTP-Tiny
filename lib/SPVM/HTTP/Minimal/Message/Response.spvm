@@ -10,7 +10,6 @@ class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
   has protocol : ro string;
   has status : ro string;
   has reason : ro string;
-  has headers : ro HTTP::Minimal::Headers;
   has content : ro StringBuffer;
   
   # Class Methods

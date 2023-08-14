@@ -3,5 +3,5 @@
 
 class HTTP::Minimal::SocketInterface : interface_t {
   method connected : int ();
-  method syswrite : int ($buffer : length);
+  method syswrite : int ($buffer : string, $length : int);
 }

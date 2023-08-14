@@ -23,7 +23,7 @@ class HTTP::Minimal::Headers {
   }
   
   # Instance Methods
-  sub add : void ($name : string, $value : string) {
+  method add : void ($name : string, $value : string) {
     
     unless ($name) {
       die "The \$name must be defined";
@@ -41,7 +41,7 @@ class HTTP::Minimal::Headers {
       die "Invalid characters in the value of the $name header";
     }
     
-    my $name_lc = lc $name;
+    my $name_lc = Fn->lc($name);
     
     my $values_list = (StringList)$self->{headers}->get($name_lc);
     
@@ -52,18 +52,18 @@ class HTTP::Minimal::Headers {
     $values_list->push($value);
   }
   
-  sub remove : void ($name : string) {
+  method remove : void ($name : string) {
     
     unless ($name) {
       die "The \$name must be defined";
     }
     
-    my $name_lc = lc $name;
+    my $name_lc = Fn->lc($name);
     
     my $values_list = (StringList)$self->{headers}->get($name_lc);
     
     if ($values_list) {
-      $self->{headers}->set(undef)
+      $self->{headers}->set(undef);
     }
   }
   
@@ -75,7 +75,7 @@ class HTTP::Minimal::Headers {
     
     my $headers = $self->{headers};
     
-    my $name_lc = lc $name;
+    my $name_lc = Fn->lc($name);
     
     my $values_list = (StringList)$self->{headers}->get($name_lc);
     

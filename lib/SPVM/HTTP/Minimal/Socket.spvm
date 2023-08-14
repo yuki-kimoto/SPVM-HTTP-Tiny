@@ -18,7 +18,7 @@ class HTTP::Minimal::Socket {
   use Errno;
   use Sys::Socket::Constant as SOCKET;
   use Sys::Signal;
-  use SYS::Signal::Constant as SIGNAL;
+  use Sys::Signal::Constant as SIGNAL;
   use IO::Socket::INET;
   use IO::Select;
   
@@ -92,7 +92,7 @@ class HTTP::Minimal::Socket {
     return $self;
   }
   
-  private method connect : HTTP::Minimal::Socket ($request : HTTP::Minimal::Request) {
+  private method connect : HTTP::Minimal::Socket ($request : HTTP::Minimal::Message::Request) {
     
     my $socket_builder = $self->{socket_builder};
     
@@ -113,14 +113,14 @@ class HTTP::Minimal::Socket {
     return $connected;
   }
   
-  private method write_request : void ($request : HTTP::Minimal::Request) {
+  private method write_request : void ($request : HTTP::Minimal::Message::Request) {
     
     $self->write_request_line($request);
     
     $self->write_request_header_lines($request);
   }
   
-  private method write_request_line : void ($request : HTTP::Minimal::Request) {
+  private method write_request_line : void ($request : HTTP::Minimal::Message::Request) {
     
     my $method = $request->{method};
     my $url = $request->{url}->to_string;
@@ -130,7 +130,7 @@ class HTTP::Minimal::Socket {
     $self->write($request_line);
   }
   
-  private method write_request_header_lines : void ($request : HTTP::Minimal::Request) {
+  private method write_request_header_lines : void ($request : HTTP::Minimal::Message::Request) {
     
     my $method = $request->{method};
     my $url = $request->{url}->to_string;
@@ -317,7 +317,7 @@ class HTTP::Minimal::Socket {
     return $line;
   }
   
-  private method read_response_body : int ($cb : HTTP::Minimal::DataCallback, $response : HTTP::Minimal::Response) {
+  private method read_response_body : int ($cb : HTTP::Minimal::DataCallback, $response : HTTP::Minimal::Message::Response) {
     
     my $content_length_string = $response->headers->header("Content-Length");
     my $content_length = Fn->to_long($content_length_string);

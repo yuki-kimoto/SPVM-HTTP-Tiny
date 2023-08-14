@@ -3,7 +3,7 @@
 
 class HTTP::Minimal::HostPort {
   allow HTTP::Minimal;
-  allow HTTP::Minimal::Handle;
+  allow HTTP::Minimal::Socket;
   
   has host : string;
   has port : int;
