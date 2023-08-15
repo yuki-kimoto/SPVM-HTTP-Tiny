@@ -2,5 +2,7 @@
 # MIT License
 
 class HTTP::Minimal::SocketBuilder : interface_t {
+  use IO::Socket;
   
+  required method : IO::Socket ();
 }

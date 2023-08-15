@@ -5,7 +5,6 @@ class HTTP::Minimal::Socket {
   allow HTTP::Minimal;
   
   use HTTP::Minimal::SocketBuilder;
-  use HTTP::Minimal::SocketInterface;
   use HTTP::Minimal::DataCallback;
   use HTTP::Minimal::Message::Request;
   use HTTP::Minimal::Message::Response;
@@ -47,10 +46,12 @@ class HTTP::Minimal::Socket {
   
   has socket_builder : HTTP::Minimal::SocketBuilder;
   
-  has handle : HTTP::Minimal::SocketInterface;
-  has response_buffer : mutable string;
+  has handle : IO::Socket;
+  has response_buffer : StringBuffer;
   
   private static method new : HTTP::Minimal::Socket ($options : object[]) {
+    
+    my $options_h = Hash->new($options);
     
     my $self = new HTTP::Minimal::Socket;
     
@@ -59,30 +60,30 @@ class HTTP::Minimal::Socket {
     $self->{response_buffer} = $response_buffer;
     
     # The timeout field
-    my $timeout = $options->delete_or_default_int("timeout", 60);
+    my $timeout = $options_h->delete_or_default_int("timeout", 60);
     $self->{timeout} = $timeout;
     
     # The socket_builder field
-    my $socket_builder = (HTTP::Minimal::SocketBuilder)$options->delete_or_default("socket_builder");
+    my $socket_builder = (HTTP::Minimal::SocketBuilder)$options_h->delete_or_default("socket_builder", undef);
     unless ($socket_builder) {
       my $socket_builder =
         [
-          has peer_host : int = $peer_host,
-          has peer_port : int = $peer_port,
-          has local_address : string = $local_address,
+          has peer_host : int = $self->{peer_host},
+          has peer_port : int = $self->{peer_port},
+          has local_address : string = $self->{local_address},
           has proto : string = "tcp",
           has type : int = SOCKET->SOCK_STREAM,
           has timeout : int = $timeout,
         ]
-        method : HTTP::Minimal::SocketInterface () {
-          my $socket = (HTTP::Minimal::SocketInterface)IO::Socket::INET->new(
+        method : IO::Socket () {
+          my $socket = (IO::Socket)IO::Socket::INET->new({
             PeerHost  => $self->{peer_host},
             PeerPort  => $self->{peer_port},
             LocalAddr => $self->{local_address},
             Proto     => $self->{proto},
             Type      => $self->{type},
             Timeout   => $self->{timeout},
-          );
+          });
           
           return $socket;
         };
@@ -172,8 +173,8 @@ class HTTP::Minimal::Socket {
   private method write : int ($buffer : string) {
     
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([has old_pipe_signal : int = $old_signal] method : void () {
-      Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
+    my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_signal] method : void () {
+      Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
     });
     
     my $can_write = $self->can_write;
@@ -349,8 +350,8 @@ class HTTP::Minimal::Socket {
   
   private method read : string ($length : int, $allow_partial : int) {
     
-    my $buffer  = "";
-    my $got = length $self->{response_buffer};
+    my $buffer  = (mutable string)new_string_len(4098);
+    my $got = $self->{response_buffer}->length;
     
     if ($got) {
       my $take = 0;
@@ -360,17 +361,17 @@ class HTTP::Minimal::Socket {
       else {
         $take = $length;
       }
-      $buffer  = Fn->substr($self->{response_buffer}, 0, $take, "");
+      $self->{response_buffer}->replace(0, $take, "");
       $length -= $take;
     }
     
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([has old_pipe_signal : int = $old_signal] method : void () {
-      Sys::Signal->signal(SIGNAL->SIGPIPE, $self->{old_pipe_signal});
+    my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
+      Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
     });
     
     while ($length > 0) {
-      my $can_read = $self->can_read;
+      my $can_read = $self->can_read($self->{timeout});
       
       unless ($can_read) {
         die "Timed out while waiting for socket to become ready for reading";
@@ -389,7 +390,7 @@ class HTTP::Minimal::Socket {
         $length -= $read_length;
       }
       elsif ($errno != Errno->EINTR) {
-        die "Could not read from socket: \"$!\"";
+        die "Could not read from socket.";
       }
     }
     if ($length && !$allow_partial) {
@@ -437,13 +438,13 @@ class HTTP::Minimal::Socket {
       my $nfound = 0;
       eval {
         if ($type eq "read") {
-          my $readable_handles = $select->can_read;
+          my $readable_handles = $select->can_read($timeout);
           if (@$readable_handles) {
             $nfound = 1;
           }
         }
         else {
-          my $writable_handles = $select->can_write;
+          my $writable_handles = $select->can_write($timeout);
           if (@$writable_handles) {
             $nfound = 1;
           }
@@ -456,7 +457,7 @@ class HTTP::Minimal::Socket {
           die $@;
         }
         
-        if ($timeout < 0 || ($pending = $timeout - (Sys::Time->time - $initial)) > 0) {
+        if ($timeout < 0 || ($pending = $timeout - (int)(Sys::Time->time - $initial)) > 0) {
           next;
         }
         
@@ -470,7 +471,7 @@ class HTTP::Minimal::Socket {
   private method to_printable : string ($string : string) {
     my $printable_string = Regex->new("([^\x20-\x7E])")->replace($string, method : string ($re : Regex, $match : Regex::Match) {
       
-      my $replaced = Format->sprintf("\\x%.2X", Fn->ord($match->cap1));
+      my $replaced = Format->sprintf("\\x%.2X", [(object)Fn->ord($match->cap1)]);
       
       return $replaced;
     });

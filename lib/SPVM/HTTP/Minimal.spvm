@@ -70,21 +70,24 @@ class HTTP::Minimal {
     
     my $data_callback = $options_h->delete_or_default("data_callback", undef);
     
-    my $headers = $options_h->delete_or_default("headers", undef);
+    my $headers = (HTTP::Minimal::Headers)$options_h->delete_or_default("headers", undef);
     
     my $url = (HTTP::Minimal::URL)undef;
-    if ($url_ isa string) {
+    if ($url_object isa string) {
       $url = HTTP::Minimal::URL->parse((string)$url_object);
     }
-    elsif ($url_ isa HTTP::Minimal::URL) {
-      $url = $url_object;
+    elsif ($url_object isa HTTP::Minimal::URL) {
+      $url = (HTTP::Minimal::URL)$url_object;
     }
     else {
       die "The \$url_ msut be a string or HTTP::Minimal::URL object";
     }
     
     # The default HTTP headers
-    my $headers = HTTP::Minimal::Headers->new;
+    unless ($headers) {
+      $headers = HTTP::Minimal::Headers->new;
+    }
+    
     {
       # user-agent
       unless ($headers->get("user-agent")) {

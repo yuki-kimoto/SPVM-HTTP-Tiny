@@ -9,4 +9,13 @@ class HTTP::Minimal::Message::Request extends HTTP::Minimal::Message {
   # Fields
   has method : ro string;
   has url : ro HTTP::Minimal::URL;
+  
+  # Class Methods
+  static method new : HTTP::Minimal::Message::Request ($options : object[]) {
+    
+    my $self = new HTTP::Minimal::Message::Request;
+    
+    return $self;
+  }
+  
 }
