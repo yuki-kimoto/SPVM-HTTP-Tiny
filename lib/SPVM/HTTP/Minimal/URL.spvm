@@ -2,6 +2,8 @@
 # MIT License
 
 class HTTP::Minimal::URL {
+  use StringBuffer;
+  
   allow HTTP::Minimal;
   
   has scheme : ro string;
@@ -138,5 +140,31 @@ class HTTP::Minimal::URL {
   
   method to_string : string () {
     
+    my $scheme = $self->{scheme};
+    my $auth = $self->{auth};
+    my $host = $self->{host};
+    my $port = $self->{port};
+    my $path = $self->{path};
+    
+    my $buffer = StringBuffer->new;
+    
+    $buffer->push("$scheme://");
+    
+    if ($auth && length $auth) {
+      $buffer->push("$auth@");
+    }
+    
+    $buffer->push("$host");
+    
+    if ($port >= 0) {
+      $buffer->push(":$port");
+    }
+    
+    $buffer->push("$path");
+    
+    my $string = $buffer->to_string;
+    
+    return $string;
   }
+  
 }
