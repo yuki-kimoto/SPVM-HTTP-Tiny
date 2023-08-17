@@ -50,6 +50,8 @@ class HTTP::Minimal::Headers {
     }
     
     $values_list->push($value);
+    
+    $self->{headers}->set($name_lc, $values_list);
   }
   
   method remove : void ($name : string) {
@@ -113,8 +115,11 @@ class HTTP::Minimal::Headers {
     
     my $buffer = StringBuffer->new;
     for my $name (@$names) {
-      my $value = $self->header($name);
-      $buffer->push($value);
+      my $values_list = (StringList)$self->{headers}->get($name);
+      my $values = $values_list->to_array;
+      my $values_string = Fn->join(",", $values);
+      $buffer->push("$name:");
+      $buffer->push($values_string);
       $buffer->push("\r\n");
     }
     
