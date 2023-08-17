@@ -2,6 +2,12 @@ class TestCase::HTTP::Minimal {
   use HTTP::Minimal;
   static method test : int () {
     
+    my $url = "http://google.com";
+    
+    my $http = HTTP::Minimal->new;
+    
+    my $res = $http->get($url);
+    
     return 1;
   }
 }
