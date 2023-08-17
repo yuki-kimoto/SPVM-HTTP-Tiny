@@ -13,7 +13,19 @@ class HTTP::Minimal::Message::Request extends HTTP::Minimal::Message {
   # Class Methods
   static method new : HTTP::Minimal::Message::Request ($options : object[]) {
     
+    my $options_h = Hash->new($options);
+    
     my $self = new HTTP::Minimal::Message::Request;
+    
+    $self->{method} = $options_h->delete_or_default_string("method", undef);
+    
+    $self->{url} = (HTTP::Minimal::URL)$options_h->delete_or_default("url", undef);
+    
+    $self->{headers} = (HTTP::Minimal::Headers)$options_h->delete_or_default("headers", undef);
+    
+    for my $name (@{$options_h->keys}) {
+      die "The \"$name\" option is not available.";
+    }
     
     return $self;
   }

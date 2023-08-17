@@ -121,6 +121,7 @@ class HTTP::Minimal::Socket {
   private method write_request_line : void ($request : HTTP::Minimal::Message::Request) {
     
     my $method = $request->{method};
+    
     my $url = $request->{url}->to_string;
     
     my $request_line = "$method $url HTTP/1.1\r\n";
