@@ -66,7 +66,8 @@ class HTTP::Minimal::Socket {
     # The socket_builder field
     my $socket_builder = (HTTP::Minimal::SocketBuilder)$options_h->delete_or_default("socket_builder", undef);
     unless ($socket_builder) {
-      my $socket_builder =
+      
+      $socket_builder =
         [
           has peer_host : int = $self->{peer_host},
           has peer_port : int = $self->{peer_port},
@@ -88,6 +89,7 @@ class HTTP::Minimal::Socket {
           return $socket;
         };
     }
+    
     $self->{socket_builder} = $socket_builder;
     
     return $self;
@@ -98,6 +100,7 @@ class HTTP::Minimal::Socket {
     my $socket_builder = $self->{socket_builder};
     
     my $socket = $socket_builder->();
+    
     $self->{handle} = $socket;
     
     return $self;
