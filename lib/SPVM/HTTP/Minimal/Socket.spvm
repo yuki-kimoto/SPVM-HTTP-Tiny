@@ -134,7 +134,8 @@ class HTTP::Minimal::Socket {
   private method write_request_header_lines : void ($request : HTTP::Minimal::Message::Request) {
     
     my $method = $request->{method};
-    my $url = $request->{url}->to_string;
+    my $url = $request->{url};
+    my $url_string = $url->to_string;
     my $headers = $request->{headers};
     
     # HTTP Headers
@@ -161,7 +162,7 @@ class HTTP::Minimal::Socket {
       }
     }
     
-    my $request_line = "$method $url HTTP/1.1\r\n";
+    my $request_line = "$method $url_string HTTP/1.1\r\n";
     
     $self->write($request_line);
     
@@ -170,14 +171,14 @@ class HTTP::Minimal::Socket {
     $self->write($header_lines);
   }
   
-  private method write : int ($buffer : string) {
+  private method write : void ($buffer : string) {
     
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_signal] method : void () {
+    my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
       Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
     });
     
-    my $can_write = $self->can_write;
+    my $can_write = $self->can_write($self->{timeout});
     unless ($can_write) {
       die "Timed out while waiting for socket to become ready for writing";
     }
@@ -185,7 +186,7 @@ class HTTP::Minimal::Socket {
     my $socket = $self->{handle};
     
     my $write_length = -1;
-    eval { $socket->write($buffer); }
+    eval { $socket->write($buffer, length $buffer); }
     
     if (my $exception = $@) {
       my $errno = Errno->errno;
@@ -196,8 +197,6 @@ class HTTP::Minimal::Socket {
         die "Could not write to socket: $exception";
       }
     }
-    
-    return $offset;
   }
   
   private method read_response : HTTP::Minimal::Message::Response () {
@@ -208,7 +207,7 @@ class HTTP::Minimal::Socket {
     
     $self->read_response_header_lines($response);
     
-    $self->read_response_body($response);
+    $self->read_response_body(undef, $response);
     
     return $response;
   }
@@ -246,7 +245,7 @@ class HTTP::Minimal::Socket {
   }
   
   private method read_response_header_lines : HTTP::Minimal::Headers ($response : HTTP::Minimal::Message::Response) {
-    my $headers = HTTP::Headers->new;
+    my $headers = HTTP::Minimal::Headers->new;
     
     my $empty_line_re = Regex->new("\A\r?\n\z");
     my $header_line_re = Regex->new("\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)");
@@ -273,7 +272,7 @@ class HTTP::Minimal::Socket {
     
     my $handle = $self->{handle};
     
-    my $read_buffer = new_string_len &READ_BUFFER_SIZE;
+    my $read_buffer = (mutable string)new_string_len &READ_BUFFER_SIZE;
     
     my $line_re = Regex->new("\A([^\r\n]*\r?\n)");
     my $line = (string)undef;
@@ -281,14 +280,17 @@ class HTTP::Minimal::Socket {
       my $response_content = $self->{response_buffer}->to_string;
       
       my $replace_info_ref = new Regex::ReplaceInfo[1];
-      $response_content = $line_re->replace($response_content, 0, -1, {info => $replace_info_ref});
+      $response_content = $line_re->replace($response_content, "", 0, -1, {info => $replace_info_ref});
       $self->{response_buffer} = StringBuffer->new($response_content);
-      if ($replace_info_ref->[0]->match) {
+      
+      my $match = $replace_info_ref->[0]->match;
+      
+      if ($match) {
         $line = $match->cap1;
         last;
       }
       
-      my $can_read = $self->can_read;
+      my $can_read = $self->can_read($self->{timeout});
       unless ($can_read) {
         die "Timed out while waiting for socket to become ready for reading";
       }
@@ -326,7 +328,7 @@ class HTTP::Minimal::Socket {
     if ($content_length >= 0) {
       my $length = $content_length;
       while ($length > 0) {
-        my $read_length = -1;
+        my $read_length = -1L;
         if ($length > &READ_BUFFER_SIZE) {
           $read_length = &READ_BUFFER_SIZE;
         }
@@ -334,11 +336,11 @@ class HTTP::Minimal::Socket {
           $read_length = $length;
         }
         
-        my $buffer = $self->read($read_length);
+        my $buffer = $self->read((int)$read_length);
         
         $cb->($buffer, $response);
         
-        $length -= $read;
+        $length -= $read_length;
       }
     }
     else {
@@ -348,7 +350,7 @@ class HTTP::Minimal::Socket {
     return $self->{response_buffer}->length == 0;
   }
   
-  private method read : string ($length : int, $allow_partial : int) {
+  private method read : string ($length : int, $allow_partial : int = 0) {
     
     my $buffer  = (mutable string)new_string_len(4098);
     my $got = $self->{response_buffer}->length;

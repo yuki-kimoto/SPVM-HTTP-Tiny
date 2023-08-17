@@ -63,11 +63,11 @@ class HTTP::Minimal::Headers {
     my $values_list = (StringList)$self->{headers}->get($name_lc);
     
     if ($values_list) {
-      $self->{headers}->set(undef);
+      $self->{headers}->set($name_lc, undef);
     }
   }
   
-  method get : string ($name : string) {
+  method get : string[] ($name : string) {
     
     unless ($name) {
       die "The \$name must be defined";
@@ -79,7 +79,7 @@ class HTTP::Minimal::Headers {
     
     my $values_list = (StringList)$self->{headers}->get($name_lc);
     
-    my $values = (string)undef;
+    my $values = (string[])undef;
     if ($values_list) {
       $values = $values_list->to_array;
     }

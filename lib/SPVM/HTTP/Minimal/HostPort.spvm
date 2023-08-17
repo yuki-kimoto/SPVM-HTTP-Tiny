@@ -9,8 +9,13 @@ class HTTP::Minimal::HostPort {
   has port : int;
   
   static method new : HTTP::Minimal::HostPort ($host : string, $port : int) {
+    
+    my $self = new HTTP::Minimal::HostPort;
+    
     $self->{host} = $host;
     $self->{port} = $port;
+    
+    return $self;
   }
   
   method to_string : string () {
