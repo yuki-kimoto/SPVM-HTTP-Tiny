@@ -69,20 +69,14 @@ class HTTP::Minimal::Socket {
       
       $socket_builder =
         [
-          has peer_host : int = $self->{peer_host},
+          has peer_host : string = $self->{peer_host},
           has peer_port : int = $self->{peer_port},
-          has local_address : string = $self->{local_address},
-          has proto : string = "tcp",
-          has type : int = SOCKET->SOCK_STREAM,
           has timeout : int = $timeout,
         ]
         method : IO::Socket () {
           my $socket = (IO::Socket)IO::Socket::INET->new({
-            PeerHost  => $self->{peer_host},
+            PeerAddr  => $self->{peer_host},
             PeerPort  => $self->{peer_port},
-            LocalAddr => $self->{local_address},
-            Proto     => $self->{proto},
-            Type      => $self->{type},
             Timeout   => $self->{timeout},
           });
           
