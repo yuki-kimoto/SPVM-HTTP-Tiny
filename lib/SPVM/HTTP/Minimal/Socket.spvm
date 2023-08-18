@@ -173,8 +173,6 @@ class HTTP::Minimal::Socket {
   
   private method write : void ($buffer : string) {
     
-    warn $buffer;
-    
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
     my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
       Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
@@ -424,22 +422,21 @@ class HTTP::Minimal::Socket {
       $timeout = $self->{timeout};
     }
     
-    my $handle = $self->{handle}->fileno;
+    my $handle_fileno = $self->{handle}->fileno;
     
-    if ($handle >= 0) {
+    unless ($handle_fileno >= 0) {
       die("select(2): Bad file descriptor");
     }
     
     my $initial = Sys::Time->time;
     my $pending = $timeout;
-    my $nfound = 0;
     
     my $select = IO::Select->new;
     
-    $select->add($handle);
+    $select->add($handle_fileno);
     
-    while (1) {
-      my $nfound = 0;
+    my $nfound = 0;
+    while ($nfound == 0) {
       eval {
         if ($type eq "read") {
           my $readable_handles = $select->can_read($timeout);
@@ -454,6 +451,7 @@ class HTTP::Minimal::Socket {
           }
         }
       }
+      
       
       if ($@) {
         my $errno = Errno->errno;
