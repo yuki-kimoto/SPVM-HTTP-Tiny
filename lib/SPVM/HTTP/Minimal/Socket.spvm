@@ -122,9 +122,11 @@ class HTTP::Minimal::Socket {
     
     my $method = $request->{method};
     
-    my $url = $request->{url}->to_string;
+    my $url = $request->{url};
     
-    my $request_line = "$method $url HTTP/1.1\r\n";
+    my $path = $url->path;
+    
+    my $request_line = "$method $path HTTP/1.1\r\n";
     
     $self->write($request_line);
   }
@@ -170,6 +172,8 @@ class HTTP::Minimal::Socket {
   }
   
   private method write : void ($buffer : string) {
+    
+    warn $buffer;
     
     my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
     my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
