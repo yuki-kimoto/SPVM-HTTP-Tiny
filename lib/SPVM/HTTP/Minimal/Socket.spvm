@@ -382,7 +382,7 @@ class HTTP::Minimal::Socket {
       my $socket = $self->{handle};
       
       Errno->set_errno(0);
-      my $read_length = $socket->sysread($buffer, $length, length $buffer);
+      my $read_length = $socket->read($buffer);
       my $errno = Errno->errno;
       
       if ($read_length >= 0) {
