@@ -168,8 +168,6 @@ class HTTP::Minimal::Socket {
     
     my $header_lines = $headers->to_string;
     
-    warn $header_lines;
-    
     $self->write($header_lines);
   }
   
@@ -216,7 +214,7 @@ class HTTP::Minimal::Socket {
   
   private method read_status_line : void ($response : HTTP::Minimal::Message::Response) {
     
-    my $line = $self->readline;
+    my $status_line = $self->readline;
     
     my $status_line_re = Regex->new("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n");
     
@@ -224,7 +222,7 @@ class HTTP::Minimal::Socket {
     my $version = (string)undef;
     my $status = (string)undef;
     my $reason = (string)undef;
-    if (my $match = $status_line_re->match("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n")) {
+    if (my $match = $status_line_re->match($status_line)) {
       $protocol = $match->cap1;
       $version = $match->cap2;
       $status = $match->cap3;
@@ -234,10 +232,10 @@ class HTTP::Minimal::Socket {
       }
     }
     else {
-      die "Malformed Status-Line: " . $self->to_printable($line);
+      die "Malformed Status-Line: " . $self->to_printable($status_line);
     }
     
-    if (Regex->new("0*1\.0*[01]")->match($version)) {
+    unless (Regex->new("0*1\.0*[01]")->match($version)) {
       die "Unsupported HTTP protocol: $protocol";
     }
     
@@ -247,7 +245,7 @@ class HTTP::Minimal::Socket {
   }
   
   private method read_response_headers : HTTP::Minimal::Headers ($response : HTTP::Minimal::Message::Response) {
-    my $headers = HTTP::Minimal::Headers->new;
+    my $headers = $response->headers;
     
     my $empty_line_re = Regex->new("\A\r?\n\z");
     my $header_line_re = Regex->new("\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)");

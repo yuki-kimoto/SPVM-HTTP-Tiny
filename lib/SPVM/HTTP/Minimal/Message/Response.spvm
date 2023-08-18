@@ -17,6 +17,8 @@ class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
     
     my $self = new HTTP::Minimal::Message::Response;
     
+    $self->{headers} = HTTP::Minimal::Headers->new;
+    
     return $self;
   }
   
