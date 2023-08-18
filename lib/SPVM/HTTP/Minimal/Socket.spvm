@@ -73,11 +73,18 @@ class HTTP::Minimal::Socket {
           has peer_port : int = $self->{peer_port},
           has timeout : int = $timeout,
         ]
-        method : IO::Socket () {
+        method : IO::Socket ($request : HTTP::Minimal::Message::Request) {
+          
+          my $url = $request->url;
+          my $peer_host = $url->host;
+          my $peer_port = $url->port;
+          
+          my $timeout = $self->{timeout};
+          
           my $socket = (IO::Socket)IO::Socket::INET->new({
-            PeerAddr  => $self->{peer_host},
-            PeerPort  => $self->{peer_port},
-            Timeout   => $self->{timeout},
+            PeerAddr  => $peer_host,
+            PeerPort  => $peer_port,
+            Timeout   => $timeout,
           });
           
           return $socket;
@@ -93,7 +100,7 @@ class HTTP::Minimal::Socket {
     
     my $socket_builder = $self->{socket_builder};
     
-    my $socket = $socket_builder->();
+    my $socket = $socket_builder->($request);
     
     $self->{handle} = $socket;
     
@@ -115,7 +122,9 @@ class HTTP::Minimal::Socket {
     
     $self->write_request_line($request);
     
-    $self->write_request_header_lines($request);
+    $self->write_request_headers($request);
+    
+    $self->write("\r\n");
   }
   
   private method write_request_line : void ($request : HTTP::Minimal::Message::Request) {
@@ -131,7 +140,7 @@ class HTTP::Minimal::Socket {
     $self->write($request_line);
   }
   
-  private method write_request_header_lines : void ($request : HTTP::Minimal::Message::Request) {
+  private method write_request_headers : void ($request : HTTP::Minimal::Message::Request) {
     
     my $method = $request->{method};
     my $url = $request->{url};
@@ -155,18 +164,11 @@ class HTTP::Minimal::Socket {
       unless ($headers->get("connection")) {
         $headers->add("connection" => "close");
       }
-      
-      # content-length
-      unless ($headers->get("content-length")) {
-        $headers->add("content-length" => "0");
-      }
     }
     
-    my $request_line = "$method $url_string HTTP/1.1\r\n";
-    
-    $self->write($request_line);
-    
     my $header_lines = $headers->to_string;
+    
+    warn $header_lines;
     
     $self->write($header_lines);
   }
@@ -186,7 +188,7 @@ class HTTP::Minimal::Socket {
     my $socket = $self->{handle};
     
     my $write_length = -1;
-    eval { $socket->write($buffer, length $buffer); }
+    eval { $socket->write($buffer); }
     
     if (my $exception = $@) {
       my $errno = Errno->errno;
