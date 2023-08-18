@@ -207,7 +207,7 @@ class HTTP::Minimal::Socket {
     
     $self->read_status_line($response);
     
-    $self->read_response_header_lines($response);
+    $self->read_response_headers($response);
     
     $self->read_response_body(undef, $response);
     
@@ -246,7 +246,7 @@ class HTTP::Minimal::Socket {
     $response->{reason} = $reason;
   }
   
-  private method read_response_header_lines : HTTP::Minimal::Headers ($response : HTTP::Minimal::Message::Response) {
+  private method read_response_headers : HTTP::Minimal::Headers ($response : HTTP::Minimal::Message::Response) {
     my $headers = HTTP::Minimal::Headers->new;
     
     my $empty_line_re = Regex->new("\A\r?\n\z");
