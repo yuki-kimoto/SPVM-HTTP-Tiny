@@ -352,17 +352,19 @@ class HTTP::Minimal::Socket {
   
   private method read : string ($length : int, $allow_partial : int = 0) {
     
-    my $buffer  = (mutable string)new_string_len(4098);
-    my $got = $self->{response_buffer}->length;
+    my $leftover_length = $self->{response_buffer}->length;
+    my $leftover = "";
     
-    if ($got) {
+    if ($leftover_length) {
       my $take = 0;
-      if ($got < $length) {
-        $take = $got;
+      if ($leftover_length < $length) {
+        $take = $leftover_length;
       }
       else {
         $take = $length;
       }
+      $leftover = Fn->substr($self->{response_buffer}->to_string, 0, $take);
+      
       $self->{response_buffer}->replace(0, $take, "");
       $length -= $take;
     }
@@ -371,6 +373,8 @@ class HTTP::Minimal::Socket {
     my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
       Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
     });
+    
+    my $buffer = (mutable string)new_string_len(&READ_BUFFER_SIZE);
     
     while ($length > 0) {
       my $can_read = $self->can_read($self->{timeout});
@@ -382,10 +386,14 @@ class HTTP::Minimal::Socket {
       my $socket = $self->{handle};
       
       Errno->set_errno(0);
-      my $read_length = $socket->read($buffer);
+      
+      my $read_length = $socket->read($buffer, length $buffer - $leftover_length, $leftover_length);
+      
       my $errno = Errno->errno;
       
       if ($read_length >= 0) {
+        Fn->shorten($buffer, $read_length);
+        
         if ($read_length == 0) {
           last;
         }
@@ -399,7 +407,9 @@ class HTTP::Minimal::Socket {
       die "Unexpected end of stream";
     }
     
-    return $buffer;
+    my $ret = $leftover . $buffer;
+    
+    return $ret;
   }
   
   private method can_read : int ($type : string, $timeout : int = -1) {
