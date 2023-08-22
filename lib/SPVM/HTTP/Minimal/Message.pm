@@ -6,11 +6,11 @@ package SPVM::HTTP::Minimal::Message;
 
 =head1 Name
 
-SPVM::HTTP::Minimal::Message - Short Description
+SPVM::HTTP::Minimal::Message - Base class of HTTP Request/Response
 
 =head1 Description
 
-The HTTP::Minimal::Message class of L<SPVM> has methods for someting.
+The HTTP::Minimal::Message class of L<SPVM> has methods to manipulate HTTP message.
 
 =head1 Usage
 

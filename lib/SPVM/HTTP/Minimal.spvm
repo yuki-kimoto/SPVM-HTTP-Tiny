@@ -43,17 +43,6 @@ class HTTP::Minimal {
   }
   
   # Instance Methods
-  method create_default_agent : string () {
-    
-    my $default_agent = "SPVM/HTTP::Minimal";
-    
-    my $version = Fn->get_version_string("HTTP::Minimal");
-    
-    $default_agent .= "/$version";
-    
-    return $default_agent;
-  }
-  
   method get : HTTP::Minimal::Message::Response ($url_object : object of string|HTTP::Minimal::URL, $options : object[] = undef) {
     
     my $response = $self->request("GET", $url_object, $options);
@@ -108,6 +97,17 @@ class HTTP::Minimal {
     my $response = $socket->read_response;
     
     return $response;
+  }
+  
+  private method create_default_agent : string () {
+    
+    my $default_agent = "SPVM/HTTP::Minimal";
+    
+    my $version = Fn->get_version_string("HTTP::Minimal");
+    
+    $default_agent .= "/$version";
+    
+    return $default_agent;
   }
   
 }

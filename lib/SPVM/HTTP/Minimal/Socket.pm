@@ -1,18 +1,18 @@
-package SPVM::HTTP::Minimal::Handle;
+package SPVM::HTTP::Minimal::Socket;
 
 1;
 
 =head1 Name
 
-SPVM::HTTP::Minimal::Handle - Short Description
+SPVM::HTTP::Minimal::Socket - Short Description
 
 =head1 Description
 
-The HTTP::Minimal::Handle class of L<SPVM> has methods for someting.
+The HTTP::Minimal::Socket class of L<SPVM> has methods for someting.
 
 =head1 Usage
 
-  use HTTP::Minimal::Handle;
+  use HTTP::Minimal::Socket;
 
 =head1 Fields
 

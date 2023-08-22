@@ -10,20 +10,11 @@ SPVM::HTTP::Minimal::DataCallback - Short Description
 
 =head1 Description
 
-The HTTP::Minimal::DataCallback interface of L<SPVM> has interface methods for someting.
-
-=head1 Usage
-
-  interface HTTP::Minimal::DataCallback;
+The HTTP::Minimal::DataCallback interface of L<SPVM> has interface methods for a response data callback.
 
 =head1 Interface Methods
 
-
-
-
-=head1 Repository
-
-
+  required method : void ($data : string, $response : HTTP::Minimal::Message::Response);
 
 =head1 Copyright & License
 

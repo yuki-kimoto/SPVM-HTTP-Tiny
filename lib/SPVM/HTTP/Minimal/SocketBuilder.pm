@@ -6,28 +6,20 @@ package SPVM::HTTP::Minimal::SocketBuilder;
 
 =head1 Name
 
-SPVM::HTTP::Minimal::SocketBuilder - Short Description
+SPVM::HTTP::Minimal::SocketBuilder - Building Sockets
 
 =head1 Description
 
-The HTTP::Minimal::SocketBuilder interface of L<SPVM> has interface methods for someting.
+The HTTP::Minimal::SocketBuilder class of L<SPVM> has methods to build sockets.
 
 =head1 Usage
 
-  interface HTTP::Minimal::SocketBuilder;
+  use HTTP::Minimal::SocketBuilder;
+  
+  
 
-=head1 Interface Methods
+=head1 Instance Methods
 
-
-
-
-=head1 Repository
-
-
-
-=head1 Author
-
-Yuki Kimoto C<kimoto.yuki@gmail.com>
 
 =head1 Copyright & License
 
