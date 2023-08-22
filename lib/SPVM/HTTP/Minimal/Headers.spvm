@@ -11,13 +11,13 @@ class HTTP::Minimal::Headers {
   use StringBuffer;
   
   # Fields
-  has headers : Hash;
+  has data : Hash;
   
   # Class Methods
   static method new : HTTP::Minimal::Headers () {
     my $self = new HTTP::Minimal::Headers;
     
-    $self->{headers} = Hash->new;
+    $self->{data} = Hash->new;
     
     return $self;
   }
@@ -43,7 +43,7 @@ class HTTP::Minimal::Headers {
     
     my $name_lc = Fn->lc($name);
     
-    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    my $values_list = (StringList)$self->{data}->get($name_lc);
     
     unless ($values_list) {
       $values_list = StringList->new;
@@ -51,7 +51,7 @@ class HTTP::Minimal::Headers {
     
     $values_list->push($value);
     
-    $self->{headers}->set($name_lc, $values_list);
+    $self->{data}->set($name_lc, $values_list);
   }
   
   method remove : void ($name : string) {
@@ -62,10 +62,10 @@ class HTTP::Minimal::Headers {
     
     my $name_lc = Fn->lc($name);
     
-    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    my $values_list = (StringList)$self->{data}->get($name_lc);
     
     if ($values_list) {
-      $self->{headers}->set($name_lc, undef);
+      $self->{data}->set($name_lc, undef);
     }
   }
   
@@ -75,11 +75,11 @@ class HTTP::Minimal::Headers {
       die "The \$name must be defined";
     }
     
-    my $headers = $self->{headers};
+    my $headers = $self->{data};
     
     my $name_lc = Fn->lc($name);
     
-    my $values_list = (StringList)$self->{headers}->get($name_lc);
+    my $values_list = (StringList)$self->{data}->get($name_lc);
     
     my $values = (string[])undef;
     if ($values_list) {
@@ -89,20 +89,20 @@ class HTTP::Minimal::Headers {
     return $values;
   }
   
-  method header : string ($name : string) {
+  method get_as_string : string ($name : string) {
     
     my $header_values = $self->get($name);
     
-    my $header = (string)undef;
+    my $header_string = (string)undef;
     if ($header_values) {
-      $header = Fn->join(", ", $header_values);
+      $header_string = Fn->join(",", $header_values);
     }
     
-    return $header;
+    return $header_string;
   }
   
   method names : string[] () {
-    my $names = $self->{headers}->keys;
+    my $names = $self->{data}->keys;
     
     Sort->sort_string_asc($names);
     
@@ -115,11 +115,9 @@ class HTTP::Minimal::Headers {
     
     my $buffer = StringBuffer->new;
     for my $name (@$names) {
-      my $values_list = (StringList)$self->{headers}->get($name);
-      my $values = $values_list->to_array;
-      my $values_string = Fn->join(",", $values);
+      my $header_string = $self->get_as_string($name);
       $buffer->push("$name:");
-      $buffer->push($values_string);
+      $buffer->push($header_string);
       $buffer->push("\r\n");
     }
     

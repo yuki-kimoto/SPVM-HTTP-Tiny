@@ -311,7 +311,7 @@ class HTTP::Minimal::Socket {
   
   private method read_response_body : int ($cb : HTTP::Minimal::DataCallback, $response : HTTP::Minimal::Message::Response) {
     
-    my $content_length_string = $response->headers->header("Content-Length");
+    my $content_length_string = $response->headers->get_as_string("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
     
     if ($content_length >= 0) {
