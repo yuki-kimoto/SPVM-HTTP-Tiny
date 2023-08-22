@@ -8,8 +8,11 @@ class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
   
   # Fields
   has protocol : ro string;
+  
   has status : ro string;
+  
   has reason : ro string;
+  
   has content_buffer : StringBuffer;
   
   # Class Methods
