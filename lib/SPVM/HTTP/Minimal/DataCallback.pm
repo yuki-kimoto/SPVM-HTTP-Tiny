@@ -16,6 +16,8 @@ The HTTP::Minimal::DataCallback interface of L<SPVM> has interface methods for a
 
   required method : void ($data : string, $response : HTTP::Minimal::Message::Response);
 
+A callback to read the body of an HTTP response with a fixed length.
+
 =head1 Copyright & License
 
 Copyright (c) 2023 Yuki Kimoto
