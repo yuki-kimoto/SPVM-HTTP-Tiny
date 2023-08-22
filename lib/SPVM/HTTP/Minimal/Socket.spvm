@@ -142,10 +142,12 @@ class HTTP::Minimal::Socket {
   
   private method write : void ($buffer : string) {
     
-    my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
-      Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
-    });
+    unless (Sys::OS->is_windows) {
+      my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
+      my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
+        Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
+      });
+    }
     
     my $can_write = $self->can_write($self->{timeout});
     unless ($can_write) {
@@ -338,10 +340,12 @@ class HTTP::Minimal::Socket {
       $length -= $take;
     }
     
-    my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-    my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
-      Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
-    });
+    unless (Sys::OS->is_windows) {
+      my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
+      my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
+        Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
+      });
+    }
     
     my $buffer = (mutable string)new_string_len(&READ_BUFFER_SIZE);
     
