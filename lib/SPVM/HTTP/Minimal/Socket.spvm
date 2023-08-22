@@ -107,17 +107,6 @@ class HTTP::Minimal::Socket {
     return $self;
   }
   
-  private method connected : HTTP::Minimal::HostPort () {
-    my $connected = (HTTP::Minimal::HostPort)undef;
-    if ($self->{handle} && $self->{handle}->connected) {
-      my $peer_host = $self->{handle}->peerhost;
-      my $peer_port = $self->{handle}->peerport;
-      $connected = HTTP::Minimal::HostPort->new($peer_host, $peer_port);
-    }
-    
-    return $connected;
-  }
-  
   private method write_request : void ($request : HTTP::Minimal::Message::Request) {
     
     $self->write_request_line($request);

@@ -15,7 +15,6 @@ class HTTP::Minimal {
   use HTTP::Minimal::Message::Response;
   use HTTP::Minimal::Headers;
   use HTTP::Minimal::URL;
-  use HTTP::Minimal::HostPort;
   
   # Fields
   has agent : ro string;
