@@ -4,9 +4,9 @@
 class HTTP::Minimal::Socket {
   allow HTTP::Minimal;
   
-  use HTTP::Minimal::DataCallback;
   use HTTP::Minimal::Message::Request;
   use HTTP::Minimal::Message::Response;
+  use HTTP::Minimal::DataCallback;
   
   use Fn;
   use StringBuffer;
@@ -20,30 +20,16 @@ class HTTP::Minimal::Socket {
   use IO::Socket::INET;
   use IO::Select;
   
-  # Class Variables
-  our $TOKEN : string;
-  our $FIELD_CONTENT : string;
-  
-  INIT {
-    $TOKEN = "[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7A\x7C\x7E]";
-    $FIELD_CONTENT = "[[:print:]]+(?:[\x20\x09]+[[:print:]]+)*";
-  }
-  
   # Enumerations
   private enum {
-    RESPONSE_BUFFER_SIZE = 32768,
     READ_BUFFER_SIZE = 4086,
   }
   
   # Fields
-  has peer_host : int;
-  has peer_port : int;
-  has local_address : string;
-  has proto : string;
-  has type : int;
   has timeout : int;
   
-  has handle : IO::Socket;
+  has socket : IO::Socket;
+  
   has response_buffer : StringBuffer;
   
   private static method new : HTTP::Minimal::Socket ($options : object[]) {
@@ -97,7 +83,7 @@ class HTTP::Minimal::Socket {
       die "The scheme $scheme is not supported.";
     }
     
-    $self->{handle} = $socket;
+    $self->{socket} = $socket;
     
     return $self;
   }
@@ -167,7 +153,7 @@ class HTTP::Minimal::Socket {
       die "Timed out while waiting for socket to become ready for writing";
     }
     
-    my $socket = $self->{handle};
+    my $socket = $self->{socket};
     
     my $write_length = -1;
     eval { $socket->write($buffer); }
@@ -254,7 +240,7 @@ class HTTP::Minimal::Socket {
   
   private method readline : string () {
     
-    my $handle = $self->{handle};
+    my $handle = $self->{socket};
     
     my $read_buffer = (mutable string)new_string_len &READ_BUFFER_SIZE;
     
@@ -369,7 +355,7 @@ class HTTP::Minimal::Socket {
         die "Timed out while waiting for socket to become ready for reading";
       }
       
-      my $socket = $self->{handle};
+      my $socket = $self->{socket};
       
       Errno->set_errno(0);
       
@@ -418,7 +404,7 @@ class HTTP::Minimal::Socket {
       $timeout = $self->{timeout};
     }
     
-    my $handle_fileno = $self->{handle}->fileno;
+    my $handle_fileno = $self->{socket}->fileno;
     
     unless ($handle_fileno >= 0) {
       die("select(2): Bad file descriptor");
