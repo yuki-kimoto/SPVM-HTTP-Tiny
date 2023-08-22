@@ -18,6 +18,7 @@ class HTTP::Minimal {
   
   # Fields
   has agent : ro string;
+  
   has timeout : ro int;
   
   # Class Methods
