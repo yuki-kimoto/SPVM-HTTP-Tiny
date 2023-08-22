@@ -28,18 +28,9 @@ The HTTP::Minimal::Message class of L<SPVM> has methods for someting.
 
 
 
-
-=head1 Repository
-
-
-
-=head1 Author
-
-[--user-name] C<[--user-email]>
-
 =head1 Copyright & License
 
-Copyright (c) 2023 [--user-name]
+Copyright (c) 2023 Yuki Kimoto
 
 MIT License
 

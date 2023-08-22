@@ -6,11 +6,11 @@ package SPVM::HTTP::Minimal::Message::Response;
 
 =head1 Name
 
-SPVM::HTTP::Minimal::Message::Response - Short Description
+SPVM::HTTP::Minimal::Message::Response - HTTP Response
 
 =head1 Description
 
-The HTTP::Minimal::Message::Response interface of L<SPVM> has interface methods for someting.
+The HTTP::Minimal::Message::Response interface of L<SPVM> has methods to manipulate HTTP requests.
 
 =head1 Usage
 
@@ -24,10 +24,6 @@ The HTTP::Minimal::Message::Response interface of L<SPVM> has interface methods 
 =head1 Repository
 
 
-
-=head1 Author
-
-Yuki Kimoto C<kimoto.yuki@gmail.com>
 
 =head1 Copyright & License
 

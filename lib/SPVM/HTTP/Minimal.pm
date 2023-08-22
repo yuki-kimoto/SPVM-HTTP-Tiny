@@ -5,11 +5,11 @@ our $VERSION = "0.001";
 
 =head1 Name
 
-SPVM::HTTP::Minimal - Short Description
+SPVM::HTTP::Minimal - HTTP Client
 
 =head1 Description
 
-The HTTP::Minimal class of L<SPVM> has methods for someting.
+The HTTP::Minimal class of L<SPVM> has methods for a HTTP client.
 
 =head1 Usage
 
@@ -30,7 +30,7 @@ The HTTP::Minimal class of L<SPVM> has methods for someting.
 
 =head1 Repository
 
-
+L<SPVM::HTTP::Minimal - Github|https://github.com/yuki-kimoto/SPVM-HTTP-Minimal>
 
 =head1 Author
 

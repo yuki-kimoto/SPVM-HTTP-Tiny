@@ -25,10 +25,6 @@ The HTTP::Minimal::DataCallback interface of L<SPVM> has interface methods for s
 
 
 
-=head1 Author
-
-Yuki Kimoto C<kimoto.yuki@gmail.com>
-
 =head1 Copyright & License
 
 Copyright (c) 2023 Yuki Kimoto
