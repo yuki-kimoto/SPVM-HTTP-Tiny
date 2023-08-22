@@ -10,7 +10,7 @@ class TestCase::HTTP::Minimal {
     
     my $res = $http->get($url);
     
-    my $content = $res->content->to_string;
+    my $content = $res->content;
     
     unless (Fn->contains($content, "www.google.com")) {
       return 0;

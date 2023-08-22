@@ -309,7 +309,7 @@ class HTTP::Minimal::Socket {
         my $buffer = $self->read((int)$read_length);
         
         unless ($cb) {
-          $response->content->push($buffer);
+          $response->{content_buffer}->push($buffer);
         }
         
         $length -= length $buffer;

@@ -10,14 +10,14 @@ class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
   has protocol : ro string;
   has status : ro string;
   has reason : ro string;
-  has content : ro StringBuffer;
+  has content_buffer : StringBuffer;
   
   # Class Methods
-  static method new : HTTP::Minimal::Message::Response () {
+  private static method new : HTTP::Minimal::Message::Response () {
     
     my $self = new HTTP::Minimal::Message::Response;
     
-    $self->{content} = StringBuffer->new;
+    $self->{content_buffer} = StringBuffer->new;
     
     $self->{headers} = HTTP::Minimal::Headers->new;
     
@@ -34,5 +34,9 @@ class HTTP::Minimal::Message::Response extends HTTP::Minimal::Message {
     }
     
     return $success;
+  }
+  
+  method content : string () {
+    return $self->{content_buffer}->to_string;
   }
 }
