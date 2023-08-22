@@ -66,16 +66,36 @@ class HTTP::Minimal::Socket {
   private method connect : HTTP::Minimal::Socket ($request : HTTP::Minimal::Message::Request) {
     
     my $url = $request->url;
-    my $peer_host = $url->host;
-    my $peer_port = $url->port;
+    my $scheme = $url->scheme;
+    my $host = $url->host;
+    my $port = $url->port;
     
     my $timeout = $self->{timeout};
     
-    my $socket = (IO::Socket)IO::Socket::INET->new({
-      PeerAddr  => $peer_host,
-      PeerPort  => $peer_port,
-      Timeout   => $timeout,
-    });
+    my $socket = (IO::Socket)undef;
+    
+    if ($scheme eq "http") {
+      $socket = IO::Socket::INET->new({
+        PeerAddr  => $host,
+        PeerPort  => $port,
+        Timeout   => $timeout,
+      });
+    }
+    elsif ($scheme eq "https") {
+      if (require IO::Socket::SSL) {
+        $socket = IO::Socket::SSL->new({
+          PeerAddr  => $host,
+          PeerPort  => $port,
+          Timeout   => $timeout,
+        });
+      }
+      else {
+        die "IO::Socket::SSL is required for HTTPS access.";
+      }
+    }
+    else {
+      die "The scheme $scheme is not supported.";
+    }
     
     $self->{handle} = $socket;
     
