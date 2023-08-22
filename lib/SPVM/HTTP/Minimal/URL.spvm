@@ -2,9 +2,10 @@
 # MIT License
 
 class HTTP::Minimal::URL {
-  use StringBuffer;
-  
   allow HTTP::Minimal;
+  allow HTTP::Minimal::Socket;
+  
+  use StringBuffer;
   
   has scheme : ro string;
   has host : ro string;
@@ -12,7 +13,7 @@ class HTTP::Minimal::URL {
   has path : ro string;
   has auth : ro string;
   
-  static method new : HTTP::Minimal::URL ($options : object[]) {
+  private static method new : HTTP::Minimal::URL ($options : object[]) {
     
     my $options_h = Hash->new($options);
     
@@ -31,7 +32,7 @@ class HTTP::Minimal::URL {
     return $self;
   }
   
-  static method parse : HTTP::Minimal::URL ($url_string : string) {
+  private static method parse : HTTP::Minimal::URL ($url_string : string) {
     
     # URI regex adapted from the URI module
     my $scheme = (string)undef;
@@ -138,7 +139,7 @@ class HTTP::Minimal::URL {
     return $substring;
   }
   
-  method to_string : string () {
+  private method to_string : string () {
     
     my $scheme = $self->{scheme};
     my $auth = $self->{auth};
