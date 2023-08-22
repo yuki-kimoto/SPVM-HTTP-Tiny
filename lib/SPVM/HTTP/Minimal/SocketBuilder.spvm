@@ -1,9 +1,0 @@
-# Copyright (c) 2023 Yuki Kimoto
-# MIT License
-
-class HTTP::Minimal::SocketBuilder : interface_t {
-  use IO::Socket;
-  use HTTP::Minimal::Message::Request;
-  
-  required method : IO::Socket ($request : HTTP::Minimal::Message::Request);
-}

@@ -4,7 +4,6 @@
 class HTTP::Minimal::Socket {
   allow HTTP::Minimal;
   
-  use HTTP::Minimal::SocketBuilder;
   use HTTP::Minimal::DataCallback;
   use HTTP::Minimal::Message::Request;
   use HTTP::Minimal::Message::Response;
@@ -44,8 +43,6 @@ class HTTP::Minimal::Socket {
   has type : int;
   has timeout : int;
   
-  has socket_builder : HTTP::Minimal::SocketBuilder;
-  
   has handle : IO::Socket;
   has response_buffer : StringBuffer;
   
@@ -63,44 +60,22 @@ class HTTP::Minimal::Socket {
     my $timeout = $options_h->delete_or_default_int("timeout", 60);
     $self->{timeout} = $timeout;
     
-    # The socket_builder field
-    my $socket_builder = (HTTP::Minimal::SocketBuilder)$options_h->delete_or_default("socket_builder", undef);
-    unless ($socket_builder) {
-      
-      $socket_builder =
-        [
-          has peer_host : string = $self->{peer_host},
-          has peer_port : int = $self->{peer_port},
-          has timeout : int = $timeout,
-        ]
-        method : IO::Socket ($request : HTTP::Minimal::Message::Request) {
-          
-          my $url = $request->url;
-          my $peer_host = $url->host;
-          my $peer_port = $url->port;
-          
-          my $timeout = $self->{timeout};
-          
-          my $socket = (IO::Socket)IO::Socket::INET->new({
-            PeerAddr  => $peer_host,
-            PeerPort  => $peer_port,
-            Timeout   => $timeout,
-          });
-          
-          return $socket;
-        };
-    }
-    
-    $self->{socket_builder} = $socket_builder;
-    
     return $self;
   }
   
   private method connect : HTTP::Minimal::Socket ($request : HTTP::Minimal::Message::Request) {
     
-    my $socket_builder = $self->{socket_builder};
+    my $url = $request->url;
+    my $peer_host = $url->host;
+    my $peer_port = $url->port;
     
-    my $socket = $socket_builder->($request);
+    my $timeout = $self->{timeout};
+    
+    my $socket = (IO::Socket)IO::Socket::INET->new({
+      PeerAddr  => $peer_host,
+      PeerPort  => $peer_port,
+      Timeout   => $timeout,
+    });
     
     $self->{handle} = $socket;
     
