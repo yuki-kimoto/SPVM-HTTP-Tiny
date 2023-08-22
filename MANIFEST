@@ -5,8 +5,6 @@ lib/SPVM/HTTP/Minimal.pm
 lib/SPVM/HTTP/Minimal.spvm
 lib/SPVM/HTTP/Minimal/DataCallback.pm
 lib/SPVM/HTTP/Minimal/DataCallback.spvm
-lib/SPVM/HTTP/Minimal/Error.pm
-lib/SPVM/HTTP/Minimal/Error.spvm
 lib/SPVM/HTTP/Minimal/Headers.pm
 lib/SPVM/HTTP/Minimal/Headers.spvm
 lib/SPVM/HTTP/Minimal/HostPort.pm
