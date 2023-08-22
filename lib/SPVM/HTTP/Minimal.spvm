@@ -11,7 +11,6 @@ class HTTP::Minimal {
   use Format;
   use Sys::Time::Tm;
   use HTTP::Minimal::Socket;
-  use HTTP::Minimal::Error;
   use HTTP::Minimal::Message::Request;
   use HTTP::Minimal::Message::Response;
   use HTTP::Minimal::Headers;
