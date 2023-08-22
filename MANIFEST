@@ -19,8 +19,6 @@ lib/SPVM/HTTP/Minimal/Socket.pm
 lib/SPVM/HTTP/Minimal/Socket.spvm
 lib/SPVM/HTTP/Minimal/SocketBuilder.pm
 lib/SPVM/HTTP/Minimal/SocketBuilder.spvm
-lib/SPVM/HTTP/Minimal/SocketInterface.pm
-lib/SPVM/HTTP/Minimal/SocketInterface.spvm
 lib/SPVM/HTTP/Minimal/URL.pm
 lib/SPVM/HTTP/Minimal/URL.spvm
 LICENSE
