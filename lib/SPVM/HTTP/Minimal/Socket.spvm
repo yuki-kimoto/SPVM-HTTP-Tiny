@@ -6,7 +6,6 @@ class HTTP::Minimal::Socket {
   
   use HTTP::Minimal::Message::Request;
   use HTTP::Minimal::Message::Response;
-  use HTTP::Minimal::DataCallback;
   
   use Fn;
   use StringBuffer;
@@ -177,7 +176,7 @@ class HTTP::Minimal::Socket {
     
     $self->read_response_headers($response);
     
-    $self->read_response_body(undef, $response);
+    $self->read_response_body($response);
     
     return $response;
   }
@@ -290,7 +289,7 @@ class HTTP::Minimal::Socket {
     return $line;
   }
   
-  private method read_response_body : int ($cb : HTTP::Minimal::DataCallback, $response : HTTP::Minimal::Message::Response) {
+  private method read_response_body : int ($response : HTTP::Minimal::Message::Response) {
     
     my $content_length_string = $response->headers->get_as_string("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
@@ -308,9 +307,7 @@ class HTTP::Minimal::Socket {
         
         my $buffer = $self->read((int)$read_length);
         
-        unless ($cb) {
-          $response->{content_buffer}->push($buffer);
-        }
+        $response->{content_buffer}->push($buffer);
         
         $length -= length $buffer;
       }
