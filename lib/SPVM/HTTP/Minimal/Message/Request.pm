@@ -16,18 +16,6 @@ The HTTP::Minimal::Message::Request class of L<SPVM> has methods to manipulate H
 
   use HTTP::Minimal::Message::Request;
 
-=head1 Fields
-
-
-
-=head1 Class Methods
-
-
-
-=head1 Instance Methods
-
-
-
 =head1 Copyright & License
 
 Copyright (c) 2023 Yuki Kimoto
