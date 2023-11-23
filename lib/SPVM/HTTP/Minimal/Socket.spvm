@@ -142,32 +142,9 @@ class HTTP::Minimal::Socket {
   
   private method write : void ($buffer : string) {
     
-    unless (Sys::OS->is_windows) {
-      my $old_pipe_signal = Sys::Signal->signal(SIGNAL->SIGPIPE, Sys::Signal->SIG_IGN);
-      my $restore_signal = Scope::Guard->new([has old_pipe_signal : Sys::Signal::Handler = $old_pipe_signal] method : void () {
-        Sys::Signal->signal(Sys::Signal::Constant->SIGPIPE, $self->{old_pipe_signal});
-      });
-    }
-    
-    my $can_write = $self->can_write($self->{timeout});
-    unless ($can_write) {
-      die "Timed out while waiting for socket to become ready for writing";
-    }
-    
     my $socket = $self->{socket};
     
-    my $write_length = -1;
-    eval { $socket->write($buffer); }
-    
-    if (my $exception = $@) {
-      my $errno = Errno->errno;
-      if ($errno == Errno->EPIPE) {
-        die "Socket closed by remote server: $exception";
-      }
-      elsif ($errno != Errno->EINTR) {
-        die "Could not write to socket: $exception";
-      }
-    }
+    $socket->write($buffer);
   }
   
   private method read_response : HTTP::Minimal::Message::Response () {
