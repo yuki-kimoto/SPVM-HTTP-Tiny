@@ -25,7 +25,7 @@ class HTTP::Minimal::Socket {
   }
   
   # Fields
-  has timeout : int;
+  has timeout : double;
   
   has socket : IO::Socket;
   
@@ -42,7 +42,7 @@ class HTTP::Minimal::Socket {
     $self->{response_buffer} = $response_buffer;
     
     # The timeout field
-    my $timeout = $options_h->delete_or_default_int("timeout", 60);
+    my $timeout = $options_h->delete_or_default_double("timeout", 60.0);
     $self->{timeout} = $timeout;
     
     return $self;
@@ -385,21 +385,21 @@ class HTTP::Minimal::Socket {
     return $ret;
   }
   
-  private method can_read : int ($type : string, $timeout : int = -1) {
+  private method can_read : int ($type : string, $timeout : double = -1) {
     
     my $can_read = $self->do_timeout("read", $timeout);
     
     return $can_read;
   }
   
-  private method can_write : int ($type : string, $timeout : int = -1) {
+  private method can_write : int ($type : string, $timeout : double = -1) {
     
     my $can_write = $self->do_timeout("write", $timeout);
     
     return $can_write;
   }
   
-  private method do_timeout : int ($type : string, $timeout : int) {
+  private method do_timeout : int ($type : string, $timeout : double) {
     
     if ($timeout < 0) {
       $timeout = $self->{timeout};
