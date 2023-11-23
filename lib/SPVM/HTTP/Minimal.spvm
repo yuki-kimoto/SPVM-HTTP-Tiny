@@ -2,7 +2,7 @@
 # MIT License
 
 class HTTP::Minimal {
-  version "0.001";
+  version "0.002";
   
   use Fn;
   use Regex;
