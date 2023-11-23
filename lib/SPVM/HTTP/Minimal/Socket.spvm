@@ -12,10 +12,7 @@ class HTTP::Minimal::Socket {
   use Format;
   use Regex;
   use Regex::ReplaceInfo;
-  use Errno;
-  use Sys::Socket::Constant as SOCKET;
   use IO::Socket::INET;
-  use IO::Select;
   
   # Enumerations
   private enum {

@@ -7,7 +7,6 @@ class HTTP::Minimal {
   use Fn;
   use Regex;
   use Hash;
-  use Sys;
   use Format;
   use HTTP::Minimal::Socket;
   use HTTP::Minimal::Message::Request;
