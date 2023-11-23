@@ -9,7 +9,6 @@ class HTTP::Minimal {
   use Hash;
   use Sys;
   use Format;
-  use Sys::Time::Tm;
   use HTTP::Minimal::Socket;
   use HTTP::Minimal::Message::Request;
   use HTTP::Minimal::Message::Response;

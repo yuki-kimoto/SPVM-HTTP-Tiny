@@ -33,7 +33,7 @@ The user agent.
 
 =head2 timeout
 
-  has timeout : ro int;
+  has timeout : ro double;
 
 The request timeout seconds.
 
@@ -53,7 +53,7 @@ Options:
 
 Sets the L</"agent"> field.
 
-=item C<timeout> : Int
+=item C<timeout> : Double
 
 Sets the L</"timeout"> field.
 
@@ -77,7 +77,7 @@ Options:
 
 Headers for an HTTP request.
 
-=item C<timeout> : Int
+=item C<timeout> : Double
 
 Timeout seconds.
 
