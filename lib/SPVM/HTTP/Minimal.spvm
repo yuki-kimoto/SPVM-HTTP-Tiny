@@ -44,20 +44,12 @@ class HTTP::Minimal {
   # Instance Methods
   method get : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
     
-    unless ($url) {
-      die "The \$url must be defined.";
-    }
-    
     my $response = $self->request("GET", $url, $options);
     
     return $response;
   }
   
   method head : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
-    
-    unless ($url) {
-      die "The \$url must be defined.";
-    }
     
     my $response = $self->request("HEAD", $url, $options);
     
@@ -66,20 +58,12 @@ class HTTP::Minimal {
   
   method put : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
     
-    unless ($url) {
-      die "The \$url must be defined.";
-    }
-    
     my $response = $self->request("PUT", $url, $options);
     
     return $response;
   }
   
   method post : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
-    
-    unless ($url) {
-      die "The \$url must be defined.";
-    }
     
     my $response = $self->request("POST", $url, $options);
     
@@ -88,20 +72,12 @@ class HTTP::Minimal {
   
   method patch : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
     
-    unless ($url) {
-      die "The \$url must be defined.";
-    }
-    
     my $response = $self->request("PATCH", $url, $options);
     
     return $response;
   }
   
   method delete : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
-    
-    unless ($url) {
-      die "The \$url must be defined.";
-    }
     
     my $response = $self->request("DELETE", $url, $options);
     
