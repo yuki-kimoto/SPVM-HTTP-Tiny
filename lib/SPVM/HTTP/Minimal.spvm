@@ -53,6 +53,61 @@ class HTTP::Minimal {
     return $response;
   }
   
+  method head : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+    
+    unless ($url) {
+      die "The \$url must be defined.";
+    }
+    
+    my $response = $self->request("HEAD", $url, $options);
+    
+    return $response;
+  }
+  
+  method put : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+    
+    unless ($url) {
+      die "The \$url must be defined.";
+    }
+    
+    my $response = $self->request("PUT", $url, $options);
+    
+    return $response;
+  }
+  
+  method post : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+    
+    unless ($url) {
+      die "The \$url must be defined.";
+    }
+    
+    my $response = $self->request("POST", $url, $options);
+    
+    return $response;
+  }
+  
+  method patch : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+    
+    unless ($url) {
+      die "The \$url must be defined.";
+    }
+    
+    my $response = $self->request("PATCH", $url, $options);
+    
+    return $response;
+  }
+  
+  method delete : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+    
+    unless ($url) {
+      die "The \$url must be defined.";
+    }
+    
+    my $response = $self->request("DELETE", $url, $options);
+    
+    return $response;
+  }
+  
   method create_default_agent : string () {
     
     my $default_agent = "SPVM/HTTP::Minimal";

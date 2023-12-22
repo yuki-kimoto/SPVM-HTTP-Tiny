@@ -1,3 +1,18 @@
+0.003 2023-12-22
+  [New Features]
+    * Add the following method to the HTTP::Minimal.
+
+      method head : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+      method put : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+      method post : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+      method patch : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+      method delete : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+
 0.002 2023-11-23
   [Incompatible Changes]
     * The type of timeout becomes double.

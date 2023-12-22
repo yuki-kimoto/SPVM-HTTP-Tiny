@@ -83,6 +83,26 @@ Timeout seconds.
 
 =back
 
+=head2 head
+
+  method head : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+=head2 put
+
+  method put : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+=head2 post
+
+  method post : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+=head2 patch
+
+  method patch : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
+=head2 delete
+
+  method delete : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef);
+
 =head1 Repository
 
 L<SPVM::HTTP::Minimal - Github|https://github.com/yuki-kimoto/SPVM-HTTP-Minimal>
