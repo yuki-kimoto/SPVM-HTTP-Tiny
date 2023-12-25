@@ -49,6 +49,7 @@ WriteMakefile(
     %configure_and_runtime_requires,
     'SPVM::IO' => '0.211',
     'SPVM::Regex' => '0.243',
+    'SPVM::Mozilla::CA' => '0.001',
   },
   TEST_REQUIRES => {
     
