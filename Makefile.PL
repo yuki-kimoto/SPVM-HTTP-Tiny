@@ -50,6 +50,7 @@ WriteMakefile(
     'SPVM::IO' => '0.211',
     'SPVM::Regex' => '0.243',
     'SPVM::Mozilla::CA' => '0.001',
+    'SPVM::File::Temp' => '0.021',
   },
   TEST_REQUIRES => {
     
