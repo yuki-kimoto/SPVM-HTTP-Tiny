@@ -125,4 +125,20 @@ class HTTP::Minimal::Headers {
     
     return $string;
   }
+  
+  method clone : HTTP::Minimal::Headers () {
+    
+    my $clone = HTTP::Minimal::Headers->new;
+    
+    my $data = $self->{data};
+    
+    my $names = $data->keys;
+    
+    for my $name (@$names) {
+      my $value = $data->get_string($name);
+      $clone->add($name, $value);
+    }
+    
+    return $clone;
+  }
 }

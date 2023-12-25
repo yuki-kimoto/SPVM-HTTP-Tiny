@@ -84,6 +84,106 @@ class HTTP::Minimal {
     return $response;
   }
   
+  method post_form : HTTP::Minimal::Message::Response ($url : string, $data : object[], $options : object[] = undef) {
+    
+    my $options_h = Hash->new($options);
+    
+    my $headers = (HTTP::Minimal::Headers)$options_h->get_or_default("headers", undef);
+    
+    my $new_headers = (HTTP::Minimal::Headers)undef;
+    if ($headers) {
+      $new_headers = $headers->clone;
+    }
+    else {
+      $new_headers = HTTP::Minimal::Headers->new;
+    }
+    
+    $new_headers->remove("content-type");
+    
+    $new_headers->add("content-type", "application/x-www-form-urlencoded");
+    
+    $options_h->set("content", $self->www_form_urlencode($data));
+    
+    $options_h->set("headers", $new_headers);
+    
+    my $response = $self->request("POST", $url, $options_h->to_array);
+    
+    return $response;
+  }
+  
+  method www_form_urlencode : string ($name_value_pairs : object[]) {
+    
+    unless ($name_value_pairs) {
+      die "\$name_value_pairs must be defined.";
+    }
+    
+    my $name_value_pairs_length = @$name_value_pairs;
+    
+    unless ($name_value_pairs_length % 2 == 0) {
+      die "The length of \$name_value_pairs_length must be an even number.";
+    }
+    
+    my $terms_list = StringList->new;
+    for (my $i = 0; $i < $name_value_pairs_length; $i+= 2) {
+      my $key = (string)$name_value_pairs->[$i];
+      
+      unless ($key) {
+        die "The key must be defined.";
+      }
+      
+      my $value = $name_value_pairs->[$i + 1];
+      
+      unless ($value) {
+        die "The value must be defined.";
+      }
+      
+      if ($value isa string) {
+        my $value = (string)$value;
+        
+        my $value_url_escape = &_uri_escape($value);
+        $terms_list->push("$key=$value_url_escape");
+      }
+      elsif ($value isa string[]) {
+        my $values = (string[])$value;
+        for my $value (@$values) {
+          my $value_url_escape = &_uri_escape($value);
+          $terms_list->push("$key=$value_url_escape");
+        }
+      }
+      else {
+        die "The type of the value must be the string type or the string[] type.";
+      }
+    }
+    
+    my $terms = $terms_list->to_array;
+    
+    my $urlencoded = Fn->join("&", $terms);
+    
+    return $urlencoded;
+  }
+  
+  private static method _uri_escape : string ($input : string) {
+    
+    my $regex = Regex->new("([^A-Za-z0-9\-\._~])");
+    my $output = $regex->replace_g($input, method : string ($re : Regex, $match : Regex::Match) {
+      my $bytes = $match->cap1;
+      
+      my $escaped_char_buffer = StringBuffer->new;
+      
+      for (my $i = 0; $i < length $bytes; $i++) {
+        my $byte = $bytes->[$i];
+        my $hex_string = Format->sprintf("%%%02X", [(object)($byte & 0xFF)]);
+        $escaped_char_buffer->push($hex_string);
+      }
+      
+      my $escaped_char = $escaped_char_buffer->to_string;
+      
+      return $escaped_char;
+    });
+    
+    return $output;
+  }
+  
   method create_default_agent : string () {
     
     my $default_agent = "SPVM/HTTP::Minimal";
