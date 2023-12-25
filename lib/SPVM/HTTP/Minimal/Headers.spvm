@@ -150,9 +150,9 @@ class HTTP::Minimal::Headers {
     return $clone;
   }
   
-  method from_array : HTTP::Minimal::Headers ($name_value_pairs : object[]) {
+  static method from_array : HTTP::Minimal::Headers ($name_value_pairs : object[]) {
     
-    my $headers = HTTP::Minimal::Headers->new;
+    my $self = HTTP::Minimal::Headers->new;
     
     unless ($name_value_pairs) {
       die "The \$name_value_pairs must be defined.";
@@ -188,6 +188,6 @@ class HTTP::Minimal::Headers {
       }
     }
     
-    return $headers;
+    return $self;
   }
 }

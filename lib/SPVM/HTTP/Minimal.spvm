@@ -312,6 +312,71 @@ class HTTP::Minimal {
     return $ca_file;
   }
   
+  method mirror : HTTP::Minimal::Message::Response ($url : string, $file : string, $options : object[] = undef) {
+    
+    unless ($file) {
+      die "\$file must be defined.";
+    }
+    
+    my $options_h = Hash->new($options);
+    
+    my $option_headers_object = $options_h->get("headers");
+    
+    my $option_headers = (HTTP::Minimal::Headers)undef;
+    
+    if ($option_headers_object is_type object[]) {
+      $option_headers = HTTP::Minimal::Headers->from_array((object[])$option_headers_object);
+    }
+    elsif ($option_headers_object is_type HTTP::Minimal::Headers) {
+      $option_headers = $option_headers_object->(HTTP::Minimal::Headers)->clone;
+    }
+    else {
+      die "The type of the \"headers\" option must be the object[] type or a HTTP::Minimal::Headers type.";
+    }
+    
+    
+    if (Sys->e($file)) {
+      
+      my $mtime = Sys->stat($file)->st_mtime;
+      
+      unless ($option_headers->get("if-modified-since")) {
+        $option_headers->add("if-modified-since", &_http_date($mtime));
+      }
+    }
+    
+    my $tmp_dir = File::Temp->newdir;
+    
+    my $tmp_dir_name = $tmp_dir->dirname;
+    
+    my $tempfile = "$tmp_dir_name/mirror";
+    
+    my $io_file = IO::File->new($tempfile);
+    
+    $options_h->set(data_callback => [$io_file : IO::File] method : void ($chunk : string) { $io_file->print($chunk); });
+    
+    my $response = $self->request("GET", $url, $options_h->to_array);
+    
+    if ($response->success) {
+      Sys->rename($tempfile, $file);
+      
+      my $lm = $response->headers->get_as_string("last-modified");
+      
+      if ($lm) {
+        if (my $mtime = &_parse_http_date($lm)) {
+          Sys->utime($mtime, $mtime, $file);
+        }
+      }
+    }
+    
+    unless ($response->success) {
+      $response->{success} = (byte)($response->{status} == 304);
+    }
+    
+    return $response;
+    
+    return undef;
+  }
+ 
   static method _http_date : string ($epoch : long) {
     
     my $tp = Time::Piece->gmtime($epoch);
