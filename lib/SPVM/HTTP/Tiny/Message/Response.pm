@@ -1,4 +1,4 @@
-package SPVM::HTTP::Minimal::Message::Response;
+package SPVM::HTTP::Tiny::Message::Response;
 
 
 
@@ -6,15 +6,15 @@ package SPVM::HTTP::Minimal::Message::Response;
 
 =head1 Name
 
-SPVM::HTTP::Minimal::Message::Response - HTTP Response
+SPVM::HTTP::Tiny::Message::Response - HTTP Response
 
 =head1 Description
 
-The HTTP::Minimal::Message::Response class of L<SPVM> has methods to manipulate HTTP responses.
+The HTTP::Tiny::Message::Response class of L<SPVM> has methods to manipulate HTTP responses.
 
 =head1 Usage
 
-  use HTTP::Minimal::Message::Response;
+  use HTTP::Tiny::Message::Response;
   
   my $is_success = $res->is_success;
   

@@ -1,4 +1,4 @@
-package SPVM::HTTP::Minimal::Headers;
+package SPVM::HTTP::Tiny::Headers;
 
 
 
@@ -6,23 +6,23 @@ package SPVM::HTTP::Minimal::Headers;
 
 =head1 Name
 
-SPVM::HTTP::Minimal::Headers - HTTP Headers
+SPVM::HTTP::Tiny::Headers - HTTP Headers
 
 =head1 Description
 
-The HTTP::Minimal::Headers class of L<SPVM> has methods to manipulate HTTP headers.
+The HTTP::Tiny::Headers class of L<SPVM> has methods to manipulate HTTP headers.
 
 =head1 Usage
 
-  my $headers = HTTP::Minimal::Headers->new;
+  my $headers = HTTP::Tiny::Headers->new;
 
 =head1 Class Methods
 
 =head2 new
 
-  static method new : HTTP::Minimal::Headers ();
+  static method new : HTTP::Tiny::Headers ();
 
-Creates a new L<HTTP::Minimal::Headers|SPVM::HTTP::Minimal::Headers> object.
+Creates a new L<HTTP::Tiny::Headers|SPVM::HTTP::Tiny::Headers> object.
 
 =head2 Instance Methods
 

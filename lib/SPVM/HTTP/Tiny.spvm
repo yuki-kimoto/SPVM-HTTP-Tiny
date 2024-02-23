@@ -1,18 +1,18 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Minimal {
+class HTTP::Tiny {
   version "0.003";
   
   use Fn;
   use Regex;
   use Hash;
   use Format;
-  use HTTP::Minimal::Socket;
-  use HTTP::Minimal::Message::Request;
-  use HTTP::Minimal::Message::Response;
-  use HTTP::Minimal::Headers;
-  use HTTP::Minimal::URL;
+  use HTTP::Tiny::Socket;
+  use HTTP::Tiny::Message::Request;
+  use HTTP::Tiny::Message::Response;
+  use HTTP::Tiny::Headers;
+  use HTTP::Tiny::URL;
   use Mozilla::CA;
   use Sys;
   use File::Temp;
@@ -31,11 +31,11 @@ class HTTP::Minimal {
   has tmp_dir : File::Temp::Dir;
   
   # Class Methods
-  static method new : HTTP::Minimal ($options : object[] = undef) {
+  static method new : HTTP::Tiny ($options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
-    my $self = new HTTP::Minimal;
+    my $self = new HTTP::Tiny;
     
     # timeout
     my $timeout = $options_h->delete_or_default_double("timeout", 60.0);
@@ -55,60 +55,60 @@ class HTTP::Minimal {
   }
   
   # Instance Methods
-  method get : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+  method get : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("GET", $url, $options);
     
     return $response;
   }
   
-  method head : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+  method head : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("HEAD", $url, $options);
     
     return $response;
   }
   
-  method put : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+  method put : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("PUT", $url, $options);
     
     return $response;
   }
   
-  method post : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+  method post : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("POST", $url, $options);
     
     return $response;
   }
   
-  method patch : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+  method patch : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("PATCH", $url, $options);
     
     return $response;
   }
   
-  method delete : HTTP::Minimal::Message::Response ($url : string, $options : object[] = undef) {
+  method delete : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("DELETE", $url, $options);
     
     return $response;
   }
   
-  method post_form : HTTP::Minimal::Message::Response ($url : string, $data : object[], $options : object[] = undef) {
+  method post_form : HTTP::Tiny::Message::Response ($url : string, $data : object[], $options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
-    my $headers = (HTTP::Minimal::Headers)$options_h->get_or_default("headers", undef);
+    my $headers = (HTTP::Tiny::Headers)$options_h->get_or_default("headers", undef);
     
-    my $new_headers = (HTTP::Minimal::Headers)undef;
+    my $new_headers = (HTTP::Tiny::Headers)undef;
     if ($headers) {
       $new_headers = $headers->clone;
     }
     else {
-      $new_headers = HTTP::Minimal::Headers->new;
+      $new_headers = HTTP::Tiny::Headers->new;
     }
     
     $new_headers->remove("content-type");
@@ -199,22 +199,22 @@ class HTTP::Minimal {
   
   method create_default_agent : string () {
     
-    my $default_agent = "SPVM/HTTP::Minimal";
+    my $default_agent = "SPVM/HTTP::Tiny";
     
-    my $version = Fn->get_version_string("HTTP::Minimal");
+    my $version = Fn->get_version_string("HTTP::Tiny");
     
     $default_agent .= "/$version";
     
     return $default_agent;
   }
   
-  private method request : HTTP::Minimal::Message::Response ($method : string, $url_string : string, $options : object[])  {
+  private method request : HTTP::Tiny::Message::Response ($method : string, $url_string : string, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
     my $data_callback = $options_h->delete_or_default("data_callback", undef);
     
-    my $headers = (HTTP::Minimal::Headers)$options_h->delete_or_default("headers", undef);
+    my $headers = (HTTP::Tiny::Headers)$options_h->delete_or_default("headers", undef);
     
     my $timeout = $options_h->delete_or_default_double("timeout", $self->{timeout});
     
@@ -223,7 +223,7 @@ class HTTP::Minimal {
     }
     
     unless ($headers) {
-      $headers = HTTP::Minimal::Headers->new;
+      $headers = HTTP::Tiny::Headers->new;
     }
     
     unless ($headers->get("user-agent")) {
@@ -231,15 +231,15 @@ class HTTP::Minimal {
       $headers->add("user-agent" => $agent);
     }
     
-    my $url = HTTP::Minimal::URL->parse($url_string);
+    my $url = HTTP::Tiny::URL->parse($url_string);
     
-    my $request = HTTP::Minimal::Message::Request->new({
+    my $request = HTTP::Tiny::Message::Request->new({
       method    => $method,
       url => $url,
       headers   => $headers,
     });
     
-    my $socket  = HTTP::Minimal::Socket->new({
+    my $socket  = HTTP::Tiny::Socket->new({
       timeout => $timeout,
       data_callback => $data_callback,
     });
@@ -312,7 +312,7 @@ class HTTP::Minimal {
     return $ca_file;
   }
   
-  method mirror : HTTP::Minimal::Message::Response ($url : string, $file : string, $options : object[] = undef) {
+  method mirror : HTTP::Tiny::Message::Response ($url : string, $file : string, $options : object[] = undef) {
     
     unless ($file) {
       die "\$file must be defined.";
@@ -322,16 +322,16 @@ class HTTP::Minimal {
     
     my $option_headers_object = $options_h->get("headers");
     
-    my $option_headers = (HTTP::Minimal::Headers)undef;
+    my $option_headers = (HTTP::Tiny::Headers)undef;
     
     if ($option_headers_object is_type object[]) {
-      $option_headers = HTTP::Minimal::Headers->from_array((object[])$option_headers_object);
+      $option_headers = HTTP::Tiny::Headers->from_array((object[])$option_headers_object);
     }
-    elsif ($option_headers_object is_type HTTP::Minimal::Headers) {
-      $option_headers = $option_headers_object->(HTTP::Minimal::Headers)->clone;
+    elsif ($option_headers_object is_type HTTP::Tiny::Headers) {
+      $option_headers = $option_headers_object->(HTTP::Tiny::Headers)->clone;
     }
     else {
-      die "The type of the \"headers\" option must be the object[] type or a HTTP::Minimal::Headers type.";
+      die "The type of the \"headers\" option must be the object[] type or a HTTP::Tiny::Headers type.";
     }
     
     

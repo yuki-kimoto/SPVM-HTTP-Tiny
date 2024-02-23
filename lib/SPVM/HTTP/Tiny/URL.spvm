@@ -1,9 +1,9 @@
 # Copyright (c) 2023 [--user-name]
 # MIT License
 
-class HTTP::Minimal::URL {
-  allow HTTP::Minimal;
-  allow HTTP::Minimal::Socket;
+class HTTP::Tiny::URL {
+  allow HTTP::Tiny;
+  allow HTTP::Tiny::Socket;
   
   use StringBuffer;
   
@@ -13,11 +13,11 @@ class HTTP::Minimal::URL {
   has path : ro string;
   has auth : ro string;
   
-  private static method new : HTTP::Minimal::URL ($options : object[]) {
+  private static method new : HTTP::Tiny::URL ($options : object[]) {
     
     my $options_h = Hash->new($options);
     
-    my $self = new HTTP::Minimal::URL;
+    my $self = new HTTP::Tiny::URL;
     
     $self->{scheme} = $options_h->delete_or_default_string("scheme", undef);
     
@@ -32,7 +32,7 @@ class HTTP::Minimal::URL {
     return $self;
   }
   
-  private static method parse : HTTP::Minimal::URL ($url_string : string) {
+  private static method parse : HTTP::Tiny::URL ($url_string : string) {
     
     # URI regex adapted from the URI module
     my $scheme = (string)undef;
@@ -96,7 +96,7 @@ class HTTP::Minimal::URL {
       $host = "localhost";
     }
     
-    my $url = HTTP::Minimal::URL->new({
+    my $url = HTTP::Tiny::URL->new({
       scheme => $scheme,
       host => $host,
       port => $port,

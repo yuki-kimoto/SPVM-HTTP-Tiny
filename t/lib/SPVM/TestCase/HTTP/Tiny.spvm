@@ -1,5 +1,5 @@
-class TestCase::HTTP::Minimal {
-  use HTTP::Minimal;
+class TestCase::HTTP::Tiny {
+  use HTTP::Tiny;
   use Fn;
   use Go;
   use Array;
@@ -10,7 +10,7 @@ class TestCase::HTTP::Minimal {
     
     my $url = "http://google.com";
     
-    my $http = HTTP::Minimal->new;
+    my $http = HTTP::Tiny->new;
     
     my $res = $http->get($url);
     
@@ -30,7 +30,7 @@ class TestCase::HTTP::Minimal {
     Go->go(method : void () {
       my $url = "http://google.com";
       
-      my $http = HTTP::Minimal->new;
+      my $http = HTTP::Tiny->new;
       
       my $res = $http->get($url);
       
@@ -42,7 +42,7 @@ class TestCase::HTTP::Minimal {
     Go->go(method : void () {
       my $url = "http://google.com";
       
-      my $http = HTTP::Minimal->new;
+      my $http = HTTP::Tiny->new;
       
       my $res = $http->get($url);
       

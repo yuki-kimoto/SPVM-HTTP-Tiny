@@ -20,11 +20,11 @@ unless ($meta) {
 
 my %configure_and_runtime_requires = ('SPVM' => '0.9706');
 WriteMakefile(
-  NAME              => 'SPVM::HTTP::Minimal',
-  VERSION_FROM           => 'lib/SPVM/HTTP/Minimal.pm',
+  NAME              => 'SPVM::HTTP::Tiny',
+  VERSION_FROM           => 'lib/SPVM/HTTP/Tiny.pm',
   LICENSE           => 'mit',
   ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-    (ABSTRACT_FROM  => 'lib/SPVM/HTTP/Minimal.pm',
+    (ABSTRACT_FROM  => 'lib/SPVM/HTTP/Tiny.pm',
      AUTHOR         => 'Yuki Kimoto<kimoto.yuki@gmail.com') : ()),
   test => {TESTS => 't/*.t t/*/*.t t/*/*/*.t'},
   clean => {FILES => ['.spvm_build', 't/.spvm_build']},
