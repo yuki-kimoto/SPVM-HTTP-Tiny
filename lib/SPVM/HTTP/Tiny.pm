@@ -18,7 +18,7 @@ The HTTP::Tiny class of L<SPVM> has methods for a HTTP client.
   
   my $response = HTTP::Tiny->new->get('http://example.com/');
   
-  unless $response->success {
+  unless ($response->success) {
     die "Failed!";
   }
   
@@ -26,10 +26,10 @@ The HTTP::Tiny class of L<SPVM> has methods for a HTTP client.
   
   say $response->reason;
   
-  while (my ($k, $v) = each %{$response->{headers}}) {
-    for (ref $v eq 'ARRAY' ? @$v : $v) {
-        print "$k: $_\n";
-    }
+  for my $header_name (@{$response->headers->names}) {
+    my $header_value = $response->headers->header($header_name);
+    
+    say $header_value;
   }
   
   if (length $response->content) {
