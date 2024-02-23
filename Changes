@@ -1,3 +1,7 @@
+0.004 2023-12-23
+  [Changes]
+    * Catch up with the latest SPVM.
+    
 0.003 2023-12-22
   [New Features]
     * Add the following method to the HTTP::Minimal.
