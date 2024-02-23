@@ -13,44 +13,46 @@ SPVM::HTTP::Tiny::Message::Response - HTTP Response
 The HTTP::Tiny::Message::Response class of L<SPVM> has methods to manipulate HTTP responses.
 
 =head1 Usage
-
-  use HTTP::Tiny::Message::Response;
   
-  my $is_success = $res->is_success;
+  my $response = HTTP::Tiny->new->get('http://example.com/');
   
-  my $content = $res->content;
+  my $success = $response->success;
+  
+  my $status = $response->status;
+  
+  my $content = $response->content;
 
-=head1  Fields
+=head1 Fields
 
 =head2 protocol
 
-  has protocol : ro string;
+C<has protocol : ro string;>
 
 The protocol of the HTTP response.
 
 =head2 status
 
-  has status : ro string;
+C<has status : ro string;>
 
 The status code of the HTTP response.
 
+=head2 success
+
+C<has success : ro byte;>
+
+The success field of the response will be true if the status code is 2XX.
+
 =head2 reason
 
-  has reason : ro string;
+C<has reason : ro string;>
 
 The reason of the status code of the HTTP response.
 
 =head1 Instance Methods
 
-=head2 is_success
-
-  method is_success : int ();
-
-If the response contains successful status code, returns 1. Otherwise returns 0.
-
 =head2 content
 
-  method content : string ();
+C<method content : string ();>
 
 Returns the content body of the response.
 
