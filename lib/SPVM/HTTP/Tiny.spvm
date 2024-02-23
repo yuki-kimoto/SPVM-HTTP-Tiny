@@ -2,31 +2,54 @@
 # MIT License
 
 class HTTP::Tiny {
-  version "0.003";
+  version "0.001";
   
   use Fn;
   use Regex;
   use Hash;
   use Format;
-  use HTTP::Tiny::Socket;
-  use HTTP::Tiny::Message::Request;
-  use HTTP::Tiny::Message::Response;
-  use HTTP::Tiny::Headers;
-  use HTTP::Tiny::URL;
   use Mozilla::CA;
   use Sys;
   use File::Temp;
   use IO::File;
   use Time::Piece;
   
+  use HTTP::Tiny::Socket;
+  use HTTP::Tiny::Message::Request;
+  use HTTP::Tiny::Message::Response;
+  use HTTP::Tiny::Headers;
+  use HTTP::Tiny::URL;
+  use HTTP::Tiny::CookieJar::Interface;
+  use HTTP::Tiny::Headers;
+  
   # Fields
-  has agent : ro string;
+  has agent : rw string;
   
-  has timeout : ro double;
+  has cookie_jar : rw HTTP::Tiny::CookieJar::Interface;
   
-  has SSL_options : object[];
+  has default_headers : rw HTTP::Tiny::Headers;
   
-  has verify_SSL : byte;
+  has local_address : rw string;
+  
+  has keep_alive : rw byte;
+  
+  has max_redirect : rw int;
+  
+  has max_size : rw int;
+  
+  has http_proxy : rw string;
+  
+  has https_proxy : rw string;
+  
+  has proxy : rw string;
+  
+  has no_proxy : rw string[];
+  
+  has timeout : rw double;
+  
+  has verify_SSL : rw byte;
+  
+  has SSL_options : rw object[];
   
   has tmp_dir : File::Temp::Dir;
   
