@@ -46,9 +46,9 @@ class HTTP::Tiny::Handle {
   private method connect : HTTP::Tiny::Handle ($request : HTTP::Tiny::Message::Request) {
     
     my $url = $request->url;
-    my $scheme = $url->scheme;
-    my $host = $url->host;
-    my $port = $url->port;
+    my $scheme = $url->{scheme};
+    my $host = $url->{host};
+    my $port = $url->{port};
     
     my $timeout = $self->{timeout};
     
@@ -97,7 +97,7 @@ class HTTP::Tiny::Handle {
     
     my $url = $request->{url};
     
-    my $path = $url->path;
+    my $path = $url->{path};
     
     my $request_line = "$method $path HTTP/1.1\r\n";
     
@@ -115,8 +115,8 @@ class HTTP::Tiny::Handle {
     {
       # host
       unless ($headers->header("host")) {
-        my $host = $url->host;
-        my $port = $url->port;
+        my $host = $url->{host};
+        my $port = $url->{port};
         if ($port < 0) {
           $port = 80;
         }
