@@ -330,4 +330,8 @@ class HTTP::Tiny::Socket {
     
     return $printable_string;
   }
+  
+  method _find_CA_file : int () {
+    return 0;
+  }
 }

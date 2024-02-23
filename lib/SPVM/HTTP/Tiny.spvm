@@ -77,6 +77,99 @@ class HTTP::Tiny {
     return $self;
   }
   
+  static method can_ssl_static : int () {
+    
+    my $error_ref = [(string)undef];
+    
+    my $can_ssl = &can_ssl_get_error_static($error_ref);
+    
+    return $can_ssl;
+  }
+  
+  static method can_ssl_get_error_static : int ($error_ref : string[] = undef) {
+    
+    unless ($error_ref) {
+      die "\$error_ref must be defined.";
+    }
+    
+    unless (@$error_ref == 1) {
+      die "the length of \$error_ref must be 1.";
+    }
+    
+    my $can_ssl = 1;
+    my $reason = "";
+    
+    # Need IO::Socket::SSL 1.42 for SSL_create_ctx_callback
+    my $io_socket_ssl_ok = 0;
+    if (require IO::Socket::SSL) {
+      my $io_socket_ssl_version_number = Fn->get_version_number("IO::Socket::SSL");
+      
+      if($io_socket_ssl_version_number >= 0.001) {
+        $io_socket_ssl_ok = 1;
+      }
+    }
+    
+    unless ($io_socket_ssl_ok) {
+      $can_ssl = 0;
+      $reason .= "IO::Socket::SSL 0.001 must be installed for https support.\n";
+    }
+    
+    my $net_ssleay_ok = 0;
+    if (require Net::SSLeay) {
+      my $net_ssleay_version_number = Fn->get_version_number("Net::SSLeay");
+      
+      if($net_ssleay_version_number >= 0.001) {
+        $net_ssleay_ok = 1;
+      }
+    }
+    
+    unless ($net_ssleay_ok) {
+      $can_ssl = 0;
+      $reason .= "Net::SSLeay 0.001 must be installed for https support.\n";
+    }
+    
+    $error_ref->[0] = $reason;
+    
+    return $can_ssl;
+  }
+  
+  method can_ssl : int () {
+    
+    my $error_ref = [(string)undef];
+    
+    my $can_ssl = $self->can_ssl_get_error($error_ref);
+    
+    return $can_ssl;
+  }
+  
+  method can_ssl_get_error : int ($error_ref : string[] = undef) {
+    
+    my $can_ssl = &can_ssl_get_error_static($error_ref);
+    
+    my $reason = $error_ref->[0];
+    
+    my $ssl_options_h = Hash->new($self->{SSL_options});
+    
+    if ($self->{verify_SSL} || $ssl_options_h->get("SSL_verify_mode")) {
+      
+      my $handle = HTTP::Tiny::Socket->new({
+        SSL_options => $self->{SSL_options},
+        verify_SSL  => $self->{verify_SSL},
+      });
+      
+      eval { $handle->_find_CA_file; }
+      
+      if ($@) {
+        $can_ssl = 0;
+        $reason .= "$@";
+      }
+    }
+    
+    $error_ref->[0] = $reason;
+    
+    return $can_ssl;
+  }
+  
   # Instance Methods
   method get : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
     
