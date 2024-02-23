@@ -1,6 +1,7 @@
 package SPVM::HTTP::Minimal;
 
-our $VERSION = "0.002";
+our $VERSION = "0.003";
+
 1;
 
 =head1 Name
