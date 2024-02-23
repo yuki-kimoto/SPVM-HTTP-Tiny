@@ -14,7 +14,7 @@ class HTTP::Tiny {
   use IO::File;
   use Time::Piece;
   
-  use HTTP::Tiny::Socket;
+  use HTTP::Tiny::Handle;
   use HTTP::Tiny::Message::Request;
   use HTTP::Tiny::Message::Response;
   use HTTP::Tiny::Headers;
@@ -152,7 +152,7 @@ class HTTP::Tiny {
     
     if ($self->{verify_SSL} || $ssl_options_h->get("SSL_verify_mode")) {
       
-      my $handle = HTTP::Tiny::Socket->new({
+      my $handle = HTTP::Tiny::Handle->new({
         SSL_options => $self->{SSL_options},
         verify_SSL  => $self->{verify_SSL},
       });
@@ -355,7 +355,7 @@ class HTTP::Tiny {
       headers   => $headers,
     });
     
-    my $socket  = HTTP::Tiny::Socket->new({
+    my $socket  = HTTP::Tiny::Handle->new({
       timeout => $timeout,
       data_callback => $data_callback,
     });

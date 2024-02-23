@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Socket {
+class HTTP::Tiny::Handle {
   allow HTTP::Tiny;
   
   use HTTP::Tiny::Message::Request;
@@ -26,11 +26,11 @@ class HTTP::Tiny::Socket {
   
   has response_buffer : StringBuffer;
   
-  private static method new : HTTP::Tiny::Socket ($options : object[]) {
+  private static method new : HTTP::Tiny::Handle ($options : object[]) {
     
     my $options_h = Hash->new($options);
     
-    my $self = new HTTP::Tiny::Socket;
+    my $self = new HTTP::Tiny::Handle;
     
     # The response_buffer field
     my $response_buffer = StringBuffer->new;
@@ -43,7 +43,7 @@ class HTTP::Tiny::Socket {
     return $self;
   }
   
-  private method connect : HTTP::Tiny::Socket ($request : HTTP::Tiny::Message::Request) {
+  private method connect : HTTP::Tiny::Handle ($request : HTTP::Tiny::Message::Request) {
     
     my $url = $request->url;
     my $scheme = $url->scheme;

@@ -3,7 +3,7 @@
 
 class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   allow HTTP::Tiny;
-  allow HTTP::Tiny::Socket;
+  allow HTTP::Tiny::Handle;
   
   use HTTP::Tiny::Headers;
   

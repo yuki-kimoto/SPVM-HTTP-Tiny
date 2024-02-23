@@ -3,7 +3,7 @@
 
 class HTTP::Tiny::URL {
   allow HTTP::Tiny;
-  allow HTTP::Tiny::Socket;
+  allow HTTP::Tiny::Handle;
   
   use StringBuffer;
   
