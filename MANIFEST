@@ -6,7 +6,6 @@
 .github/workflows/windows-latest.yml
 .gitignore
 Changes
-HTTP_Tiny_Original.pm.txt
 lib/SPVM/HTTP/Minimal.pm
 lib/SPVM/HTTP/Minimal.spvm
 lib/SPVM/HTTP/Minimal/Headers.pm
