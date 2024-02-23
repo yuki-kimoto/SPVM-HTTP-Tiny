@@ -22,6 +22,10 @@ The HTTP::Tiny::Message::Response class of L<SPVM> has methods to manipulate HTT
   
   my $content = $response->content;
 
+=head1 Inheritance
+
+L<HTTP::Tiny::Message|SPVM::HTTP::Tiny::Message>
+
 =head1 Fields
 
 =head2 protocol

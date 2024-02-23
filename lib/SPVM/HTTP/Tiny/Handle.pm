@@ -8,11 +8,9 @@ SPVM::HTTP::Tiny::Handle - Socket for HTTP
 
 =head1 Description
 
-The HTTP::Tiny::Handle class of L<SPVM> has methods to manipulate a socket for HTTP.
+The HTTP::Tiny::Handle class of L<SPVM> has methods to manipulate a socket handle for HTTP.
 
-=head1 Usage
-
-  use HTTP::Tiny::Handle;
+This class is a private class.
 
 =head1 Copyright & License
 

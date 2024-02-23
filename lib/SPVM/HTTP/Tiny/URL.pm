@@ -12,9 +12,7 @@ SPVM::HTTP::Tiny::URL - URL
 
 The HTTP::Tiny::URL class of L<SPVM> has methods to manipulate URL.
 
-=head1 Usage
-
-  use HTTP::Tiny::URL;
+This class is a private class.
 
 =head1 Copyright & License
 

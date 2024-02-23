@@ -12,9 +12,7 @@ SPVM::HTTP::Tiny::Message::Request - HTTP Request
 
 The HTTP::Tiny::Message::Request class of L<SPVM> has methods to manipulate HTTP requests.
 
-=head1 Usage
-
-  use HTTP::Tiny::Message::Request;
+This class is a private class.
 
 =head1 Copyright & License
 

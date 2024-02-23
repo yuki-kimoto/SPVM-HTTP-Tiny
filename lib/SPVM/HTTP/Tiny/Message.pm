@@ -12,9 +12,7 @@ SPVM::HTTP::Tiny::Message - Base class of HTTP Request/Response
 
 The HTTP::Tiny::Message class of L<SPVM> has methods to manipulate HTTP message.
 
-=head1 Usage
-
-  use HTTP::Tiny::Message;
+This class is an abstract class for child classes.
 
 =head1 Copyright & License
 
