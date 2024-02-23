@@ -12,6 +12,8 @@ SPVM::HTTP::Tiny - HTTP Client
 
 The HTTP::Tiny class of L<SPVM> has methods for a HTTP client.
 
+B<This class does not work well now. It will be fixed in the near future.>
+
 =head1 Usage
 
   use HTTP::Tiny;

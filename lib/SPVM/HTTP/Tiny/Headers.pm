@@ -15,52 +15,62 @@ The HTTP::Tiny::Headers class of L<SPVM> has methods to manipulate HTTP headers.
 =head1 Usage
 
   my $headers = HTTP::Tiny::Headers->new;
-
+  
+  $headers->add("Foo", "one value");
+  
+  my $header_value = $headers->header("Foo");
+  
 =head1 Class Methods
 
 =head2 new
 
-  static method new : HTTP::Tiny::Headers ();
+C<static method new : L<HTTP::Tiny::Headers|SPVM::HTTP::Tiny::Headers> ();>
 
-Creates a new L<HTTP::Tiny::Headers|SPVM::HTTP::Tiny::Headers> object.
+Creates a new L<HTTP::Tiny::Headers|SPVM::HTTP::Tiny::Headers> object, and returns it.
 
 =head2 Instance Methods
 
 =head2 add
 
-  method add : void ($name : string, $value : string);
+C<method add : void ($name : string, $value : string);>
 
-Adds a header.
+Adds a header name $name and its value $value.
 
 =head2 remove
 
-  method remove : void ($name : string);
+C<method remove : void ($name : string);>
 
-Removes a header.
+Removes a header given its name $name.
 
 =head2 header
 
-  method header : string ($name : string);
+C<method header : string ($name : string);>
 
-Gets the current header values.
+Gets a header value given its name $name.
 
 =head2 set_header
 
-  method set_header : void ($name : string, $value : string);
+C<method set_header : void ($name : string, $value : string);>
 
-Replaces the current header values.
+Set a header value $value given its name $name.
 
 =head2 names
 
-  method names : string[] ();
+C<method names : string[] ();>
 
-Gets header names.
+Returns header names.
 
 =head2 to_string
 
-  method to_string : string ();
+C<method to_string : string ();>
 
-Converts all headers to a string.
+Converts all headers to a string, and returns it.
+
+=head2 clone
+
+C<method clone : HTTP::Tiny::Headers ();>
+
+Clones this headers, and returns it.
 
 =head1 Copyright & License
 

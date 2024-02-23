@@ -347,16 +347,12 @@ class HTTP::Tiny {
     
     my $option_headers = (HTTP::Tiny::Headers)undef;
     
-    if ($option_headers_object is_type object[]) {
-      $option_headers = HTTP::Tiny::Headers->from_array((object[])$option_headers_object);
-    }
-    elsif ($option_headers_object is_type HTTP::Tiny::Headers) {
+    if ($option_headers_object is_type HTTP::Tiny::Headers) {
       $option_headers = $option_headers_object->(HTTP::Tiny::Headers)->clone;
     }
     else {
       die "The type of the \"headers\" option must be the object[] type or a HTTP::Tiny::Headers type.";
     }
-    
     
     if (Sys->e($file)) {
       
