@@ -77,13 +77,13 @@ class HTTP::Tiny::Headers {
     }
   }
   
-  method get : string[] ($name : string) {
+  method header : string ($name : string) {
     
     unless ($name) {
-      die "The \$name must be defined";
+      die "\$name must be defined.";
     }
     
-    my $headers = $self->{headers_h};
+    my $headers_h = $self->{headers_h};
     
     my $name_lc = Fn->lc($name);
     
@@ -94,19 +94,20 @@ class HTTP::Tiny::Headers {
       $values = $values_list->to_array;
     }
     
-    return $values;
-  }
-  
-  method get_as_string : string ($name : string) {
+    my $value_string = (string)undef;
     
-    my $header_values = $self->get($name);
-    
-    my $header_string = (string)undef;
-    if ($header_values) {
-      $header_string = Fn->join(",", $header_values);
+    if ($values) {
+      $value_string = Fn->join(",", $values);
     }
     
-    return $header_string;
+    return $value_string;
+  }
+  
+  method set_header : void ($name : string, $value : string) {
+    
+    $self->remove($name);
+    
+    $self->add($name, $value);
   }
   
   method names : string[] () {
@@ -123,7 +124,7 @@ class HTTP::Tiny::Headers {
     
     my $buffer = StringBuffer->new;
     for my $name (@$names) {
-      my $header_string = $self->get_as_string($name);
+      my $header_string = $self->header($name);
       $buffer->push("$name:");
       $buffer->push($header_string);
       $buffer->push("\r\n");

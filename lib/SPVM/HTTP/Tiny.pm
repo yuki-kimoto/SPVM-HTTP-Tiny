@@ -15,14 +15,26 @@ The HTTP::Tiny class of L<SPVM> has methods for a HTTP client.
 =head1 Usage
 
   use HTTP::Tiny;
-
-  my $url = "http://google.com";
   
-  my $http = HTTP::Tiny->new;
+  my $response = HTTP::Tiny->new->get('http://example.com/');
   
-  my $res = $http->get($url);
+  unless $response->success {
+    die "Failed!";
+  }
   
-  my $content = $res->content;
+  say $response->status;
+  
+  say $response->reason;
+  
+  while (my ($k, $v) = each %{$response->{headers}}) {
+    for (ref $v eq 'ARRAY' ? @$v : $v) {
+        print "$k: $_\n";
+    }
+  }
+  
+  if (length $response->content) {
+    print $response->content;
+  }
 
 =head1 Fields
 

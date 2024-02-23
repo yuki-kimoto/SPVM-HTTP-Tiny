@@ -226,7 +226,7 @@ class HTTP::Tiny {
       $headers = HTTP::Tiny::Headers->new;
     }
     
-    unless ($headers->get("user-agent")) {
+    unless ($headers->header("user-agent")) {
       my $agent = $self->{agent};
       $headers->add("user-agent" => $agent);
     }
@@ -339,7 +339,7 @@ class HTTP::Tiny {
       
       my $mtime = Sys->stat($file)->st_mtime;
       
-      unless ($option_headers->get("if-modified-since")) {
+      unless ($option_headers->header("if-modified-since")) {
         $option_headers->add("if-modified-since", &_http_date($mtime));
       }
     }
@@ -359,7 +359,7 @@ class HTTP::Tiny {
     if ($response->success) {
       Sys->rename($tempfile, $file);
       
-      my $lm = $response->headers->get_as_string("last-modified");
+      my $lm = $response->headers->header("last-modified");
       
       if ($lm) {
         if (my $mtime = &_parse_http_date($lm)) {

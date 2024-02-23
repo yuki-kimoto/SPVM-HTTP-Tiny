@@ -114,7 +114,7 @@ class HTTP::Tiny::Socket {
     # HTTP Headers
     {
       # host
-      unless ($headers->get("host")) {
+      unless ($headers->header("host")) {
         my $host = $url->host;
         my $port = $url->port;
         if ($port < 0) {
@@ -125,7 +125,7 @@ class HTTP::Tiny::Socket {
       }
       
       # connection
-      unless ($headers->get("connection")) {
+      unless ($headers->header("connection")) {
         $headers->add("connection" => "close");
       }
     }
@@ -256,7 +256,7 @@ class HTTP::Tiny::Socket {
   
   private method read_response_body : int ($response : HTTP::Tiny::Message::Response) {
     
-    my $content_length_string = $response->headers->get_as_string("Content-Length");
+    my $content_length_string = $response->headers->header("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
     
     if ($content_length >= 0) {

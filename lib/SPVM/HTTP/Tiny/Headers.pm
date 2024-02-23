@@ -38,17 +38,17 @@ Adds a header.
 
 Removes a header.
 
-=head2 get
+=head2 header
 
-  method get : string[] ($name : string);
+  method header : string ($name : string);
 
-Gets a header value.
+Gets the current header values.
 
-=head2 get_as_string
+=head2 set_header
 
-  method get_as_string : string ($name : string);
+  method set_header : void ($name : string, $value : string);
 
-Gets a header value as a string.
+Replaces the current header values.
 
 =head2 names
 
