@@ -19,6 +19,15 @@ unless ($meta) {
 }
 
 my %configure_and_runtime_requires = ('SPVM' => '0.9706');
+
+my %test_requires;
+
+# For HTTP tests
+if ($] >= 5.032000) {
+  $test_requires{'Mojolicious'} = '9.36';
+  $test_requires{'Test::TCP'} = '2.22';
+}
+
 WriteMakefile(
   NAME              => 'SPVM::HTTP::Tiny',
   VERSION_FROM           => 'lib/SPVM/HTTP/Tiny.pm',
@@ -53,7 +62,7 @@ WriteMakefile(
     'SPVM::File::Temp' => '0.021',
   },
   TEST_REQUIRES => {
-    
+    %test_requires
   },
 );
 

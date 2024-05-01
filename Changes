@@ -1,4 +1,6 @@
+0.002 2024-05-01
+  [Test Changes]
+    * Mojolicious and Test::TCP is required for HTTP tests in Perl v5.32+.
 0.001 2024-02-23
   [Changes]
     * First release.
-  
