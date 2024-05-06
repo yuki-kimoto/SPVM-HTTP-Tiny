@@ -29,3 +29,5 @@ MANIFEST.SKIP
 README.md
 t/basic.t
 t/lib/SPVM/TestCase/HTTP/Tiny.spvm
+t/test-tcp_and_mojolicious.t
+t/webapp/basic.pl
