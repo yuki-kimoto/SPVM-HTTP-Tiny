@@ -13,7 +13,7 @@ use SPVM ();
 use SPVM 'Int';
 use SPVM 'Sys';
 use SPVM 'Sys::IO::Constant';
-use SPVM 'OS';
+use SPVM 'Sys::OS';
 
 # Close SPVM's stdout and stderr
 # If not, "make test" (Test::Harness->runtests) waits forever,

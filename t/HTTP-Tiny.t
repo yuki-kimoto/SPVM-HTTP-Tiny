@@ -12,7 +12,7 @@ use SPVM ();
 use SPVM 'Int';
 use SPVM 'Sys';
 use SPVM 'Sys::IO::Constant';
-use SPVM 'OS';
+use SPVM 'Sys::OS';
 use SPVM 'HTTP::Tiny';
 
 # Close SPVM's stdout and stderr
