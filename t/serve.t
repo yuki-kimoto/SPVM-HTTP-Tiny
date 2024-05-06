@@ -13,6 +13,8 @@ my $server = Test::TCP->new(
   code => sub {
     my $port = shift;
     
+    # If ">/dev/null 2>&1" does not exists, "make test" waits forever.
+    # I do not know this reason by now.
     my $cmd = "perl t/webapp/basic.pl daemon --listen http://*:$port >/dev/null 2>&1";
     
     warn "[Test Output]Server port:$port";
