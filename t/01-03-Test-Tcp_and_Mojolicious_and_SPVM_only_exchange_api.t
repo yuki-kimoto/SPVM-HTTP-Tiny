@@ -7,7 +7,11 @@ use lib "$FindBin::Bin/lib";
 BEGIN { $ENV{SPVM_BUILD_DIR} = "$FindBin::Bin/.spvm_build"; }
 
 use Test::TCP;
-use SPVM 'Int';
+use HTTP::Tiny;
+
+use SPVM ();
+
+my $api = SPVM::api;
 
 my $server = Test::TCP->new(
   code => sub {
@@ -25,6 +29,12 @@ my $server = Test::TCP->new(
   },
 );
 
-ok(1);
+my $http = HTTP::Tiny->new;
+
+my $port = $server->port;
+
+my $res = $http->get("http://localhost:$port/hello");
+
+like($res->{content}, qr|Hello|);
 
 done_testing;
