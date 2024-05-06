@@ -60,6 +60,7 @@ WriteMakefile(
     'SPVM::Regex' => '0.243',
     'SPVM::Mozilla::CA' => '0.001',
     'SPVM::File::Temp' => '0.021',
+    'Time::Piece' => '0.003',
   },
   TEST_REQUIRES => {
     %test_requires
