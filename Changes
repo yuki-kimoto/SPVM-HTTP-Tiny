@@ -3,6 +3,10 @@
     * Require Perl v5.20.3 instead of Perl v5.32.
     * Remove Mojolicious requirement.
     * Remove Test::TCP requirement.
+  [Incompatible Changes]
+    * Rename HTTP::Tiny#can_ssl method to can_ssl_with_verify.
+    * Rename HTTP::Tiny#can_ssl_get_error method to can_ssl_with_verify_get_error.
+    
 0.002 2024-05-01
   [Test Changes]
     * Mojolicious and Test::TCP is required for HTTP tests in Perl v5.32+.
