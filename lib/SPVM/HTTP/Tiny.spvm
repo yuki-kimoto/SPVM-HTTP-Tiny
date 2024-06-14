@@ -124,16 +124,7 @@ class HTTP::Tiny {
     return $can_ssl;
   }
   
-  method can_ssl_with_verify : int () {
-    
-    my $error_ref = [(string)undef];
-    
-    my $can_ssl = $self->can_ssl_with_verify_get_error($error_ref);
-    
-    return $can_ssl;
-  }
-  
-  method can_ssl_with_verify_get_error : int ($error_ref : string[] = undef) {
+  method can_ssl_with_verify : int ($error_ref : string[] = undef) {
     
     my $can_ssl = &can_ssl($error_ref);
     

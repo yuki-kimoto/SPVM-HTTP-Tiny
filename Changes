@@ -8,6 +8,8 @@
     * Rename HTTP::Tiny#can_ssl_get_error method to can_ssl_with_verify_get_error.
     * Remove HTTP::Tiny#can_ssl method.
     * Remove HTTP::Tiny#can_ssl_get_error method to can_ssl.
+    * Remove HTTP::Tiny#can_ssl_with_verify method.
+    * Remove HTTP::Tiny#can_ssl_with_verify_get_error method to can_ssl.
     
 0.002 2024-05-01
   [Test Changes]
