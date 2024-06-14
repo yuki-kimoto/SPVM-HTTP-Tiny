@@ -1,4 +1,4 @@
-use 5.008_007;
+use v5.20.3;
 use ExtUtils::MakeMaker;
 use strict;
 use warnings;
@@ -23,10 +23,8 @@ my %configure_and_runtime_requires = ('SPVM' => '0.9706');
 my %test_requires;
 
 # For HTTP tests
-if ($] >= 5.032000) {
-  $test_requires{'Mojolicious'} = '9.36';
-  $test_requires{'Test::TCP'} = '2.22';
-}
+$test_requires{'Mojolicious'} = '9.36';
+$test_requires{'Test::TCP'} = '2.22';
 
 WriteMakefile(
   NAME              => 'SPVM::HTTP::Tiny',
