@@ -1,4 +1,6 @@
 0.003 2024-06-14
+  [Support Changes]
+    * Do not support 32bit systems.
   [Requirement Changes]
     * Require Perl v5.20.3 instead of Perl v5.32.
     * Remove Mojolicious requirement.
