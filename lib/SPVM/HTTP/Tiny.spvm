@@ -276,8 +276,8 @@ class HTTP::Tiny {
   
   private static method _uri_escape : string ($input : string) {
     
-    my $regex = Regex->new("([^A-Za-z0-9\-\._~])");
-    my $output = Regex->new("([^A-Za-z0-9\-\._~])")->replace_g($input, method : string ($re : Regex, $match : Regex::Match) {
+    my $input_ref = [$input];
+    Regex->new("([^A-Za-z0-9\-\._~])")->replace_v2_g($input_ref, method : string ($re : Regex, $match : Regex::Match) {
       my $bytes = $match->cap1;
       
       my $escaped_char_buffer = StringBuffer->new;
@@ -292,6 +292,8 @@ class HTTP::Tiny {
       
       return $escaped_char;
     });
+    
+    my $output = $input_ref->[0];
     
     return $output;
   }
