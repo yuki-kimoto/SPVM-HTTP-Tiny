@@ -179,7 +179,7 @@ class HTTP::Tiny::Handle {
       die "Malformed Status-Line: " . $self->to_printable($status_line);
     }
     
-    unless (Regex->new("0*1\.0*[01]")->match($version)) {
+    unless (Re->m($version, "0*1\.0*[01]")) {
       die "Unsupported HTTP protocol: $protocol";
     }
     
@@ -198,12 +198,12 @@ class HTTP::Tiny::Handle {
     while (1) {
       my $line = $self->readline;
       
-      if (my $match = Regex->new("\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)")->match($line)){
+      if (my $match = Re->m($line, "\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)")){
         my $name = Fn->lc($match->cap1);
         my $value = $match->cap2;
         $headers->add($name, $value);
       }
-      elsif (Regex->new("\A\r?\n\z")->match($line)) {
+      elsif (Re->m($line, "\A\r?\n\z")) {
         last;
       }
       else {
@@ -226,7 +226,7 @@ class HTTP::Tiny::Handle {
       
       my $replace_info_ref = new Regex::ReplaceInfo[1];
       my $response_content_ref = [$response_content];
-      my $replace_info = Regex->new("\A([^\r\n]*\r?\n)")->replace_v2($response_content_ref, "");
+      my $replace_info = Re->s($response_content_ref, "\A([^\r\n]*\r?\n)", "");
       $response_content = $response_content_ref->[0];
       $self->{response_buffer} = StringBuffer->new($response_content);
       
