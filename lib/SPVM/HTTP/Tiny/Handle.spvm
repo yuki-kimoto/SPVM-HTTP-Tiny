@@ -12,6 +12,7 @@ class HTTP::Tiny::Handle {
   use Fn;
   use StringBuffer;
   use Format;
+  use Re;
   use Regex;
   use Regex::ReplaceInfo;
   use IO::Socket::INET;

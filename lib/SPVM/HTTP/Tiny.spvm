@@ -5,6 +5,7 @@ class HTTP::Tiny {
   version "0.004";
   
   use Fn;
+  use Re;
   use Regex;
   use Hash;
   use Format;
@@ -276,7 +277,7 @@ class HTTP::Tiny {
   private static method _uri_escape : string ($input : string) {
     
     my $regex = Regex->new("([^A-Za-z0-9\-\._~])");
-    my $output = $regex->replace_g($input, method : string ($re : Regex, $match : Regex::Match) {
+    my $output = Regex->new("([^A-Za-z0-9\-\._~])")->replace_g($input, method : string ($re : Regex, $match : Regex::Match) {
       my $bytes = $match->cap1;
       
       my $escaped_char_buffer = StringBuffer->new;

@@ -8,6 +8,7 @@ class HTTP::Tiny::URL {
   allow HTTP::Tiny::Handle;
   
   use StringBuffer;
+  use Re;
   
   # Fields
   has scheme : string;
