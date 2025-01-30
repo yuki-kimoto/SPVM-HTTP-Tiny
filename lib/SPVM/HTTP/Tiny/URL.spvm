@@ -70,7 +70,7 @@ class HTTP::Tiny::URL {
       
       # userinfo might be percent escaped, so recover real auth info
       my $auth_ref = [$auth];
-      Regex->new("%([0-9A-Fa-f]{2})")->replace_v2_g($auth_ref, method : string ($re : Regex, $match : Regex::Match) {
+      Re->s($auth_ref, ["%([0-9A-Fa-f]{2})", "g"], method : string ($re : Regex, $match : Regex::Match) {
         return Fn->chr(Fn->hex($match->cap1));
       });
       $auth = $auth_ref->[0];
