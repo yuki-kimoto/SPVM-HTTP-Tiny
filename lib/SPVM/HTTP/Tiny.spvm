@@ -6,7 +6,6 @@ class HTTP::Tiny {
   
   use Fn;
   use Re;
-  use Regex;
   use Hash;
   use Format;
   use Mozilla::CA;
