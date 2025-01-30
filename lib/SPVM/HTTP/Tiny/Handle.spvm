@@ -166,7 +166,7 @@ class HTTP::Tiny::Handle {
     my $version = (string)undef;
     my $status = (string)undef;
     my $reason = (string)undef;
-    if (my $match = Regex->new("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n")->match($status_line)) {
+    if (my $match = Re->m($status_line, "\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n")) {
       $protocol = $match->cap1;
       $version = $match->cap2;
       $status = $match->cap3;
