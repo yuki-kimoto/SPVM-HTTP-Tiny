@@ -47,7 +47,7 @@ class HTTP::Tiny::URL {
     my $host = (string)undef;
     my $path_query = (string)undef;
     
-    if (my $match = Regex->new("\A([^:/?#]+)://([^/?#]*)([^#]*)")->match($url_string)) {
+    if (my $match = Re->m($url_string, "\A([^:/?#]+)://([^/?#]*)([^#]*)")) {
       $scheme = $match->cap1;
       $host = $match->cap2;
       $path_query = $match->cap3;
@@ -58,7 +58,7 @@ class HTTP::Tiny::URL {
     
     $scheme = Fn->lc($scheme);
     
-    unless (Regex->new("\A/")->match($path_query)) {
+    unless (Re->m($path_query, "\A/")) {
       $path_query = "/$path_query";
     }
     
