@@ -322,7 +322,7 @@ class HTTP::Tiny::Handle {
   
   private method to_printable : string ($string : string) {
     my $string_ref = [$string];
-    Regex->new("([^\x20-\x7E])")->replace_v2($string_ref, method : string ($re : Regex, $match : Regex::Match) {
+    Re->s($string_ref, "([^\x20-\x7E])", method : string ($re : Regex, $match : Regex::Match) {
       
       my $replaced = Format->sprintf("\\x%.2X", [(object)Fn->ord($match->cap1)]);
       
