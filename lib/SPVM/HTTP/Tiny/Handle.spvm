@@ -162,13 +162,11 @@ class HTTP::Tiny::Handle {
     
     my $status_line = $self->readline;
     
-    my $status_line_re = Regex->new("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n");
-    
     my $protocol = (string)undef;
     my $version = (string)undef;
     my $status = (string)undef;
     my $reason = (string)undef;
-    if (my $match = $status_line_re->match($status_line)) {
+    if (my $match = Regex->new("\A(HTTP\/(0*\d+\.0*\d+))[\x09\x20]+([0-9]{3})(?:[\x09\x20]+([^\r\n]*))?\r?\n")->match($status_line)) {
       $protocol = $match->cap1;
       $version = $match->cap2;
       $status = $match->cap3;
@@ -197,17 +195,15 @@ class HTTP::Tiny::Handle {
   private method read_response_headers : HTTP::Tiny::Headers ($response : HTTP::Tiny::Message::Response) {
     my $headers = $response->headers;
     
-    my $empty_line_re = Regex->new("\A\r?\n\z");
-    my $header_line_re = Regex->new("\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)");
     while (1) {
       my $line = $self->readline;
       
-      if (my $match = $header_line_re->match($line)){
+      if (my $match = Regex->new("\A([^\x00-\x1F\x7F:]+):[\x09\x20]*([^\r\n]*)")->match($line)){
         my $name = Fn->lc($match->cap1);
         my $value = $match->cap2;
         $headers->add($name, $value);
       }
-      elsif ($empty_line_re->match($line)) {
+      elsif (Regex->new("\A\r?\n\z")->match($line)) {
         last;
       }
       else {
