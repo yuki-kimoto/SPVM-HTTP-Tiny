@@ -81,7 +81,7 @@ class HTTP::Tiny::URL {
     my $replace_info_ref = [(Regex::ReplaceInfo)undef];
     
     my $host_ref = [$host];
-    my $replace_info = Regex->new(":(\d*)\z")->replace_v2($host_ref, "");
+    my $replace_info = Re->s($host_ref, ":(\d*)\z", "");
     $host = $host_ref->[0];
     
     if ($replace_info) {
