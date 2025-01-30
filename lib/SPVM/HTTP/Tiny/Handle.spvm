@@ -220,18 +220,19 @@ class HTTP::Tiny::Handle {
     
     my $read_buffer = (mutable string)new_string_len &READ_BUFFER_SIZE;
     
-    my $line_re = Regex->new("\A([^\r\n]*\r?\n)");
     my $line = (string)undef;
     while (1) {
       my $response_content = $self->{response_buffer}->to_string;
       
       my $replace_info_ref = new Regex::ReplaceInfo[1];
-      $response_content = $line_re->replace($response_content, "", 0, -1, {info => $replace_info_ref});
+      my $response_content_ref = [$response_content];
+      my $replace_info = Regex->new("\A([^\r\n]*\r?\n)")->replace_v2($response_content_ref, "");
+      $response_content = $response_content_ref->[0];
       $self->{response_buffer} = StringBuffer->new($response_content);
       
-      my $match = $replace_info_ref->[0]->match;
-      
-      if ($match) {
+      if ($replace_info) {
+        my $match = $replace_info->match;
+        
         $line = $match->cap1;
         last;
       }
