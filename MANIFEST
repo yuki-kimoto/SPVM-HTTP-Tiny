@@ -9,6 +9,8 @@ lib/SPVM/HTTP/Tiny.pm
 lib/SPVM/HTTP/Tiny.spvm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.pm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.spvm
+lib/SPVM/HTTP/Tiny/Daemon.pm
+lib/SPVM/HTTP/Tiny/Daemon.spvm
 lib/SPVM/HTTP/Tiny/Handle.pm
 lib/SPVM/HTTP/Tiny/Handle.spvm
 lib/SPVM/HTTP/Tiny/Headers.pm
