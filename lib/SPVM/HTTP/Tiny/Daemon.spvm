@@ -6,7 +6,7 @@ class HTTP::Tiny::Daemon {
   
   use IO::Socket::IP;
   
-  has io_socket : IO::Socket;
+  has server_socket : IO::Socket;
   
   # Class Methods
   static method new : HTTP::Tiny::Daemon ($options : object[]) {
@@ -18,15 +18,27 @@ class HTTP::Tiny::Daemon {
       $new_options = Fn->merge_options($new_options, {Listen => 5});
     }
     
-    my $io_socket = IO::Socket::IP->new($new_options);
+    my $server_socket = IO::Socket::IP->new($new_options);
     
     my $daemon = new HTTP::Tiny::Daemon;
     
-    $daemon->{io_socket} = $io_socket;
+    $daemon->{server_socket} = $server_socket;
     
     return $daemon;
   }
   
+  # Instance Mehtods
+  method accept : IO::Socket () {
+    
+    my $server_socket = $self->{server_socket};
+    
+    my $accepted_socket = $server_socket->accept;
+    
+    return $accepted_socket;
+  }
+  
+  
+
 }
 
 =pod HTTP::Daemon
