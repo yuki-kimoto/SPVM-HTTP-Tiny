@@ -5,8 +5,22 @@ class HTTP::Tiny::Daemon {
   version_from HTTP::Tiny;
   
   use IO::Socket::IP;
+  use HTTP::Tiny::Message::Request;
+  
+  our $CRLF : string;
+  
+  our $HTTP_VERSION : string;
+  
+  INIT {
+    $CRLF = "\015\012";
+    $HTTP_VERSION = "HTTP/1.1";
+  }
   
   has server_socket : IO::Socket;
+  
+  has request : HTTP::Tiny::Message::Request;
+  
+  has response : ro HTTP::Tiny::Message::Response;
   
   # Class Methods
   static method new : HTTP::Tiny::Daemon ($options : object[]) {
@@ -37,8 +51,6 @@ class HTTP::Tiny::Daemon {
     return $accepted_socket;
   }
   
-  
-
 }
 
 =pod HTTP::Daemon
