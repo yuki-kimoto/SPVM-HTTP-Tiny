@@ -6,6 +6,7 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   allow HTTP::Tiny::Handle;
   allow HTTP::Tiny;
+  allow HTTP::Tiny::Daemon;
   
   use HTTP::Tiny::Headers;
   use HTTP::Tiny::Status;
@@ -24,6 +25,8 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     my $self = new HTTP::Tiny::Message::Response;
     
+    $self->{protocol} = "HTTP/1.1";
+    
     $self->{content_buffer} = StringBuffer->new;
     
     $self->{headers} = HTTP::Tiny::Headers->new;
@@ -41,10 +44,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     my $status = $self->{status};
     
     my $reason = HTTP::Tiny::Status->status_message($status);
-    
-    unless ($reason) {
-      die "The status code $status is invalid.";
-    }
     
     return $reason;
   }
@@ -70,6 +69,11 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     # TODO
     
     return undef;
+  }
+  
+  private method message : string () {
+    
+    return $self->reason;
   }
   
 }

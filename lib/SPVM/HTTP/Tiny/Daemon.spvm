@@ -6,8 +6,11 @@ class HTTP::Tiny::Daemon {
   
   use IO::Socket::IP;
   use HTTP::Tiny::Message::Request;
+  use HTTP::Tiny::Message::Response;
   use IO;
   use HTTP::Tiny::Status;
+  use Re;
+  use Sys::Time::Tm;
   
   our $CRLF : string;
   
@@ -68,6 +71,83 @@ class HTTP::Tiny::Daemon {
     while (my $read_length = $fh->read($buffer)) {
       $io_socket->write($buffer, $read_length);
     }
+  }
+  
+  method send_response : void ($res : HTTP::Tiny::Message::Response) {
+    
+    my $io_socket = $self->{io_socket};
+    
+    unless ($res) {
+      die "The HTTP response \$res must be defined.";
+    }
+    
+    my $content = $res->content;
+    
+    my $chunked = 0;
+    
+    my $status = $res->status;
+    
+    my $message = $res->message;
+    
+    my $protocol = $res->protocol;
+    
+    my $request = $self->{request};
+    
+    my $request_has_data_callback = 0;
+    
+    if (Re->m($status, "^(1\d\d|[23]04)$")) {
+        $res->headers->remove("Content-Length");
+        $content = "";
+    }
+    elsif ($request && $request->method eq "HEAD") {
+      
+    }
+    elsif ($request_has_data_callback) {
+      $res->headers->add("Transfer-Encoding" => "chunked");
+      $chunked++;
+    }
+    elsif (length($content)) {
+      $res->headers->add("Content-Length" => length($content));
+    }
+    
+    my $start_line = $res->build_start_line;
+    $io_socket->write($start_line);
+    
+    my $http_date = &time2str(Sys->time);
+    my $data_header = "Date: $http_date$CRLF";
+    $io_socket->write($data_header);
+    
+    my $headers_as_string = $res->build_headers;
+    $io_socket->write($headers_as_string);
+    $io_socket->write($CRLF);
+    
+    if ($self->{request}->method eq "HEAD") {
+      # no content
+    }
+    elsif (length $content) {
+      $io_socket->write($content);
+    }
+    
+  }
+  
+  private static method time2str : string ($time : long) {
+    
+    my $tm = Sys->gmtime($time);
+    
+    my $DoW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    
+    my $MoY = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    my $http_date = Fn->sprintf(
+        "%s, %02d %s %04d %02d:%02d:%02d GMT",
+        [(object)
+          $DoW->[$tm->tm_wday],
+          $tm->tm_mday, $MoY->[$tm->tm_mon], $tm->tm_year + 1900,
+          $tm->tm_hour, $tm->tm_min,       $tm->tm_sec
+        ]
+    );
+    
+    return $http_date;
   }
 
 }
