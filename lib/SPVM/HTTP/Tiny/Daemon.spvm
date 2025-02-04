@@ -99,7 +99,7 @@ class HTTP::Tiny::Daemon {
         $res->headers->remove("Content-Length");
         $content = "";
     }
-    elsif ($request && $request->method eq "HEAD") {
+    elsif ($request->method eq "HEAD") {
       
     }
     elsif ($request_has_data_callback) {
@@ -125,6 +125,45 @@ class HTTP::Tiny::Daemon {
       # no content
     }
     elsif (length $content) {
+      $io_socket->write($content);
+    }
+    
+  }
+  
+  private method send_error : void ($error : string) {
+    
+    my $io_socket = $self->{io_socket};
+    
+    my $status = 400;
+    
+    my $res = new HTTP::Tiny::Message::Response;
+    
+    $res->{status} = $status;
+    
+    my $status_message = $res->message;
+    
+    my $start_line = $res->build_start_line;
+    $io_socket->write($start_line);
+    
+    my $http_date = &time2str(Sys->time);
+    my $data_header = "Date: $http_date$CRLF";
+    $io_socket->write($data_header);
+    
+    my $content = 
+"<title>$status $status_message</title>
+<h1>$status $status_message</h1>
+$error
+";
+    $io_socket->write("Content-Type:text/html$CRLF");
+    my $content_length = length $content;
+    if ($content_length) {
+      $io_socket->write("Content-Length:$content_length$CRLF");
+    }
+    $io_socket->write($CRLF);
+    
+    my $request = $self->{request};
+    
+    unless ($request->method eq "HEAD") {
       $io_socket->write($content);
     }
     
