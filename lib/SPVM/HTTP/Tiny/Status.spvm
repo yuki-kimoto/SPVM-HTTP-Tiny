@@ -1,19 +1,13 @@
-# Copyright (c) 2023 Yuki Kimoto
+# Copyright (c) 2025 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
+class HTTP::Tiny::Status {
   version_from HTTP::Tiny;
   
-  allow HTTP::Tiny::Handle;
-  allow HTTP::Tiny;
-  
-  use HTTP::Tiny::Headers;
-  use Hash;
-  
-  our $REASONS_H : Hash of string;
+  our $MESSAGES_H : Hash of string;
   
   INIT {
-    $REASONS_H = Hash->new({
+    $MESSAGES_H = Hash->new({
       "100" => "Continue",
       "101" => "Switching Protocols",
       "102" => "Processing",                         # RFC 2518 (WebDAV)
@@ -80,76 +74,15 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     });
   }
   
-  # Fields
-  has protocol : ro string;
-  
-  has status : ro int;
-  
-  has success : ro byte;
-  
-  has content_buffer : StringBuffer;
-  
-  # Class Methods
-  private static method new : HTTP::Tiny::Message::Response () {
+  static method status_message : string ($code : int) {
     
-    my $self = new HTTP::Tiny::Message::Response;
+    my $message = $MESSAGES_H->get_string($code);
     
-    $self->{content_buffer} = StringBuffer->new;
-    
-    $self->{headers} = HTTP::Tiny::Headers->new;
-    
-    return $self;
-  }
-  
-  # Instance Methods
-  method content : string () {
-    return $self->{content_buffer}->to_string;
-  }
-  
-  method reason : string () {
-    
-    my $status = $self->{status};
-    
-    my $reason = $REASONS_H->get_string($status);
-    
-    unless ($reason) {
-      $REASONS_H->get_string("404");
+    unless ($message) {
+      die "A message for the status code \$code is not found.";
     }
     
-    return $reason;
-  }
-  
-  method build_start_line : string () {
-    
-    my $status = $self->{status};
-    
-    unless ($status > 0) {
-      $status = 404;
-    }
-    
-    my $reason = $REASONS_H->get_string($status);
-    
-    my $start_line = "HTTP/1.1 $status $reason\x0d\x0a";
-    
-    return $start_line;
-  }
-  
-  method build_headers : string () {
-    # TODO
-    
-    return undef;
-  }
-  
-  method build_body : string (){
-    # TODO
-    
-    return undef;
-  }
-  
-  method default_message : string ($code : int) {
-    
-    
-    
+    return $message;
   }
   
 }

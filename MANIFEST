@@ -21,6 +21,8 @@ lib/SPVM/HTTP/Tiny/Message/Request.pm
 lib/SPVM/HTTP/Tiny/Message/Request.spvm
 lib/SPVM/HTTP/Tiny/Message/Response.pm
 lib/SPVM/HTTP/Tiny/Message/Response.spvm
+lib/SPVM/HTTP/Tiny/Status.pm
+lib/SPVM/HTTP/Tiny/Status.spvm
 lib/SPVM/HTTP/Tiny/URL.pm
 lib/SPVM/HTTP/Tiny/URL.spvm
 LICENSE
