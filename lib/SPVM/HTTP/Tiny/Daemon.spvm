@@ -6,6 +6,7 @@ class HTTP::Tiny::Daemon {
   
   use IO::Socket::IP;
   use HTTP::Tiny::Message::Request;
+  use IO;
   
   our $CRLF : string;
   
@@ -16,7 +17,7 @@ class HTTP::Tiny::Daemon {
     $HTTP_VERSION = "HTTP/1.1";
   }
   
-  has server_socket : IO::Socket;
+  has io_socket : IO::Socket;
   
   has request : HTTP::Tiny::Message::Request;
   
@@ -32,11 +33,11 @@ class HTTP::Tiny::Daemon {
       $new_options = Fn->merge_options($new_options, {Listen => 5});
     }
     
-    my $server_socket = IO::Socket::IP->new($new_options);
+    my $io_socket = IO::Socket::IP->new($new_options);
     
     my $daemon = new HTTP::Tiny::Daemon;
     
-    $daemon->{server_socket} = $server_socket;
+    $daemon->{io_socket} = $io_socket;
     
     return $daemon;
   }
@@ -44,9 +45,9 @@ class HTTP::Tiny::Daemon {
   # Instance Mehtods
   method accept : IO::Socket () {
     
-    my $server_socket = $self->{server_socket};
+    my $io_socket = $self->{io_socket};
     
-    my $accepted_socket = $server_socket->accept;
+    my $accepted_socket = $io_socket->accept;
     
     return $accepted_socket;
   }
