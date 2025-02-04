@@ -43,15 +43,32 @@ class HTTP::Tiny::Daemon {
   }
   
   # Instance Mehtods
-  method accept : IO::Socket () {
+  method accept : HTTP::Tiny::Daemon () {
     
     my $io_socket = $self->{io_socket};
     
     my $accepted_socket = $io_socket->accept;
     
-    return $accepted_socket;
+    my $daemon = new HTTP::Tiny::Daemon;
+    
+    $daemon->{io_socket} = $accepted_socket;
+    
+    return $daemon;
   }
   
+  method send_file : void ($file : string)  {
+    
+    my $io_socket = $self->{io_socket};
+    
+    my $fh = IO->open($file, "<");
+    
+    my $buffer_length = 8 * 1024;
+    my $buffer = (mutable string)new_string_len $buffer_length;
+    while (my $read_length = $fh->read($buffer)) {
+      $io_socket->write($buffer, $read_length);
+    }
+  }
+
 }
 
 =pod HTTP::Daemon
