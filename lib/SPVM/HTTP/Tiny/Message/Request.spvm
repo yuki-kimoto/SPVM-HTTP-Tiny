@@ -11,10 +11,11 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   # Fields
   has method : ro string;
+  
   has url : ro HTTP::Tiny::URL;
   
   # Class Methods
-  private static method new : HTTP::Tiny::Message::Request ($options : object[]) {
+  static method new : HTTP::Tiny::Message::Request ($options : object[]) {
     
     my $options_h = Hash->new($options);
     

@@ -21,7 +21,7 @@ class HTTP::Tiny::URL {
   
   has auth : string;
   
-  private static method new : HTTP::Tiny::URL ($options : object[]) {
+  static method new : HTTP::Tiny::URL ($options : object[]) {
     
     my $options_h = Hash->new($options);
     
@@ -40,7 +40,7 @@ class HTTP::Tiny::URL {
     return $self;
   }
   
-  private static method parse : HTTP::Tiny::URL ($url_string : string) {
+  static method parse : HTTP::Tiny::URL ($url_string : string) {
     
     # URI regex adapted from the URI module
     my $scheme = (string)undef;
