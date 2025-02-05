@@ -27,6 +27,11 @@ class HTTP::Tiny::Daemon {
   
   has response : ro HTTP::Tiny::Message::Response;
   
+  # Private Fields
+  has httpd_nomore : byte;
+  
+  has httpd_rbuf : StringBuffer;
+  
   # Class Methods
   static method new : HTTP::Tiny::Daemon ($options : object[]) {
     
@@ -130,7 +135,7 @@ class HTTP::Tiny::Daemon {
     
   }
   
-  private method send_error : void ($error : string) {
+  private method send_error : void ($status : code, $error : string = undef) {
     
     my $io_socket = $self->{io_socket};
     
@@ -188,7 +193,266 @@ $error
     
     return $http_date;
   }
+  
+  private static method _http_version_number : int ($http_version : string) {
+    
+    my $http_version_number = 0;
+    if (my $match = Re->m($http_version, ["^(?:HTTP/)?(\d+)\.(\d+)$", "i"])) {
+      $http_version_number = $match->cap1 * 1000 + $match->cap2;
+    }
+    
+    return $http_version_number;
+  }
+  
+  method get_request : HTTP::Tiny::Message::Request ($only_headers : int = 0) {
+    
+    my $io_socket = $self->{io_socket};
+    
+    my ($self, $only_headers) = @_;
+    if ($self->{httpd_nomore}) {
+      die "No more requests from this connection";
+    }
+    
+    my $buf = $self->{httpd_rbuf};
+    
+    my $timeout = $io_socket->timeout;
+    
+    while (1) {
+      my $tmp_buffer = (mutable string)new_string_len 2048
+      my $read_length = $io_socket->read($tmp_buffer);
+      
+      if ($read_length == 0) {
+        last;
+      }
+      
+      $buf->push($tmp_buffer, $read_length);
+      
+      Re->s($buf, "^(?:\015?\012)+", "");
+      
+      if (Re->m($buf, "\012")) {
+        if (Re->m($buf, "\w+[^\012]+HTTP\/\d+\.\d+\015?\012")) {
+          if (Re->m($buf, "\015?\012\015?\012") {
+            last
+          }
+          elsif ($buf->length > 16 * 1024) {
+            # $self->send_error(413);
+            die "Very long header";
+          }
+        }
+        else {
+          last
+        }
+      }
+      elsif ($buf->length > 16 * 1024) {
+        # $self->send_error(414);            # REQUEST_URI_TOO_LARGE
+        die "Very long first line";
+      }
+    }
+    
+    my $httpd_client_proto = 
+    
+    if (my $replace_info = Re->s($buf, "^(\S+)[ \t]+(\S+)(?:[ \t]+(HTTP\/\d+\.\d+))?[^\012]*\012", "") {
+      my $match = $replace_info->match;
+      
+      my $method = $match->cap1;
+      my $url    = $match->cap2;
+      my $http_version  = $match->cap3;
+      
+      my $uri = HTTP::Tiny::URL->parse($uri);
+      
+      my $request = HTTP::Request->new({method => $method, url => $url);
+      
+      my $httpd_version_number = _http_version_number($http_version);
+      
+      unless ($httpd_version_number < _http_version_number(""HTTP/1.1")) {
+        die "505 HTTP Version Not Supported";
+      }
+    }
+    else {
+      # $self->send_error(400);                # BAD_REQUEST
+      die "Bad request line: " . $buf->to_string);
+    }
+    
+    # we expect to find some headers
+    my ($key, $val);
+HEADER:
+    while ($buf =~ s/^([^\012]*)\012//) {
+        $_ = $1;
+        s/\015$//;
+        if (/^([^:\s]+)\s*:\s*(.*)/) {
+            $request->push_header($key, $val) if $key;
+            ($key, $val) = ($1, $2);
+        }
+        elsif (/^\s+(.*)/) {
+            $val .= " $1";
+        }
+        else {
+            last HEADER;
+        }
+    }
+    $request->push_header($key, $val) if $key;
 
+    my $conn = $request->header('Connection');
+    if ($proto >= $HTTP_1_1) {
+        ${*$self}{'httpd_nomore'}++ if $conn && lc($conn) =~ /\bclose\b/;
+    }
+    else {
+        ${*$self}{'httpd_nomore'}++
+            unless $conn && lc($conn) =~ /\bkeep-alive\b/;
+    }
+
+    if ($only_headers) {
+        ${*$self}{'httpd_rbuf'} = $buf;
+        return $r;
+    }
+
+    # Find out how much content to read
+    my $tr_enc  = $request->header('Transfer-Encoding');
+    my $ct_type = $request->header('Content-Type');
+    my $ct_len  = $request->header('Content-Length');
+
+    # Act on the Expect header, if it's there
+    for my $e ($request->header('Expect')) {
+        if (lc($e) eq '100-continue') {
+            $self->send_status_line(100);
+            $self->send_crlf;
+        }
+        else {
+            $self->send_error(417);
+            $self->reason("Unsupported Expect header value");
+            return;
+        }
+    }
+
+    if ($tr_enc && lc($tr_enc) eq 'chunked') {
+
+        # Handle chunked transfer encoding
+        my $body = "";
+    CHUNK:
+        while (1) {
+            print STDERR "Chunked\n" if $DEBUG;
+            if ($buf =~ s/^([^\012]*)\012//) {
+                my $chunk_head = $1;
+                unless ($chunk_head =~ /^([0-9A-Fa-f]+)/) {
+                    $self->send_error(400);
+                    $self->reason("Bad chunk header $chunk_head");
+                    return;
+                }
+                my $size = hex($1);
+                last CHUNK if $size == 0;
+
+                my $missing = $size - length($buf) + 2;    # 2=CRLF at chunk end
+                     # must read until we have a complete chunk
+                while ($missing > 0) {
+                    print STDERR "Need $missing more bytes\n" if $DEBUG;
+                    my $n = $self->_need_more($buf, $timeout, $fdset);
+                    return unless $n;
+                    $missing -= $n;
+                }
+                $body .= substr($buf, 0, $size);
+                substr($buf, 0, $size + 2) = '';
+
+            }
+            else {
+                # need more data in order to have a complete chunk header
+                return unless $self->_need_more($buf, $timeout, $fdset);
+            }
+        }
+        $request->content($body);
+
+        # pretend it was a normal entity body
+        $request->remove_header('Transfer-Encoding');
+        $request->header('Content-Length', length($body));
+
+        my ($key, $val);
+    FOOTER:
+        while (1) {
+            if ($buf !~ /\012/) {
+
+                # need at least one line to look at
+                return unless $self->_need_more($buf, $timeout, $fdset);
+            }
+            else {
+                $buf =~ s/^([^\012]*)\012//;
+                $_ = $1;
+                s/\015$//;
+                if (/^([\w\-]+)\s*:\s*(.*)/) {
+                    $request->push_header($key, $val) if $key;
+                    ($key, $val) = ($1, $2);
+                }
+                elsif (/^\s+(.*)/) {
+                    $val .= " $1";
+                }
+                elsif (!length) {
+                    last FOOTER;
+                }
+                else {
+                    $self->reason("Bad footer syntax");
+                    return;
+                }
+            }
+        }
+        $request->push_header($key, $val) if $key;
+
+    }
+    elsif ($tr_enc) {
+        $self->send_error(501);    # Unknown transfer encoding
+        $self->reason("Unknown transfer encoding '$tr_enc'");
+        return;
+
+    }
+    elsif ($ct_len) {
+
+        # After a security issue, we ensure we comply to
+        # RFC-7230 -- HTTP/1.1 Message Syntax and Routing
+        # section 3.3.2 -- Content-Length
+        # section 3.3.3 -- Message Body Length
+
+        # split and clean up Content-Length ', ' separated string
+        my @vals = map {my $str = $_; $str =~ s/^\s+//; $str =~ s/\s+$//; $str }
+            split ',', $ct_len;
+        # check that they are all numbers (RFC: Content-Length = 1*DIGIT)
+        my @nums = grep { /^[0-9]+$/} @vals;
+        unless (@vals == @nums) {
+            my $reason = "Content-Length value must be an unsigned integer";
+            $self->send_error(400, $reason);
+            $self->reason($reason);
+            return;
+        }
+        # check they are all the same
+        my $ct_len = shift @nums;
+        foreach (@nums) {
+            next if $_ == $ct_len;
+            my $reason = "Content-Length values are not the same";
+            $self->send_error(400, $reason);
+            $self->reason($reason);
+            return;
+        }
+        # ensure we have now a fixed header, with only 1 value
+        $request->header('Content-Length' => $ct_len);
+
+        # Plain body specified by "Content-Length"
+        my $missing = $ct_len - length($buf);
+        while ($missing > 0) {
+            print "Need $missing more bytes of content\n" if $DEBUG;
+            my $n = $self->_need_more($buf, $timeout, $fdset);
+            return unless $n;
+            $missing -= $n;
+        }
+        if (length($buf) > $ct_len) {
+            $request->content(substr($buf, 0, $ct_len));
+            substr($buf, 0, $ct_len) = '';
+        }
+        else {
+            $request->content($buf);
+            $buf = '';
+        }
+    }
+    
+    ${*$self}{'httpd_rbuf'} = $buf;
+
+    $r;
+  }
 }
 
 =pod HTTP::Daemon
@@ -343,8 +607,16 @@ READ_HEADER:
     my $method = $1;
     my $uri    = $2;
     my $proto  = $3 || "HTTP/0.9";
-    $uri = "http://$uri" if $method eq "CONNECT";
-    $uri = $HTTP::URI_CLASS->new($uri, $self->daemon->url);
+    
+    if ($method eq "CONNECT") {
+      die "501 Not Implemented.";
+    }
+    
+    unless (Re->m($method, "^(GET|POST|HEAD|PUT|DELETE)$")) {
+      die "400 Bad Request.";
+    }
+    
+    my $uri = HTTP::Tiny::URL->new($uri, $self->daemon->url);
     my $r = HTTP::Request->new($method, $uri);
     $r->protocol($proto);
     ${*$self}{'httpd_client_proto'} = $proto = _http_version($proto);
