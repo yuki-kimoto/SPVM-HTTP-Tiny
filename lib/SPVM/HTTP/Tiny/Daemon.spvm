@@ -30,8 +30,6 @@ class HTTP::Tiny::Daemon {
   # Private Fields
   has httpd_nomore : byte;
   
-  has httpd_rbuf : StringBuffer;
-  
   # Class Methods
   static method new : HTTP::Tiny::Daemon ($options : object[]) {
     
@@ -213,7 +211,7 @@ $error
       die "No more requests from this connection";
     }
     
-    my $buf = $self->{httpd_rbuf};
+    my $buf = StringBuffer->new;
     
     my $timeout = $io_socket->timeout;
     
@@ -274,58 +272,52 @@ $error
     }
     
     # we expect to find some headers
-    my ($key, $val);
-HEADER:
-    while ($buf =~ s/^([^\012]*)\012//) {
-        $_ = $1;
-        s/\015$//;
-        if (/^([^:\s]+)\s*:\s*(.*)/) {
-            $request->push_header($key, $val) if $key;
-            ($key, $val) = ($1, $2);
+    my $key = (string)undef;
+    my $val = (string)undef;
+    while (my $replace_info = Re->s($buf, "^([^\012]*)\012", "") {
+      
+      my $match = $replace_info->match;
+      
+      my $header_line = $match->cap1;
+      
+      my $header_line_buffer = StringBuffer->new($header_line);
+      
+      Re->s($header_line_buffer, "\015$", "");
+      
+      if (my $match = Re->m($header_line_buffer, "^([^:\s]+)\s*:\s*(.*)")) {
+        if ($key) {
+          $request->headers->add($key, $val);
         }
-        elsif (/^\s+(.*)/) {
-            $val .= " $1";
-        }
-        else {
-            last HEADER;
-        }
+        
+        $key = $match->cap1;
+        $val = $match->cap2;
+      }
+      elsif (my $match = Re->m($header_line_buffer, "^\s+(.*)")) {
+        $val .= " " . $match->cap1;
+      }
+      else {
+        last;
+      }
     }
-    $request->push_header($key, $val) if $key;
-
-    my $conn = $request->header('Connection');
-    if ($proto >= $HTTP_1_1) {
-        ${*$self}{'httpd_nomore'}++ if $conn && lc($conn) =~ /\bclose\b/;
+    
+    $request->headers->add($key, $val) if $key;
+    
+    my $conn = $request->headers->header("Connection");
+    if ($conn && Re->m(Fn->lc($conn), "\bclose\b") {
+      $self->{httpd_nomore}++ ;
     }
-    else {
-        ${*$self}{'httpd_nomore'}++
-            unless $conn && lc($conn) =~ /\bkeep-alive\b/;
+    
+    if ($request->method eq "HEAD") {
+      return $request;
     }
-
-    if ($only_headers) {
-        ${*$self}{'httpd_rbuf'} = $buf;
-        return $r;
-    }
-
+    
     # Find out how much content to read
-    my $tr_enc  = $request->header('Transfer-Encoding');
-    my $ct_type = $request->header('Content-Type');
-    my $ct_len  = $request->header('Content-Length');
-
-    # Act on the Expect header, if it's there
-    for my $e ($request->header('Expect')) {
-        if (lc($e) eq '100-continue') {
-            $self->send_status_line(100);
-            $self->send_crlf;
-        }
-        else {
-            $self->send_error(417);
-            $self->reason("Unsupported Expect header value");
-            return;
-        }
-    }
-
+    my $tr_enc  = $request->headers->header("Transfer-Encoding");
+    my $ct_type = $request->headers->header("Content-Type");
+    my $ct_len  = $request->headers->header("Content-Length");
+    
     if ($tr_enc && lc($tr_enc) eq 'chunked') {
-
+    
         # Handle chunked transfer encoding
         my $body = "";
     CHUNK:
@@ -393,65 +385,48 @@ HEADER:
             }
         }
         $request->push_header($key, $val) if $key;
-
     }
     elsif ($tr_enc) {
-        $self->send_error(501);    # Unknown transfer encoding
-        $self->reason("Unknown transfer encoding '$tr_enc'");
-        return;
-
+      die "501 Unknown transfer encoding '$tr_enc'";
     }
     elsif ($ct_len) {
-
-        # After a security issue, we ensure we comply to
-        # RFC-7230 -- HTTP/1.1 Message Syntax and Routing
-        # section 3.3.2 -- Content-Length
-        # section 3.3.3 -- Message Body Length
-
-        # split and clean up Content-Length ', ' separated string
-        my @vals = map {my $str = $_; $str =~ s/^\s+//; $str =~ s/\s+$//; $str }
-            split ',', $ct_len;
-        # check that they are all numbers (RFC: Content-Length = 1*DIGIT)
-        my @nums = grep { /^[0-9]+$/} @vals;
-        unless (@vals == @nums) {
-            my $reason = "Content-Length value must be an unsigned integer";
-            $self->send_error(400, $reason);
-            $self->reason($reason);
-            return;
+      
+      if (Re->m($ct_len, ",")) {
+        die "400 Invalid Content-Length'";
+      }
+      
+      my $content_length = 0;
+      eval { $content_length = Fn->to_long($ct_length); }
+      if ($@) {
+        die "400 Invalid Content-Length'";
+      }
+      
+      my $tmp_buffer = (mutable string)new_string_len 2048;
+      my $total_readl_length = 0;
+      while (1) {
+        
+        if ($total_read_length > $content_length) {
+          last;
         }
-        # check they are all the same
-        my $ct_len = shift @nums;
-        foreach (@nums) {
-            next if $_ == $ct_len;
-            my $reason = "Content-Length values are not the same";
-            $self->send_error(400, $reason);
-            $self->reason($reason);
-            return;
-        }
-        # ensure we have now a fixed header, with only 1 value
-        $request->header('Content-Length' => $ct_len);
-
-        # Plain body specified by "Content-Length"
-        my $missing = $ct_len - length($buf);
-        while ($missing > 0) {
-            print "Need $missing more bytes of content\n" if $DEBUG;
-            my $n = $self->_need_more($buf, $timeout, $fdset);
-            return unless $n;
-            $missing -= $n;
-        }
-        if (length($buf) > $ct_len) {
-            $request->content(substr($buf, 0, $ct_len));
-            substr($buf, 0, $ct_len) = '';
+        
+        my $read_length = $io_socket->read($tmp_buffer);
+        
+        $total_read_length = $read_length;
+        
+        if ($read_length > 0) {
+          $buf->push($tmp_buffer, $read_length);
         }
         else {
-            $request->content($buf);
-            $buf = '';
+          last;
         }
+      }
+      
+      $buf->set_length($content_length);
+      
+      $request->content($buf->to_string);
     }
     
-    ${*$self}{'httpd_rbuf'} = $buf;
-
-    $r;
+    return $request;
   }
 }
 
