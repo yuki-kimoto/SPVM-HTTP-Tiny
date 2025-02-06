@@ -18,8 +18,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   has success : ro byte;
   
-  has content_buffer : StringBuffer;
-  
   # Class Methods
   private static method new : HTTP::Tiny::Message::Response () {
     
@@ -35,10 +33,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   }
   
   # Instance Methods
-  method content : string () {
-    return $self->{content_buffer}->to_string;
-  }
-  
   method reason : string () {
     
     my $status = $self->{status};

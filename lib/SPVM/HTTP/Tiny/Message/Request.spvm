@@ -6,6 +6,7 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   allow HTTP::Tiny;
   allow HTTP::Tiny::Handle;
+  allow HTTP::Tiny::Daemon;
   
   use HTTP::Tiny::Headers;
   

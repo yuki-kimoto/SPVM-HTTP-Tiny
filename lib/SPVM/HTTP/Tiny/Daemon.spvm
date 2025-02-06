@@ -123,8 +123,6 @@ class HTTP::Tiny::Daemon {
     
     my $io_socket = $self->{io_socket};
     
-    my $status = 400;
-    
     my $res = new HTTP::Tiny::Message::Response;
     
     $res->{status} = $status;
@@ -331,7 +329,7 @@ $error
           }
         }
       }
-      $request->{content} = $body;
+      $request->{content_buffer} = StringBuffer->new($body);
       
       $request->headers->remove("Transfer-Encoding");
       
@@ -379,16 +377,16 @@ $error
         die "400 Invalid Content-Length'";
       }
       
-      my $content_length = 0;
-      eval { $content_length = Fn->to_long($ct_length); }
+      my $content_length_long = 0L;
+      eval { $content_length_long = Fn->to_long($ct_len); }
       if ($@) {
         die "400 Invalid Content-Length'";
       }
       
-      my $total_readl_length = 0;
+      my $total_read_length = 0;
       while (1) {
         
-        if ($total_read_length > $content_length) {
+        if ($total_read_length > $content_length_long) {
           last;
         }
         
@@ -404,9 +402,9 @@ $error
         }
       }
       
-      $buf->set_length($content_length);
+      $buf->set_length((int)$content_length_long);
       
-      $request->content($buf->to_string);
+      $request->{content_buffer} = $buf;
     }
     
     return $request;
