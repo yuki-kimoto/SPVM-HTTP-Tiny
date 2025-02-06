@@ -103,8 +103,11 @@ class HTTP::Tiny::Daemon {
     my $start_line = $res->build_start_line;
     $io_socket->write($start_line);
     
-    my $http_date = &time2str(Sys->time);
-    my $data_header = "Date: $http_date$CRLF";
+    my $http_date = HTTP::Tiny::Date->new;
+    $http_date->set_epoch(Sys->time);
+    my $http_date_string = $http_date->to_datetime;
+    
+    my $data_header = "Date: $http_date_string$CRLF";
     $io_socket->write($data_header);
     
     my $headers_as_string = $res->build_headers;
@@ -133,8 +136,11 @@ class HTTP::Tiny::Daemon {
     my $start_line = $res->build_start_line;
     $io_socket->write($start_line);
     
-    my $http_date = &time2str(Sys->time);
-    my $data_header = "Date: $http_date$CRLF";
+    my $http_date = HTTP::Tiny::Date->new;
+    $http_date->set_epoch(Sys->time);
+    my $http_date_string = $http_date->to_datetime;
+    
+    my $data_header = "Date: $http_date_string$CRLF";
     $io_socket->write($data_header);
     
     my $content = 
@@ -155,26 +161,6 @@ $error
       $io_socket->write($content);
     }
     
-  }
-  
-  private static method time2str : string ($time : long) {
-    
-    my $tm = Sys->gmtime($time);
-    
-    my $DoW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    
-    my $MoY = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
-    my $http_date = Fn->sprintf(
-        "%s, %02d %s %04d %02d:%02d:%02d GMT",
-        [(object)
-          $DoW->[$tm->tm_wday],
-          $tm->tm_mday, $MoY->[$tm->tm_mon], $tm->tm_year + 1900,
-          $tm->tm_hour, $tm->tm_min,       $tm->tm_sec
-        ]
-    );
-    
-    return $http_date;
   }
   
   private static method _http_version_number : int ($http_version : string) {
