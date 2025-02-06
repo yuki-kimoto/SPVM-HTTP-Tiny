@@ -11,6 +11,7 @@ class HTTP::Tiny::Daemon {
   use HTTP::Tiny::Status;
   use Re;
   use Sys::Time::Tm;
+  use HTTP::Tiny::Date;
   
   our $CRLF : string;
   
