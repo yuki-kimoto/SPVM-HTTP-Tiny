@@ -37,14 +37,6 @@ class HTTP::Tiny {
   
   has max_size : rw int;
   
-  has http_proxy : rw string;
-  
-  has https_proxy : rw string;
-  
-  has proxy : rw string;
-  
-  has no_proxy : rw string[];
-  
   has timeout : rw double;
   
   has verify_SSL : rw byte;
