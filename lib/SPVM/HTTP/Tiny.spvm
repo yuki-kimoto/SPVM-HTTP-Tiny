@@ -16,7 +16,8 @@ class HTTP::Tiny {
   
   use HTTP::Tiny::Handle;
   use HTTP::Tiny::Message::Request;
-  use HTTP::Tiny::Message::Response;
+  use HTTP::Tiny::Result;
+  use HTTP::Tiny::Result;
   use HTTP::Tiny::Headers;
   use HTTP::Tiny::URL;
   use HTTP::Tiny::CookieJar::Interface;
@@ -145,49 +146,49 @@ class HTTP::Tiny {
   }
   
   # Instance Methods
-  method get : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
+  method get : HTTP::Tiny::Result ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("GET", $url, $options);
     
     return $response;
   }
   
-  method head : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
+  method head : HTTP::Tiny::Result ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("HEAD", $url, $options);
     
     return $response;
   }
   
-  method put : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
+  method put : HTTP::Tiny::Result ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("PUT", $url, $options);
     
     return $response;
   }
   
-  method post : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
+  method post : HTTP::Tiny::Result ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("POST", $url, $options);
     
     return $response;
   }
   
-  method patch : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
+  method patch : HTTP::Tiny::Result ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("PATCH", $url, $options);
     
     return $response;
   }
   
-  method delete : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef) {
+  method delete : HTTP::Tiny::Result ($url : string, $options : object[] = undef) {
     
     my $response = $self->request("DELETE", $url, $options);
     
     return $response;
   }
   
-  method post_form : HTTP::Tiny::Message::Response ($url : string, $data : object[], $options : object[] = undef) {
+  method post_form : HTTP::Tiny::Result ($url : string, $data : object[], $options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
@@ -300,7 +301,7 @@ class HTTP::Tiny {
     return $default_agent;
   }
   
-  private method request : HTTP::Tiny::Message::Response ($method : string, $url_string : string, $options : object[])  {
+  private method request : HTTP::Tiny::Result ($method : string, $url_string : string, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
@@ -404,7 +405,7 @@ class HTTP::Tiny {
     return $ca_file;
   }
   
-  method mirror : HTTP::Tiny::Message::Response ($url : string, $file : string, $options : object[] = undef) {
+  method mirror : HTTP::Tiny::Result ($url : string, $file : string, $options : object[] = undef) {
     
     unless ($file) {
       die "\$file must be defined.";

@@ -7,7 +7,7 @@ class HTTP::Tiny::Handle {
   allow HTTP::Tiny;
   
   use HTTP::Tiny::Message::Request;
-  use HTTP::Tiny::Message::Response;
+  use HTTP::Tiny::Result;
   
   use Fn;
   use StringBuffer;
@@ -144,9 +144,9 @@ class HTTP::Tiny::Handle {
     $socket->write($buffer);
   }
   
-  private method read_response : HTTP::Tiny::Message::Response () {
+  private method read_response : HTTP::Tiny::Result () {
     
-    my $response = HTTP::Tiny::Message::Response->new;
+    my $response = HTTP::Tiny::Result->new;
     
     $self->read_status_line($response);
     
@@ -157,7 +157,7 @@ class HTTP::Tiny::Handle {
     return $response;
   }
   
-  private method read_status_line : void ($response : HTTP::Tiny::Message::Response) {
+  private method read_status_line : void ($response : HTTP::Tiny::Result) {
     
     my $status_line = $self->readline;
     
@@ -190,7 +190,7 @@ class HTTP::Tiny::Handle {
     }
   }
   
-  private method read_response_headers : HTTP::Tiny::Headers ($response : HTTP::Tiny::Message::Response) {
+  private method read_response_headers : HTTP::Tiny::Headers ($response : HTTP::Tiny::Result) {
     my $headers = $response->headers;
     
     while (1) {
@@ -252,7 +252,7 @@ class HTTP::Tiny::Handle {
     return $line;
   }
   
-  private method read_response_body : int ($response : HTTP::Tiny::Message::Response) {
+  private method read_response_body : int ($response : HTTP::Tiny::Result) {
     
     my $content_length_string = $response->headers->header("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
