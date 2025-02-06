@@ -450,7 +450,11 @@ class HTTP::Tiny {
       my $lm = $response->headers->header("last-modified");
       
       if ($lm) {
-        if (my $mtime = &_parse_http_date($lm)) {
+        my $http_date = (HTTP::Tiny::Date)undef;
+        eval { $http_date = HTTP::Tiny::Date->new($lm); }
+        
+        if ($http_date) {
+          my $mtime = $http_date->epoch;
           Sys->utime($mtime, $mtime, $file);
         }
       }
@@ -474,50 +478,4 @@ class HTTP::Tiny {
     return $http_date;
   }
   
-  static method _parse_http_date : long ($http_date : string) {
-    
-    my $DoW = "Sun|Mon|Tue|Wed|Thu|Fri|Sat";
-    my $MoY = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
-    
-    my $tm = Sys->gmtime(0);
-    
-    if (my $match = Re->m($http_date, "^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$")) {
-      $tm->set_tm_sec(Fn->to_int($match->cap6));
-      $tm->set_tm_min(Fn->to_int($match->cap5));
-      $tm->set_tm_hour(Fn->to_int($match->cap4));
-      $tm->set_tm_mday(Fn->to_int($match->cap1));
-      $tm->set_tm_mon(Fn->index($MoY, Fn->to_int($match->cap2)) / 4);
-      $tm->set_tm_year(Fn->to_int($match->cap3) - 1900);
-    }
-    elsif (my $match = Re->m($http_date, "^[SMTWF][a-z]+, +(\d\d)-($MoY)-(\d{2,4}) +(\d\d):(\d\d):(\d\d) +GMT$")) {
-      $tm->set_tm_sec(Fn->to_int($match->cap6));
-      $tm->set_tm_min(Fn->to_int($match->cap5));
-      $tm->set_tm_hour(Fn->to_int($match->cap4));
-      $tm->set_tm_mday(Fn->to_int($match->cap1));
-      $tm->set_tm_mon(Fn->index($MoY, Fn->to_int($match->cap2)) / 4);
-      $tm->set_tm_year(Fn->to_int($match->cap3) - 1900);
-    }
-    elsif (my $match = Re->m($http_date, "^[SMTWF][a-z]+ +($MoY) +(\d{1,2}) +(\d\d):(\d\d):(\d\d) +(?:[^0-9]+ +)?(\d\d\d\d)$")) {
-      $tm->set_tm_sec(Fn->to_int($match->cap5));
-      $tm->set_tm_min(Fn->to_int($match->cap4));
-      $tm->set_tm_hour(Fn->to_int($match->cap3));
-      $tm->set_tm_mday(Fn->to_int($match->cap2));
-      $tm->set_tm_mon(Fn->index($MoY, Fn->to_int($match->cap1)) / 4);
-      $tm->set_tm_year(Fn->to_int($match->cap6) - 1900);
-    }
-    else {
-      die "\$http_date is an invalid format.";
-    }
-    
-    my $epoch = -1L;
-    
-    eval { $epoch = Time::Local->timegm($tm); }
-    
-    if ($epoch < 0) {
-      die "\$http_date is an invalid time.";
-    }
-    
-    return $epoch;
-  }
-
 }
