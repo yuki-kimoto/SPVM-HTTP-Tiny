@@ -6,7 +6,7 @@ class HTTP::Tiny::Daemon {
   
   use IO::Socket::IP;
   use HTTP::Tiny::Message::Request;
-  use HTTP::Tiny::Result;
+  use HTTP::Tiny::Message::Response;
   use IO;
   use HTTP::Tiny::Status;
   use Re;
@@ -26,7 +26,7 @@ class HTTP::Tiny::Daemon {
   
   has request : HTTP::Tiny::Message::Request;
   
-  has response : ro HTTP::Tiny::Result;
+  has response : ro HTTP::Tiny::Message::Response;
   
   # Private Fields
   
@@ -63,7 +63,7 @@ class HTTP::Tiny::Daemon {
     return $daemon;
   }
   
-  method send_response : void ($res : HTTP::Tiny::Result) {
+  method send_response : void ($res : HTTP::Tiny::Message::Response) {
     
     my $io_socket = $self->{io_socket};
     
@@ -127,7 +127,7 @@ class HTTP::Tiny::Daemon {
     
     my $io_socket = $self->{io_socket};
     
-    my $res = new HTTP::Tiny::Result;
+    my $res = new HTTP::Tiny::Message::Response;
     
     $res->{status} = $status;
     

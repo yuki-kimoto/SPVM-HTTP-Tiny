@@ -16,7 +16,7 @@ class HTTP::Tiny {
   
   use HTTP::Tiny::Handle;
   use HTTP::Tiny::Message::Request;
-  use HTTP::Tiny::Result;
+  use HTTP::Tiny::Message::Response;
   use HTTP::Tiny::Result;
   use HTTP::Tiny::Headers;
   use HTTP::Tiny::URL;
@@ -343,7 +343,9 @@ class HTTP::Tiny {
     
     my $response = $socket->read_response;
     
-    return $response;
+    my $result = HTTP::Tiny::Result->new($response);
+    
+    return $result;
   }
   
   method _ssl_args : object[] ($host : string) {
@@ -443,12 +445,12 @@ class HTTP::Tiny {
     
     $options_h->set(data_callback => [$io_file : IO::File] method : void ($chunk : string) { $io_file->print($chunk); });
     
-    my $response = $self->request("GET", $url, $options_h->to_array);
+    my $result = $self->request("GET", $url, $options_h->to_array);
     
-    if ($response->success) {
+    if ($result->success) {
       Sys->rename($tempfile, $file);
       
-      my $lm = $response->headers->header("last-modified");
+      my $lm = $result->headers->header("last-modified");
       
       if ($lm) {
         my $http_date = (HTTP::Tiny::Date)undef;
@@ -460,14 +462,16 @@ class HTTP::Tiny {
         }
       }
     }
-    
+
+=pod TODO
+
     unless ($response->success) {
       $response->{success} = (byte)($response->{status} == 304);
     }
-    
-    return $response;
-    
-    return undef;
+
+=cut
+
+    return $result;
   }
  
   static method _http_date : string ($epoch : long) {

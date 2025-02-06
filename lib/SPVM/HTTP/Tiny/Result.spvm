@@ -1,73 +1,77 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Result extends HTTP::Tiny::Message {
+class HTTP::Tiny::Result {
   version_from HTTP::Tiny;
   
   allow HTTP::Tiny::Handle;
   allow HTTP::Tiny;
-  allow HTTP::Tiny::Daemon;
   
   use HTTP::Tiny::Headers;
   use HTTP::Tiny::Status;
   
-  # Fields
-  has protocol : ro string;
-  
-  has status : ro int;
-  
-  has success : ro byte;
+  has response : HTTP::Tiny::Message::Response;
   
   # Class Methods
-  private static method new : HTTP::Tiny::Result () {
+  private static method new : HTTP::Tiny::Result ($response : HTTP::Tiny::Message::Response) {
     
     my $self = new HTTP::Tiny::Result;
     
-    $self->{protocol} = "HTTP/1.1";
-    
-    $self->{content_buffer} = StringBuffer->new;
-    
-    $self->{headers} = HTTP::Tiny::Headers->new;
+    $self->{response} = $response;
     
     return $self;
   }
   
   # Instance Methods
+  method protocol : string () {
+    
+    my $res = $self->{response};
+    
+    return $res->protocol;
+  }
+  
+  method status : int () {
+    
+    my $res = $self->{response};
+    
+    return $res->status;
+  }
+  
+  method success : int () {
+    
+    my $status = $self->status;
+    
+    my $success = 0;
+    if ($status >= 200 & $status < 300) {
+      $success = 1;
+    }
+    
+    return $success;
+  }
+  
   method reason : string () {
     
-    my $status = $self->{status};
+    my $status = $self->status;
     
     my $reason = HTTP::Tiny::Status->status_message($status);
     
     return $reason;
   }
   
-  method build_start_line : string () {
+  method headers : HTTP::Tiny::Headers () {
     
-    my $status = $self->{status};
+    my $res = $self->{response};
     
-    my $reason = $self->reason;
-    
-    my $start_line = "HTTP/1.1 $status $reason\x0d\x0a";
-    
-    return $start_line;
+    return $res->headers;
   }
   
-  method build_headers : string () {
-    # TODO
+  method content : string () {
     
-    return undef;
-  }
-  
-  method build_body : string (){
-    # TODO
+    my $res = $self->{response};
     
-    return undef;
-  }
-  
-  private method message : string () {
+    my $content = $res->content;
     
-    return $self->reason;
+    return $content;
   }
   
 }
