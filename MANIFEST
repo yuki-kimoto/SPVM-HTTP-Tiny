@@ -23,6 +23,8 @@ lib/SPVM/HTTP/Tiny/Message/Request.pm
 lib/SPVM/HTTP/Tiny/Message/Request.spvm
 lib/SPVM/HTTP/Tiny/Message/Response.pm
 lib/SPVM/HTTP/Tiny/Message/Response.spvm
+lib/SPVM/HTTP/Tiny/Path.pm
+lib/SPVM/HTTP/Tiny/Path.spvm
 lib/SPVM/HTTP/Tiny/Result.pm
 lib/SPVM/HTTP/Tiny/Result.spvm
 lib/SPVM/HTTP/Tiny/Status.pm
