@@ -3,32 +3,39 @@
 
 class HTTP::Tiny::Path {
   version_from HTTP::Tiny;
+  
+  static method new : HTTP::Tiny::Path ($path_string : string) {
+    
+    my $self = new HTTP::Tiny::Path;
+    
+    if ($path_string) {
+      $self->parse($path_string);
+    }
+    
+    return $self;
+  }
+  
+  method parse : void ($path_string : string) {
+    
+    # TODO
+  }
+  
 }
 
 __END__
 
-# TODO
-
-package Mojo::Path;
-use Mojo::Base -base;
-use overload '@{}' => sub { shift->parts }, bool => sub {1}, '""' => sub { shift->to_string }, fallback => 1;
-
-use Mojo::Util qw(decode encode url_escape url_unescape);
-
-has charset => 'UTF-8';
-
-sub canonicalize {
-  my $self = shift;
-
-  my $parts = $self->parts;
-  for (my $i = 0; $i <= $#$parts;) {
-    if    (!length $parts->[$i] || $parts->[$i] eq '.' || $parts->[$i] eq '...') { splice @$parts, $i, 1 }
-    elsif ($i < 1 || $parts->[$i] ne '..' || $parts->[$i - 1] eq '..')           { $i++ }
-    else                                                                         { splice @$parts, --$i, 2 }
+  method canonicalize {
+    my $self = shift;
+    
+    my $parts = $self->parts;
+    for (my $i = 0; $i <= $#$parts;) {
+      if    (!length $parts->[$i] || $parts->[$i] eq '.' || $parts->[$i] eq '...') { splice @$parts, $i, 1 }
+      elsif ($i < 1 || $parts->[$i] ne '..' || $parts->[$i - 1] eq '..')           { $i++ }
+      else                                                                         { splice @$parts, --$i, 2 }
+    }
+    
+    return @$parts ? $self : $self->trailing_slash(undef);
   }
-
-  return @$parts ? $self : $self->trailing_slash(undef);
-}
 
 sub clone {
   my $self = shift;

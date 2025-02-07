@@ -22,6 +22,7 @@ class HTTP::Tiny {
   use HTTP::Tiny::URL;
   use HTTP::Tiny::CookieJar::Interface;
   use HTTP::Tiny::Headers;
+  use HTTP::Tiny::Path;
   
   # Fields
   has agent : rw string;
