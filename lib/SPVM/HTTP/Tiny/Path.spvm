@@ -4,3 +4,147 @@
 class HTTP::Tiny::Path {
   version_from HTTP::Tiny;
 }
+
+__END__
+
+# TODO
+
+package Mojo::Path;
+use Mojo::Base -base;
+use overload '@{}' => sub { shift->parts }, bool => sub {1}, '""' => sub { shift->to_string }, fallback => 1;
+
+use Mojo::Util qw(decode encode url_escape url_unescape);
+
+has charset => 'UTF-8';
+
+sub canonicalize {
+  my $self = shift;
+
+  my $parts = $self->parts;
+  for (my $i = 0; $i <= $#$parts;) {
+    if    (!length $parts->[$i] || $parts->[$i] eq '.' || $parts->[$i] eq '...') { splice @$parts, $i, 1 }
+    elsif ($i < 1 || $parts->[$i] ne '..' || $parts->[$i - 1] eq '..')           { $i++ }
+    else                                                                         { splice @$parts, --$i, 2 }
+  }
+
+  return @$parts ? $self : $self->trailing_slash(undef);
+}
+
+sub clone {
+  my $self = shift;
+
+  my $clone = $self->new;
+  if (exists $self->{charset}) { $clone->{charset} = $self->{charset} }
+  if (my $parts = $self->{parts}) {
+    $clone->{$_} = $self->{$_} for qw(leading_slash trailing_slash);
+    $clone->{parts} = [@$parts];
+  }
+  else { $clone->{path} = $self->{path} }
+
+  return $clone;
+}
+
+sub contains { $_[1] eq '/' || $_[0]->to_route =~ m!^\Q$_[1]\E(?:/|$)! }
+
+sub leading_slash { shift->_parse(leading_slash => @_) }
+
+sub merge {
+  my ($self, $path) = @_;
+
+  # Replace
+  return $self->parse($path) if $path =~ m!^/!;
+
+  # Merge
+  pop @{$self->parts} unless $self->trailing_slash;
+  $path = $self->new($path);
+  push @{$self->parts}, @{$path->parts};
+  return $self->trailing_slash($path->trailing_slash);
+}
+
+sub new { @_ > 1 ? shift->SUPER::new->parse(@_) : shift->SUPER::new }
+
+sub parse {
+  my $self = shift;
+  $self->{path} = shift;
+  delete @$self{qw(leading_slash parts trailing_slash)};
+  return $self;
+}
+
+sub parts { shift->_parse(parts => @_) }
+
+sub to_abs_string {
+  my $path = shift->to_string;
+  return $path =~ m!^/! ? $path : "/$path";
+}
+
+sub to_dir {
+  my $clone = shift->clone;
+  pop @{$clone->parts} unless $clone->trailing_slash;
+  return $clone->trailing_slash(!!@{$clone->parts});
+}
+
+sub to_route {
+  my $clone = shift->clone;
+  return '/' . join '/', @{$clone->parts}, $clone->trailing_slash ? '' : ();
+}
+
+sub to_string {
+  my $self = shift;
+
+  # Path
+  my $charset = $self->charset;
+  if (defined(my $path = $self->{path})) {
+    $path = encode $charset, $path if $charset;
+    return url_escape $path, '^A-Za-z0-9\-._~!$&\'()*+,;=%:@/';
+  }
+
+  # Build path
+  my @parts = @{$self->parts};
+  @parts = map { encode $charset, $_ } @parts if $charset;
+  my $path = join '/', map { url_escape $_, '^A-Za-z0-9\-._~!$&\'()*+,;=:@' } @parts;
+  $path = "/$path" if $self->leading_slash;
+  $path = "$path/" if $self->trailing_slash;
+  return $path;
+}
+
+sub trailing_slash { shift->_parse(trailing_slash => @_) }
+
+sub _parse {
+  my ($self, $name) = (shift, shift);
+
+  unless ($self->{parts}) {
+    my $path    = url_unescape delete($self->{path}) // '';
+    my $charset = $self->charset;
+    $path                   = decode($charset, $path) // $path if $charset;
+    $self->{leading_slash}  = $path =~ s!^/!!;
+    $self->{trailing_slash} = $path =~ s!/$!!;
+    $self->{parts}          = [split /\//, $path, -1];
+  }
+
+  return $self->{$name} unless @_;
+  $self->{$name} = shift;
+  return $self;
+}
+
+sub url_escape {
+  my ($str, $pattern) = @_;
+
+  if ($pattern) {
+    unless (exists $PATTERN{$pattern}) {
+      (my $quoted = $pattern) =~ s!([/\$\[])!\\$1!g;
+      $PATTERN{$pattern} = eval "sub { \$_[0] =~ s/([$quoted])/sprintf '%%%02X', ord \$1/ge }" or croak $@;
+    }
+    $PATTERN{$pattern}->($str);
+  }
+  else { $str =~ s/([^A-Za-z0-9\-._~])/sprintf '%%%02X', ord $1/ge }
+
+  return $str;
+}
+
+sub url_unescape {
+  my $str = shift;
+  $str =~ s/%([0-9a-fA-F]{2})/chr hex $1/ge;
+  return $str;
+}
+
+1;
