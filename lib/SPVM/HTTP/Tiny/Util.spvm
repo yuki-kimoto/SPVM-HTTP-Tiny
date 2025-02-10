@@ -5,9 +5,31 @@ class HTTP::Tiny::Util {
   version_from HTTP::Tiny;
   
   use Re;
+  use Hash;
   
-  static method url_escape : string ($str : string, $pattern : string) {
+  static method url_escape : string ($string : string, $pattern : string = undef) {
     
+    unless ($string) {
+      die "The string \$string must be defined.";
+    }
+    
+    my $char_class = (string)undef;
+    if ($pattern) {
+      $char_class = "[$pattern]";
+    }
+    else {
+      $char_class = "[^A-Za-z0-9\-._~]";
+    }
+    
+    my $string_ref = [$string];
+    Re->s($string_ref, ["($char_class)", "g"], method : string ($regex : Regex, $match : Regex::Match) {
+      
+      my $ret = Fn->sprintf("%%%02X", [(object)Fn->ord($match->cap1)]);
+      
+      return $ret;
+    });
+    
+    return $string_ref->[0];
   }
   
   static method url_unescape : string ($string : string) {
@@ -27,29 +49,4 @@ class HTTP::Tiny::Util {
     return $string_ref->[0];
   }
   
-}
-
-__END__
-
-TODO
-
-sub url_escape {
-  my ($str, $pattern) = @_;
-
-  if ($pattern) {
-    unless (exists $PATTERN{$pattern}) {
-      (my $quoted = $pattern) =~ s!([/\$\[])!\\$1!g;
-      $PATTERN{$pattern} = eval "sub { \$_[0] =~ s/([$quoted])/sprintf '%%%02X', ord \$1/ge }" or croak $@;
-    }
-    $PATTERN{$pattern}->($str);
-  }
-  else { $str =~ s/([^A-Za-z0-9\-._~])/sprintf '%%%02X', ord $1/ge }
-
-  return $str;
-}
-
-sub url_unescape {
-  my $str = shift;
-  $str =~ s/%([0-9a-fA-F]{2})/chr hex $1/ge;
-  return $str;
 }
