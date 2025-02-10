@@ -9,6 +9,11 @@ class HTTP::Tiny::Path {
   
   has parts : string[];
   
+  has leading_slash : byte;
+  
+  has trailing_slash : byte;
+  
+  # Class Methods
   static method new : HTTP::Tiny::Path ($path_string : string) {
     
     my $self = new HTTP::Tiny::Path;
