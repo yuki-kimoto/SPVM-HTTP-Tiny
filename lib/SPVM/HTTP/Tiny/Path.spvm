@@ -14,28 +14,73 @@ class HTTP::Tiny::Path {
     
     return $self;
   }
-  
+
+=pod
+
+  method canonicalize {
+    
+    my $parts = $self->parts;
+    
+    my $parts_length = @$parts;
+    
+    my $parts_list = StringList->new($parts);
+    
+    my $i = 0;
+    while ($i < $parts_length) {
+      
+      my $part = $parts->[$i];
+      
+      my $part_length = length $part;
+      
+      if ($part_length == 0 || $part eq "." || $part eq "...") {
+        
+      }
+      
+      if    (!length $parts->[$i] || $parts->[$i] eq '.' || $parts->[$i] eq '...') {
+        splice @$parts, $i, 1
+      }
+      elsif ($i < 1 || $parts->[$i] ne '..' || $parts->[$i - 1] eq '..')           {
+        $i++
+      }
+      else                                                                         {
+        splice @$parts, --$i, 2
+      }
+    }
+    
+    return @$parts ? $self : $self->trailing_slash(undef);
+  }
+
+=cut
+
   method parse : void ($path_string : string) {
     
     # TODO
   }
   
+  method parts : string[] () {
+    
+    # TODO
+  }
+  
+  method to_string : string () {
+    
+    # TODO
+  }
+  
+  method to_abs_string : string () {
+    
+    my $abs_path = $self->to_string;
+    
+    unless (Re->m($abs_path, "^/")) {
+      $abs_path = "/$abs_path";
+    }
+    
+    return $abs_path;
+  }
+
 }
 
 __END__
-
-  method canonicalize {
-    my $self = shift;
-    
-    my $parts = $self->parts;
-    for (my $i = 0; $i <= $#$parts;) {
-      if    (!length $parts->[$i] || $parts->[$i] eq '.' || $parts->[$i] eq '...') { splice @$parts, $i, 1 }
-      elsif ($i < 1 || $parts->[$i] ne '..' || $parts->[$i - 1] eq '..')           { $i++ }
-      else                                                                         { splice @$parts, --$i, 2 }
-    }
-    
-    return @$parts ? $self : $self->trailing_slash(undef);
-  }
 
 sub clone {
   my $self = shift;
