@@ -62,9 +62,11 @@ class HTTP::Tiny::Path {
 
 =cut
 
-  method parse : void ($path_string : string) {
+  method parse : void ($path : string) {
     
-    # TODO
+    # This method does not parse $path, parts method parse path field by calling _parse method.
+    $self->{path} = $path;
+    $self->{parts_list} = undef;
   }
   
   method to_string : string () {
