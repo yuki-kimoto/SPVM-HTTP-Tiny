@@ -4,6 +4,11 @@
 class HTTP::Tiny::Path {
   version_from HTTP::Tiny;
   
+  # Fields
+  has path : string;
+  
+  has parts : string[];
+  
   static method new : HTTP::Tiny::Path ($path_string : string) {
     
     my $self = new HTTP::Tiny::Path;
@@ -63,8 +68,25 @@ class HTTP::Tiny::Path {
   }
   
   method to_string : string () {
+    # Path
+    if (my $path = $self->{path}) {
+      return &url_escape($path, "^A-Za-z0-9\-._~!\$&\'()*+,;=%:@/");
+    }
     
-    # TODO
+    # Build path
+    my $parts = $self->parts;
+    
+    my $path = Fn->join("/", (string[])Fn->map($parts, method : object ($part : object) { return &url_escape((string)$part, "^A-Za-z0-9\-._~!\$&\'()*+,;=:@"); }));
+    
+    if ($self->leading_slash) {
+      $path = "/$path";
+    }
+    
+    if ($self->trailing_slash) {
+      $path = "$path/";
+    }
+    
+    return $path;
   }
   
   method to_abs_string : string () {
@@ -77,7 +99,32 @@ class HTTP::Tiny::Path {
     
     return $abs_path;
   }
-
+  
+  # TODO
+  method leading_slash : int () {
+    
+  }
+  
+  # TODO
+  method set_leading_slash : void ($bool : int) {
+    
+  }
+  
+  # TODO
+  method trailing_slash : int () {
+    
+  }
+  
+  # TODO
+  method set_trailing_slash : void ($bool : int) {
+    
+  }
+  
+  # TODO
+  private static method url_escape : string ($str : string, $pattern : string) {
+    
+    return undef;
+  }
 }
 
 __END__
