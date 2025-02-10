@@ -24,44 +24,33 @@ class HTTP::Tiny::Path {
     
     return $self;
   }
-
-=pod
-
-  method canonicalize {
+  
+  method canonicalize : void () {
     
-    my $parts = $self->parts;
+    $self->_parse;
     
-    my $parts_length = @$parts;
-    
-    my $parts_list = StringList->new($parts);
+    my $parts_list = $self->{parts_list};
     
     my $i = 0;
-    while ($i < $parts_length) {
-      
-      my $part = $parts->[$i];
-      
-      my $part_length = length $part;
-      
-      if ($part_length == 0 || $part eq "." || $part eq "...") {
-        
+    while ($i < $parts_list->length) {
+      if    (!length $parts_list->get($i) || $parts_list->get($i) eq "." || $parts_list->get($i) eq "...") {
+        $parts_list->replace($i, 1, undef);
       }
-      
-      if    (!length $parts->[$i] || $parts->[$i] eq '.' || $parts->[$i] eq '...') {
-        splice @$parts, $i, 1
+      elsif ($i < 1 || $parts_list->get($i) ne ".." || $parts_list->get($i - 1) eq "..")           {
+        $i++;
       }
-      elsif ($i < 1 || $parts->[$i] ne '..' || $parts->[$i - 1] eq '..')           {
-        $i++
-      }
-      else                                                                         {
-        splice @$parts, --$i, 2
+      else {
+        --$i;
+        $parts_list->replace($i, 2, undef);
       }
     }
     
-    return @$parts ? $self : $self->trailing_slash(undef);
+    if ($parts_list->length == 0) {
+      $self->set_trailing_slash(0);
+    }
+    
   }
-
-=cut
-
+  
   method parse : void ($path : string) {
     
     # This method does not parse $path, parts method parse path field by calling _parse method.
