@@ -31,6 +31,8 @@ lib/SPVM/HTTP/Tiny/Status.pm
 lib/SPVM/HTTP/Tiny/Status.spvm
 lib/SPVM/HTTP/Tiny/URL.pm
 lib/SPVM/HTTP/Tiny/URL.spvm
+lib/SPVM/HTTP/Tiny/Util.pm
+lib/SPVM/HTTP/Tiny/Util.spvm
 LICENSE
 Makefile.PL
 MANIFEST			This list of files
