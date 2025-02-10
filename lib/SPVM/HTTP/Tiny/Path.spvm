@@ -4,6 +4,9 @@
 class HTTP::Tiny::Path {
   version_from HTTP::Tiny;
   
+  use HTTP::Tiny::Util;
+  use Re;
+  
   # Fields
   has path : string;
   
@@ -61,13 +64,13 @@ class HTTP::Tiny::Path {
   method to_string : string () {
     # Path
     if (my $path = $self->{path}) {
-      return &url_escape($path, "^A-Za-z0-9\-._~!\$&\'()*+,;=%:@/");
+      return HTTP::Tiny::Util->url_escape($path, "^A-Za-z0-9\-._~!\$&\'()*+,;=%:@/");
     }
     
     # Build path
     my $parts = $self->parts;
     
-    my $path = Fn->join("/", (string[])Fn->map($parts, method : object ($part : object) { return &url_escape((string)$part, "^A-Za-z0-9\-._~!\$&\'()*+,;=:@"); }));
+    my $path = Fn->join("/", (string[])Fn->map($parts, method : object ($part : object) { return HTTP::Tiny::Util->url_escape((string)$part, "^A-Za-z0-9\-._~!\$&\'()*+,;=:@"); }));
     
     if ($self->leading_slash) {
       $path = "/$path";
@@ -131,33 +134,12 @@ class HTTP::Tiny::Path {
       unless ($path_url_encoded) {
         $path_url_encoded = "";
       }
-      my $path = &url_unescape($path_url_encoded);
+      my $path = HTTP::Tiny::Util->url_unescape($path_url_encoded);
       $self->{leading_slash} = (byte)!!Re->s($path, "^/", "");
       $self->{trailing_slash} = (byte)!!Re->s($path, "/$", "");
       $self->{parts_list} = StringList->new(Fn->split("/", $path, -1));
     }
     
-  }
-  
-  # TODO
-  private static method url_escape : string ($str : string, $pattern : string) {
-  }
-  
-  private static method url_unescape : string ($string : string) {
-    
-    unless ($string) {
-      die "The string \$string muse be defined.";
-    }
-    
-    my $string_ref = [$string];
-    Re->s($string_ref, ["%([0-9a-fA-F]{2})", "g"], method : string ($regex : Regex, $match : Regex::Match) {
-      
-      my $ret = Fn->chr(Fn->hex($match->cap1));
-      
-      return $ret;
-    });
-    
-    return $string_ref->[0];
   }
   
   method contains : int ($string : string) {
@@ -358,27 +340,6 @@ sub _parse {
   return $self->{$name} unless @_;
   $self->{$name} = shift;
   return $self;
-}
-
-sub url_escape {
-  my ($str, $pattern) = @_;
-
-  if ($pattern) {
-    unless (exists $PATTERN{$pattern}) {
-      (my $quoted = $pattern) =~ s!([/\$\[])!\\$1!g;
-      $PATTERN{$pattern} = eval "sub { \$_[0] =~ s/([$quoted])/sprintf '%%%02X', ord \$1/ge }" or croak $@;
-    }
-    $PATTERN{$pattern}->($str);
-  }
-  else { $str =~ s/([^A-Za-z0-9\-._~])/sprintf '%%%02X', ord $1/ge }
-
-  return $str;
-}
-
-sub url_unescape {
-  my $str = shift;
-  $str =~ s/%([0-9a-fA-F]{2})/chr hex $1/ge;
-  return $str;
 }
 
 1;
