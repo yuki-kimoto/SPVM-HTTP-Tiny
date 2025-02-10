@@ -151,9 +151,7 @@ class HTTP::Tiny::Path {
   }
   
   # TODO
-  private static method url_escape : string ($string : string, $pattern : string) {
-    
-    return undef;
+  private static method url_escape : string ($str : string, $pattern : string) {
   }
   
   private static method url_unescape : string ($string : string) {
@@ -259,7 +257,19 @@ class HTTP::Tiny::Path {
     
     $self->set_trailing_slash($path_obj->trailing_slash);
   }
-
+  
+  method to_dir : HTTP::Tiny::Path () {
+    
+    my $clone = $self->clone;
+    
+    unless ($clone->trailing_slash) {
+      $clone->{parts_list}->pop;
+    }
+    
+    $clone->set_trailing_slash(!!@{$clone->parts});
+    
+    return $clone;
+  }
 }
 
 __END__
