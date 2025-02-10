@@ -210,6 +210,42 @@ class HTTP::Tiny::Path {
     
     return $clone;
   }
+  
+  method merge : void ($path : object of string|HTTP::Tiny::Path) {
+    
+    unless ($path) {
+      die "The path \$path must be defined.";
+    }
+    
+    my $path_string = (string)undef;
+    if ($path isa string) {
+      # Do nothing
+    }
+    elsif ($path isa HTTP::Tiny::Path) {
+      $path_string = $path->(HTTP::Tiny::Path)->to_string;
+    }
+    else {
+      die "Tha type of the path \$path must be string or HTTP::Tiny::Path.";
+    }
+    
+    if (Re->m($path_string, "^/")) {
+      $self->parse($path_string);
+      return;
+    }
+    
+    # Merge
+    unless ($self->trailing_slash) {
+      $self->{parts_list}->pop;
+    }
+    
+    my $path_obj = HTTP::Tiny::Path->new($path_string);
+    
+    for my $part (@{$path_obj->parts}) {
+      $self->{parts_list}->push($part);
+    }
+    
+    $self->set_trailing_slash($path_obj->trailing_slash);
+  }
 
 }
 
