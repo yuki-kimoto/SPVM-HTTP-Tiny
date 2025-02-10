@@ -7,7 +7,7 @@ class HTTP::Tiny::Path {
   # Fields
   has path : string;
   
-  has parts : string[];
+  has parts_list : StringList;
   
   has leading_slash : byte;
   
@@ -122,19 +122,19 @@ class HTTP::Tiny::Path {
   
   method parts : string[] () {
     $self->_parse;
-    return $self->{parts};
+    return $self->{parts_list}->to_array;
   }
   
   method set_parts : void ($parts : string[]) {
     $self->_parse;
-    $self->{parts} = $parts;
+    $self->{parts_list} = StringList->new($parts);
   }
   
   private method _parse : void (){
     
-    my $parts = $self->{parts};
+    my $parts_list = $self->{parts_list};
     
-    unless ($parts) {
+    unless ($parts_list) {
       my $path_url_encoded = $self->{path};
       $self->{path} = undef;
       unless ($path_url_encoded) {
@@ -143,7 +143,7 @@ class HTTP::Tiny::Path {
       my $path = &url_unescape($path_url_encoded);
       $self->{leading_slash} = (byte)!!Re->s($path, "^/", "");
       $self->{trailing_slash} = (byte)!!Re->s($path, "/$", "");
-      $self->{parts} = Fn->split("/", $path, -1);
+      $self->{parts_list} = StringList->new(Fn->split("/", $path, -1));
     }
     
   }
@@ -198,11 +198,11 @@ class HTTP::Tiny::Path {
     
     my $clone = HTTP::Tiny::Path->new;
     
-    if (my $parts = $self->{parts}) {
+    if (my $parts_list = $self->{parts_list}) {
       $clone->{leading_slash} = $self->{leading_slash};
       $clone->{trailing_slash} = $self->{trailing_slash};
       
-      $clone->{parts} = Array->copy_string($parts);
+      $clone->{parts_list} = StringList->new($parts_list->to_array);
     }
     else {
       $clone->{path} = copy $self->{path};
@@ -214,6 +214,7 @@ class HTTP::Tiny::Path {
 }
 
 __END__
+
 
 sub clone {
   my $self = shift;
