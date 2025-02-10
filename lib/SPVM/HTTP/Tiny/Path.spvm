@@ -67,11 +67,6 @@ class HTTP::Tiny::Path {
     # TODO
   }
   
-  method parts : string[] () {
-    
-    # TODO
-  }
-  
   method to_string : string () {
     # Path
     if (my $path = $self->{path}) {
@@ -105,28 +100,62 @@ class HTTP::Tiny::Path {
     return $abs_path;
   }
   
-  # TODO
   method leading_slash : int () {
-    
+    $self->_parse;
+    return $self->{leading_slash};
   }
   
-  # TODO
   method set_leading_slash : void ($bool : int) {
-    
+    $self->_parse;
+    $self->{leading_slash} = (byte)$bool;
   }
   
-  # TODO
   method trailing_slash : int () {
-    
+    $self->_parse;
+    return $self->{trailing_slash};
   }
   
-  # TODO
   method set_trailing_slash : void ($bool : int) {
+    $self->_parse;
+    $self->{trailing_slash} = (byte)$bool;
+  }
+  
+  method parts : string[] () {
+    $self->_parse;
+    return $self->{parts};
+  }
+  
+  method set_parts : void ($parts : string[]) {
+    $self->_parse;
+    $self->{parts} = $parts;
+  }
+  
+  private method _parse : void (){
+    
+    my $parts = $self->{parts};
+    
+    unless ($parts) {
+      my $path_url_encoded = $self->{path};
+      $self->{path} = undef;
+      unless ($path_url_encoded) {
+        $path_url_encoded = "";
+      }
+      my $path = &url_unescape($path_url_encoded);
+      $self->{leading_slash} = (byte)!!Re->s($path, "^/", "");
+      $self->{trailing_slash} = (byte)!!Re->s($path, "/$", "");
+      $self->{parts} = Fn->split("/", $path, -1);
+    }
     
   }
   
   # TODO
-  private static method url_escape : string ($str : string, $pattern : string) {
+  private static method url_escape : string ($string : string, $pattern : string) {
+    
+    return undef;
+  }
+  
+  # TODO
+  private static method url_unescape : string ($string : string) {
     
     return undef;
   }
