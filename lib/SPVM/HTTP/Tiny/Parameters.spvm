@@ -5,6 +5,8 @@ class HTTP::Tiny::Parameters {
   version_from HTTP::Tiny;
   
   use HTTP::Tiny::Util;
+  use Hash;
+  use Sort;
   
   # Fields
   has string : string;
@@ -103,6 +105,51 @@ class HTTP::Tiny::Parameters {
     my $values = $values_list->to_array;
     
     return $values;
+  }
+  
+  method merge : void ($parameters : object of object[]|HTTP::Tiny::Parameters)  {
+    
+    unless ($parameters) {
+      die "The parameters \$parameters must be defined.";
+    }
+    
+    my $parameters_hash = (Hash)undef;
+    if ($parameters isa object[]) {
+      $parameters_hash = Hash->new((object[])$parameters);
+    }
+    elsif ($parameters isa HTTP::Tiny::Parameters) {
+      $parameters_hash = $parameters->(HTTP::Tiny::Parameters)->to_hash;
+    }
+    else {
+      die "The type of the parameters \$parameters must be object[] or HTTP::Tiny::Parameters.";
+    }
+    
+    my $merge = $parameters_hash;
+    my $merge_keys = $merge->keys;
+    Sort->sort_string_asc($merge_keys);
+    
+    for my $name (@$merge_keys) {
+      my $value = $merge->get($name);
+      if ($value) {
+        $self->set_param($name => $value);
+      }
+      else {
+        $self->remove($name);
+      }
+    }
+    
+  }
+  
+  method set_param : void ($name : string, $value : object) {
+    
+  }
+  
+  method remove : void ($name : string) {
+    
+  }
+  
+  method to_hash : Hash () {
+    
   }
   
   method pairs : string[] () {
