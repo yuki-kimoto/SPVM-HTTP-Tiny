@@ -241,6 +241,12 @@ class HTTP::Tiny::Parameters {
     
   }
   
+  method parse : void ($string : string) {
+    
+    $self->{string} = $string;
+    
+  }
+  
   method remove : void ($name : string) {
     
     unless ($name) {
@@ -265,13 +271,44 @@ class HTTP::Tiny::Parameters {
   }
   
   method to_hash : Hash () {
+
+    my $hash = Hash->new;
     
-  }
-  
-  method parse : void ($string : string) {
+    $self->_parse;
     
-    $self->{string} = $string;
+    my $pairs_list = $self->{pairs_list};
     
+    for (my $i = 0; $i < $pairs_list->length; $i += 2) {
+      my $name = $pairs_list->get($i);
+      my $value = $pairs_list->get($i + 1);
+      
+      # Array
+      if ($hash->exists($name)) {
+        my $hash_value = $hash->get($name);
+        
+        my $hash_value_array = (string[])undef;
+        if ($hash_value isa string[]) {
+          $hash_value_array = (string[])$hash_value;
+        }
+        elsif ($hash_value isa string) {
+          $hash_value_array = [(string)$hash_value];
+        }
+        else {
+          die "[Unexpected Error]Invalid hash value type.";
+        }
+        
+        $hash_value_array = Array->merge_string($hash_value_array, [$value]);
+        
+        $hash->set($name, $hash_value_array);
+      }
+      
+      # String
+      else {
+        $hash->set($name, $value);
+      }
+    }
+    
+    return $hash;
   }
   
 }
