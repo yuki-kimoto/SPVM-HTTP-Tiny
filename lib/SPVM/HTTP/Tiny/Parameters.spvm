@@ -243,6 +243,25 @@ class HTTP::Tiny::Parameters {
   
   method remove : void ($name : string) {
     
+    unless ($name) {
+      die "The name \$name must be defined.";
+    }
+    
+    $self->_parse;
+    
+    my $pairs_list = $self->{pairs_list};
+    
+    my $i     = 0;
+    while ($i < $pairs_list->length) {
+      if ($pairs_list->get($i) eq $name) {
+        $pairs_list->remove($i);
+        $pairs_list->remove($i + 1);
+      }
+      else {
+        $i += 2;
+      }
+    }
+    
   }
   
   method to_hash : Hash () {
