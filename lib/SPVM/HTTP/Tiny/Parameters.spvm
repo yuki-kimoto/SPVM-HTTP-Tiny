@@ -84,6 +84,23 @@ class HTTP::Tiny::Parameters {
     return $clone;
   }
   
+  method every_param : string[] ($name : string) {
+    
+    my $values_list = StringList->new;
+    
+    my $pairs_list = StringList->new($self->pairs);
+    
+    for (my $i = 0; $i < $pairs_list->length; $i += 2) {
+      if ($pairs_list->get($i) eq $name) {
+        $values_list->push($pairs_list->get($i + 1));
+      }
+    }
+    
+    my $values = $values_list->to_array;
+    
+    return $values;
+  }
+  
   method pairs : string[] () {
     
   }
