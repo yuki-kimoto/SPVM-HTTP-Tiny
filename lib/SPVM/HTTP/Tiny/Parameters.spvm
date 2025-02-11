@@ -140,6 +140,15 @@ class HTTP::Tiny::Parameters {
     
   }
   
+  method names : string[] () {
+    
+    my $hash = $self->to_hash;
+    my $keys = $hash->keys;
+    Sort->sort_string_asc($keys);
+    
+    return $keys;
+  }
+  
   method set_param : void ($name : string, $value : object) {
     
   }
