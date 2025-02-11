@@ -149,6 +149,62 @@ class HTTP::Tiny::Parameters {
     return $keys;
   }
   
+  method pairs : string[] () {
+    
+    $self->_parse;
+    
+    return $self->{pairs_list}->to_array;
+  }
+  
+  method _parse : void () {
+    
+    my $string = $self->{string};
+    $self->{string} = undef;
+    
+    $self->{pairs_list} = StringList->new;
+    
+    my $pairs_list = $self->{pairs_list};
+    
+    if (length $string) {
+      for my $pair (@{Fn->split("&", $string)}) {
+        if (my $match = Re->m($pair, "^([^=]+)(?:=(.*))?$")) {
+          my $name = $match->cap1;
+          my $value = $match->cap2;
+          
+          my $name_ref = [$name];
+          Re->s($name_ref, ["\+", "g"], " ");
+          $name = $name_ref->[0];
+          
+          my $value_ref = [$value];
+          Re->s($value_ref, ["\+", "g"], " ");
+          $value = $value_ref->[0];
+          unless ($value) {
+            $value = "";
+          }
+          
+          $name  = HTTP::Tiny::Util->url_unescape($name);
+          $value = HTTP::Tiny::Util->url_unescape($value);
+          
+          $pairs_list->push($name);
+          $pairs_list->push($value);
+        }
+      }
+    }
+    
+  }
+  
+  method set_pairs : void ($pairs : string[])  {
+    
+    unless ($pairs) {
+      die "The paris \$pairs must be defined.";
+    }
+    
+    $self->{pairs_list} = StringList->new($pairs);
+    
+    $self->{string} = undef;
+    
+  }
+
   method set_param : void ($name : string, $value : object) {
     
   }
@@ -161,16 +217,12 @@ class HTTP::Tiny::Parameters {
     
   }
   
-  method pairs : string[] () {
-    
-  }
-  
   method parse : void ($string : string) {
     
     $self->{string} = $string;
     
   }
-
+  
 }
 
 __END__
