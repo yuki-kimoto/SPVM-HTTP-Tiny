@@ -205,7 +205,39 @@ class HTTP::Tiny::Parameters {
     
   }
 
-  method set_param : void ($name : string, $value : object) {
+  method param : string ($name : string) {
+    
+    my $every_param = $self->every_param($name);
+    
+    my $param = (string)undef;
+    if (@$every_param) {
+      $param = $every_param->[0];
+    }
+    
+    return $param;
+  }
+  
+  method set_param : void ($name : string, $value : object of string|string[]) {
+    
+    unless ($name) {
+      die "The name \$name must be defined.";
+    }
+    
+    unless ($value) {
+      die "The value \$value must be defined.";
+    }
+    
+    $self->remove($name);
+    
+    if ($value isa string) {
+      $self->append([(string)$value]);
+    }
+    elsif ($value isa string[]) {
+      $self->append((string[])$value);
+    }
+    else {
+      die "The type of value \$value must be string or string[].";
+    }
     
   }
   
