@@ -6,8 +6,20 @@ class HTTP::Tiny::Parameters {
   
   use HTTP::Tiny::Util;
   
-  has pairs_list : List;
+  # Fields
+  has string : string;
   
+  has pairs_list : StringList;
+  
+  # Class Methods
+  static method new : HTTP::Tiny::Parameters () {
+    
+    my $self = new HTTP::Tiny::Parameters;
+    
+    return $self;
+  }
+  
+  # Instance Methods
   method append : void ($pairs : object of object[]|HTTP::Tiny::Parameters) {
     
     unless ($pairs) {
@@ -41,12 +53,12 @@ class HTTP::Tiny::Parameters {
       
       if ($new_value) {
         if ($new_value isa string) {
-          $old_list->push($new_name);
+          $old_list->push((string)$new_name);
           $old_list->push((string)$new_value);
         }
         elsif ($new_value isa string[]) {
           for my $one_new_value (@(string[])$new_value) {
-            $old_list->push($new_name);
+            $old_list->push((string)$new_name);
             $old_list->push($one_new_value);
           }
         }
@@ -56,6 +68,20 @@ class HTTP::Tiny::Parameters {
       }
     }
     
+  }
+  
+  method clone : HTTP::Tiny::Parameters () {
+    
+    my $clone = HTTP::Tiny::Parameters->new;
+    
+    if ($self->{string}) {
+      $clone->{string} = copy $self->{string};
+    }
+    else {
+      $clone->{pairs_list} = StringList->new(Array->copy_string($self->pairs));
+    }
+    
+    return $clone;
   }
   
   method pairs : string[] () {
