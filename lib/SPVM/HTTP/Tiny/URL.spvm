@@ -264,6 +264,21 @@ class HTTP::Tiny::URL {
     }
   }
 
+  method password : string () {
+    
+    my $userinfo = "";
+    if ($self->userinfo) {
+      $userinfo = $self->userinfo;
+    }
+    
+    my $password = (string)undef;
+    if (my $match = Re->m($userinfo, ":(.*)$")) {
+      $password = $match->cap1;
+    }
+    
+    return $password;
+  }
+  
   method protocol : string () {
     
     my $protocol = "";
