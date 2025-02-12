@@ -24,7 +24,7 @@ class HTTP::Tiny::URL {
   
   has port : rw int;
   
-  has path : rw HTTP::Tiny::Path;
+  has path : HTTP::Tiny::Path;
   
   has auth : rw string;
   
@@ -289,6 +289,36 @@ class HTTP::Tiny::URL {
     return $protocol;
   }
 
+  method path : HTTP::Tiny::Path () {
+    
+    unless ($self->{path}) {
+      $self->{path} = HTTP::Tiny::Path->new;
+    }
+    
+    my $path = $self->{path};
+    
+    return $path;
+  }
+  
+  method set_path : void ($path : object of string|HTTP::Tiny::Path) {
+    
+    unless ($path) {
+      die "The path \$path must be defined.";
+    }
+    
+    if ($path isa HTTP::Tiny::Path) {
+      $self->{path} = (HTTP::Tiny::Path)$path;
+    }
+    else {
+      unless ($self->{path}) {
+        $self->{path} = HTTP::Tiny::Path->new;
+      }
+      
+      $self->{path}->merge((string)$path);
+    }
+    
+  }
+  
 }
 
 __END__
