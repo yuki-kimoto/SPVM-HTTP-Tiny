@@ -50,11 +50,11 @@ class HTTP::Tiny::Util {
   }
   
   static method punycode_decode : string ($string : string) {
-    
+    die "TODO.";
   }
   
   static method punycode_encode : string ($string : string) {
-    
+    die "TODO.";
   }
   
 }
