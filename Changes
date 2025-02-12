@@ -1,6 +1,6 @@
 0.007 2025-02-12
   [Internal Changes]
-    * Add many internal classes.
+    * Add many internal classes. These internal classes are separated in other distribution in the future.
     
 0.006 2025-02-06
   [Incompatibe Changes]
