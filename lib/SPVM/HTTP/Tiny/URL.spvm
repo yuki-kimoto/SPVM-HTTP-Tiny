@@ -407,6 +407,21 @@ class HTTP::Tiny::URL {
     return $url;
   }
   
+  method username : string () {
+    
+    my $userinfo = "";
+    if ($self->userinfo) {
+      
+    }
+    
+    my $username = (string)undef;
+    if (my $match = Re->m($username, "^([^:]+)")) {
+      $username = $match->cap1;
+    }
+    
+    return $username;
+  }
+
 }
 
 __END__
