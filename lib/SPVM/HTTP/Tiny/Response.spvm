@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Result {
+class HTTP::Tiny::Response {
   version_from HTTP::Tiny;
   
   allow HTTP::Tiny::Handle;
@@ -13,9 +13,9 @@ class HTTP::Tiny::Result {
   has response : HTTP::Tiny::Message::Response;
   
   # Class Methods
-  private static method new : HTTP::Tiny::Result ($response : HTTP::Tiny::Message::Response) {
+  private static method new : HTTP::Tiny::Response ($response : HTTP::Tiny::Message::Response) {
     
-    my $self = new HTTP::Tiny::Result;
+    my $self = new HTTP::Tiny::Response;
     
     $self->{response} = $response;
     

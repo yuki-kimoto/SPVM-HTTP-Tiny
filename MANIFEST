@@ -27,8 +27,8 @@ lib/SPVM/HTTP/Tiny/Parameters.pm
 lib/SPVM/HTTP/Tiny/Parameters.spvm
 lib/SPVM/HTTP/Tiny/Path.pm
 lib/SPVM/HTTP/Tiny/Path.spvm
-lib/SPVM/HTTP/Tiny/Result.pm
-lib/SPVM/HTTP/Tiny/Result.spvm
+lib/SPVM/HTTP/Tiny/Response.pm
+lib/SPVM/HTTP/Tiny/Response.spvm
 lib/SPVM/HTTP/Tiny/Status.pm
 lib/SPVM/HTTP/Tiny/Status.spvm
 lib/SPVM/HTTP/Tiny/URL.pm
