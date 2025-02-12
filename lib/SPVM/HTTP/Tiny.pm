@@ -78,11 +78,11 @@ Sets the L</"timeout"> field.
 
 =head2 get
 
-  method get : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef);
+  method get : HTTP::Tiny::Response ($url : string, $options : object[] = undef);
 
 Gets the HTTP response by sending an HTTP GET request to the URL $url.
 
-The HTTP response is a L<HTTP::Tiny::Message::Response|SPVM::HTTP::Tiny::Message::Response> object.
+The HTTP response is a L<HTTP::Tiny::Response|SPVM::HTTP::Tiny::Response> object.
 
 Options:
 
@@ -100,23 +100,23 @@ Timeout seconds.
 
 =head2 head
 
-  method head : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef);
+  method head : HTTP::Tiny::Response ($url : string, $options : object[] = undef);
 
 =head2 put
 
-  method put : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef);
+  method put : HTTP::Tiny::Response ($url : string, $options : object[] = undef);
 
 =head2 post
 
-  method post : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef);
+  method post : HTTP::Tiny::Response ($url : string, $options : object[] = undef);
 
 =head2 patch
 
-  method patch : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef);
+  method patch : HTTP::Tiny::Response ($url : string, $options : object[] = undef);
 
 =head2 delete
 
-  method delete : HTTP::Tiny::Message::Response ($url : string, $options : object[] = undef);
+  method delete : HTTP::Tiny::Response ($url : string, $options : object[] = undef);
 
 =head1 Repository
 
