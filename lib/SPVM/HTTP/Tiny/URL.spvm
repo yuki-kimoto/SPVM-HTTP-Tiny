@@ -355,6 +355,58 @@ class HTTP::Tiny::URL {
     
   }
   
+  method to_abs : HTTP::Tiny::URL ($base : HTTP::Tiny::URL = undef) {
+
+    my $abs = $self->clone;
+    
+    if ($abs->is_abs) {
+      return $abs;
+    }
+    
+    # Scheme
+    unless ($base) {
+      $base = $abs->base;
+    }
+    $abs->set_base($base);
+    $abs->set_scheme($base->scheme);
+    
+    # Authority
+    if ($abs->host) {
+      return $abs;
+    }
+    $abs->set_userinfo($base->userinfo);
+    $abs->set_host($base->host);
+    $abs->set_port($base->port);
+    
+    # Absolute path
+    my $path = $abs->path;
+    if ($path->leading_slash) {
+      return $abs;
+    }
+    
+    # Inherit path
+    if (!@{$path->parts}) {
+      my $abs_path = $base->path->clone;
+      $abs_path->canonicalize;
+      $abs->set_path($abs_path);
+      
+      # Query
+      unless (length $abs->query->to_string) {
+        $abs->set_query($base->query->clone);
+      }
+    }
+    
+    # Merge paths
+    else {
+      my $abs_path = $base->path->clone;
+      $abs_path->merge($path);
+      $abs_path->canonicalize;
+      $abs->set_path($abs_path);
+    }
+    
+    return $abs;
+  }
+
 }
 
 __END__
