@@ -12,7 +12,7 @@ SPVM::HTTP::Tiny - HTTP Client
 
 HTTP::Tiny class in L<SPVM> is a HTTP client.
 
-B<This class is highly experimental.>
+B<This class is highly experimental. Many dramatic incompatibilities are expected.>.
 
 =head1 Usage
 
