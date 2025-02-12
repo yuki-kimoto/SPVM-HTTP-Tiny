@@ -43,57 +43,6 @@ class HTTP::Tiny::URL {
     return $self;
   }
   
-  method to_string : string () {
-    return $self->_string(0);
-  }
-  
-  method to_unsafe_string : string () {
-    return $self->_string(1);
-  }
-  
-  method _string : string ($unsafe : int) {
-    
-    # Scheme
-    my $url = "";
-    if (my $proto = $self->protocol) {
-      $url .= "$proto:";
-    }
-    
-    # Authority
-    my $auth = $self->host_port;
-    if ($auth) {
-      $auth = HTTP::Tiny::Util->url_escape($auth, q'^A-Za-z0-9\\-._~!$&\'()*+,;=:\\[\\]');
-    }
-    
-    my $info = $self->userinfo;
-    if ($unsafe && $info) {
-      $auth = HTTP::Tiny::Util->url_escape(q'^A-Za-z0-9\\-._~!$&\'()*+,;=:') . "@" . $auth;
-    }
-    
-    if ($auth) {
-      $url .= "//$auth";
-    }
-    
-    # Path and query
-    my $path = $self->path_query;
-    if (!$auth || !length $path || Re->m($path, "^[/?]")) {
-      $url .= $path;
-    }
-    else {
-      $url .= "/$path";
-    }
-    
-    # Fragment
-    my $fragment = $self->fragment;
-    unless (length $fragment) {
-      return $url;
-    }
-    
-    $url .= "#" . HTTP::Tiny::Util->url_escape($fragment, q'^A-Za-z0-9\\-._~!$&\'()*+,;=:@/?');
-    
-    return $url;
-  }
-  
   method clone : HTTP::Tiny::URL () {
     
     my $clone = HTTP::Tiny::URL->new;
@@ -407,6 +356,57 @@ class HTTP::Tiny::URL {
     return $abs;
   }
 
+  method to_string : string () {
+    return $self->_string(0);
+  }
+  
+  method to_unsafe_string : string () {
+    return $self->_string(1);
+  }
+  
+  method _string : string ($unsafe : int) {
+    
+    # Scheme
+    my $url = "";
+    if (my $proto = $self->protocol) {
+      $url .= "$proto:";
+    }
+    
+    # Authority
+    my $auth = $self->host_port;
+    if ($auth) {
+      $auth = HTTP::Tiny::Util->url_escape($auth, q'^A-Za-z0-9\\-._~!$&\'()*+,;=:\\[\\]');
+    }
+    
+    my $info = $self->userinfo;
+    if ($unsafe && $info) {
+      $auth = HTTP::Tiny::Util->url_escape(q'^A-Za-z0-9\\-._~!$&\'()*+,;=:') . "@" . $auth;
+    }
+    
+    if ($auth) {
+      $url .= "//$auth";
+    }
+    
+    # Path and query
+    my $path = $self->path_query;
+    if (!$auth || !length $path || Re->m($path, "^[/?]")) {
+      $url .= $path;
+    }
+    else {
+      $url .= "/$path";
+    }
+    
+    # Fragment
+    my $fragment = $self->fragment;
+    unless (length $fragment) {
+      return $url;
+    }
+    
+    $url .= "#" . HTTP::Tiny::Util->url_escape($fragment, q'^A-Za-z0-9\\-._~!$&\'()*+,;=:@/?');
+    
+    return $url;
+  }
+  
 }
 
 __END__
