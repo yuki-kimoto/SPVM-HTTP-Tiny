@@ -23,9 +23,7 @@ class HTTP::Tiny::URL {
   
   has port : int;
   
-  has path : string;
-  
-  has path_v2 : HTTP::Tiny::URL;
+  has path : HTTP::Tiny::Path;
   
   has auth : string;
   
@@ -45,7 +43,7 @@ class HTTP::Tiny::URL {
     
     $self->{port} = $options_h->delete_or_default_int("port", -1);
     
-    $self->{path} = $options_h->delete_or_default_string("path", undef);
+    $self->{path} = (HTTP::Tiny::Path)$options_h->delete_or_default("path", undef);
     
     $self->{auth} = $options_h->delete_or_default_string("auth", undef);
     
@@ -125,7 +123,7 @@ class HTTP::Tiny::URL {
       scheme => $scheme,
       host => $host,
       port => $port,
-      path => $path_query,
+      path => HTTP::Tiny::Path->new($path_query),
       auth => $auth,
     });
     
@@ -171,6 +169,10 @@ class HTTP::Tiny::URL {
     my $host = $self->{host};
     my $port = $self->{port};
     my $path = $self->{path};
+    my $path_string = "";
+    if ($path) {
+      $path_string = $path->to_string;
+    }
     
     my $buffer = StringBuffer->new;
     
@@ -186,7 +188,7 @@ class HTTP::Tiny::URL {
       $buffer->push(":$port");
     }
     
-    $buffer->push("$path");
+    $buffer->push("$path_string");
     
     my $string = $buffer->to_string;
     
@@ -207,8 +209,8 @@ class HTTP::Tiny::URL {
       $clone->{base} = $self->{base}->clone;
     }
     
-    if ($self->{path_v2}) {
-      $clone->{path_v2} = $self->{path_v2}->clone;
+    if ($self->{path}) {
+      $clone->{path} = $self->{path}->clone;
     }
     
     if ($self->{query}) {

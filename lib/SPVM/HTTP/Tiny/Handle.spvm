@@ -99,7 +99,7 @@ class HTTP::Tiny::Handle {
     
     my $url = $request->{url};
     
-    my $path = $url->{path};
+    my $path = $url->{path}->to_string;
     
     my $request_line = "$method $path HTTP/1.1\r\n";
     
