@@ -255,10 +255,47 @@ class HTTP::Tiny::URL {
   
   method ihost : string () {
     
+    my $host = $self->host;
+    unless ($host) {
+      return undef;
+    }
+    
+    unless (Re->m($host, "[^\x00-\x7f]")) {
+      return $host;
+    }
+    
+    my $parts = Fn->split(".", $host, -1);
+    
+    my $parts_punycode_encoded = (string[])Fn->map($parts, method : string ($part : string) {
+      if (my $match = Re->m($part, "[^\x00-\x7f]")) {
+        return  "xn--" . HTTP::Tiny::Util->punycode_encode($match->cap1);
+      }
+      else {
+        return $part;
+      }
+    });
+    
+    my $ihost = Fn->join(".", $parts_punycode_encoded);
+    
+    return $ihost;
   }
   
   method set_ihost : void ($ihost : string) {
     
+    my $parts = Fn->split(".", $ihost, -1);
+    
+    my $parts_punycode_decoded = (string[])Fn->map($parts, method : string ($part : string) {
+      if (my $match = Re->m($part, "^xn--(.+)$")) {
+        return  HTTP::Tiny::Util->punycode_decode($match->cap1);
+      }
+      else {
+        return $part;
+      }
+    });
+    
+    my $host = Fn->join(".", $parts_punycode_decoded);
+    
+    $self->set_host($host);
   }
   
 }

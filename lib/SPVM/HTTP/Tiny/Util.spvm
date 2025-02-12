@@ -49,4 +49,12 @@ class HTTP::Tiny::Util {
     return $string_ref->[0];
   }
   
+  static method punycode_decode : string ($string : string) {
+    
+  }
+  
+  static method punycode_encode : string ($string : string) {
+    
+  }
+  
 }
