@@ -11,6 +11,7 @@ class HTTP::Tiny::URL {
   use Re;
   use HTTP::Tiny::URL;
   use HTTP::Tiny::Parameters;
+  use HTTP::Tiny::Util;
   
   # Fields
   has fragment : string;
@@ -19,9 +20,9 @@ class HTTP::Tiny::URL {
   
   has userinfo : string;
   
-  has host : string;
+  has host : rw string;
   
-  has port : int;
+  has port : rw int;
   
   has path : HTTP::Tiny::Path;
   
@@ -219,7 +220,47 @@ class HTTP::Tiny::URL {
     
     return $clone;
   }
-
+  
+  method host_port : string () {
+    
+    my $host = $self->ihost;
+    unless ($host) {
+      return undef ;
+    }
+    
+    my $port = $self->port;
+    unless ($port) {
+      return $host;
+    }
+    
+    return "$host:$port";
+  }
+  
+  method set_host_port : void ($host_port : string) {
+    
+    if (my $replace_info = Re->s($host_port, ":(\d+)$", "")) {
+      my $match = $replace_info->match;
+      $self->set_port((int)$match->cap1);
+    }
+    
+    my $host = HTTP::Tiny::Util->url_unescape($host_port);
+    
+    if (Re->m($host, "[^\x00-\x7f]")) {
+      $self->set_ihost($host);
+    }
+    else {
+      $self->set_host($host);
+    }
+  }
+  
+  method ihost : string () {
+    
+  }
+  
+  method set_ihost : void ($ihost : string) {
+    
+  }
+  
 }
 
 __END__
