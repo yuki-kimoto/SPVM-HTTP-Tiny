@@ -1,10 +1,9 @@
-0.007 2025-02-12
+0.006 2025-02-12
   [Internal Changes]
     * Add many internal classes. These internal classes are separated in other distribution in the future.
     
-0.006 2025-02-06
   [Incompatibe Changes]
-    * Rename HTTP::Tiny::Message::Response to HTTP::Tiny::Result.
+    * Rename HTTP::Tiny::Message::Response to HTTP::Tiny::Response.
   
 0.005 2025-01-30
   [Internal Changes]
