@@ -14,186 +14,111 @@ class HTTP::Tiny::URL {
   use HTTP::Tiny::Util;
   
   # Fields
-  has fragment : string;
+  has fragment : rw string;
   
-  has scheme : string;
+  has scheme : rw string;
   
-  has userinfo : string;
+  has userinfo : rw string;
   
   has host : rw string;
   
   has port : rw int;
   
-  has path : HTTP::Tiny::Path;
+  has path : rw HTTP::Tiny::Path;
   
-  has auth : string;
+  has auth : rw string;
   
-  has base : HTTP::Tiny::URL;
+  has base : rw HTTP::Tiny::URL;
   
-  has query : HTTP::Tiny::Parameters;
+  has query : rw HTTP::Tiny::Parameters;
   
-  static method new : HTTP::Tiny::URL ($options : object[] = undef) {
-    
-    my $options_h = Hash->new($options);
+  static method new : HTTP::Tiny::URL ($url : string = undef) {
     
     my $self = new HTTP::Tiny::URL;
     
-    $self->{scheme} = $options_h->delete_or_default_string("scheme", undef);
-    
-    $self->{host} = $options_h->delete_or_default_string("host", undef);
-    
-    $self->{port} = $options_h->delete_or_default_int("port", -1);
-    
-    $self->{path} = (HTTP::Tiny::Path)$options_h->delete_or_default("path", undef);
-    
-    $self->{auth} = $options_h->delete_or_default_string("auth", undef);
+    if ($url) {
+      $self->parse($url);
+    }
     
     return $self;
   }
   
-  static method parse : HTTP::Tiny::URL ($url_string : string) {
+  method to_string : string () {
+    return $self->_string(0);
+  }
+  
+  method to_unsafe_string : string () {
+    return $self->_string(1);
+  }
+  
+  method _string : string ($unsafe : int) {
     
-    # URI regex adapted from the URI module
-    my $scheme = (string)undef;
-    my $host = (string)undef;
-    my $path_query = (string)undef;
+    # Scheme
+    my $url = "";
+    if (my $proto = $self->protocol) {
+      $url .= "$proto:";
+    }
     
-    if (my $match = Re->m($url_string, "\A([^:/?#]+)://([^/?#]*)([^#]*)")) {
-      $scheme = $match->cap1;
-      $host = $match->cap2;
-      $path_query = $match->cap3;
+    # Authority
+    my $auth = $self->host_port;
+    if ($auth) {
+      $auth = HTTP::Tiny::Util->url_escape($auth, q'^A-Za-z0-9\\-._~!$&\'()*+,;=:\\[\\]');
+    }
+    
+    my $info = $self->userinfo;
+    if ($unsafe && $info) {
+      $auth = HTTP::Tiny::Util->url_escape(q'^A-Za-z0-9\\-._~!$&\'()*+,;=:') . "@" . $auth;
+    }
+    
+    if ($auth) {
+      $url .= "//$auth";
+    }
+    
+    # Path and query
+    my $path = $self->path_query;
+    if (!$auth || !length $path || Re->m($path, "^[/?]")) {
+      $url .= $path;
     }
     else {
-      die "Cannot parse URL: \"$url_string\"";
+      $url .= "/$path";
     }
     
-    $scheme = Fn->lc($scheme);
-    
-    unless (Re->m($path_query, "\A/")) {
-      $path_query = "/$path_query";
+    # Fragment
+    my $fragment = $self->fragment;
+    unless (length $fragment) {
+      return $url;
     }
     
-    my $auth = "";
-    if ((my $i = Fn->index($host, '@')) != -1 ) {
-      # user:pass@host
-      $auth = &substr_replacement($host, 0, $i, ""); # take up to the @ for auth
-      &substr_replacement($host, 0, 1, "");          # knock the @ off the host
-      
-      # userinfo might be percent escaped, so recover real auth info
-      my $auth_ref = [$auth];
-      Re->s($auth_ref, ["%([0-9A-Fa-f]{2})", "g"], method : string ($re : Regex, $match : Regex::Match) {
-        return Fn->chr(Fn->hex($match->cap1));
-      });
-      $auth = $auth_ref->[0];
-    }
-    
-    my $port_string = (string)undef;
-    
-    my $replace_info_ref = [(Regex::ReplaceInfo)undef];
-    
-    my $host_ref = [$host];
-    my $replace_info = Re->s($host_ref, ":(\d*)\z", "");
-    $host = $host_ref->[0];
-    
-    if ($replace_info) {
-      my $match = $replace_info->match;
-      $port_string = $match->cap1;
-    }
-    
-    my $port = -1;
-    if($port_string) {
-      $port = Fn->to_int($port_string);
-    }
-    else {
-      if ($scheme eq "http") {
-        $port = 80;
-      }
-      elsif ($scheme eq "https") {
-        $port = 443;
-      }
-    }
-    
-    if ($host) {
-      $host = Fn->lc($host);
-    }
-    else {
-      $host = "localhost";
-    }
-    
-    my $url = HTTP::Tiny::URL->new({
-      scheme => $scheme,
-      host => $host,
-      port => $port,
-      path => HTTP::Tiny::Path->new($path_query),
-      auth => $auth,
-    });
+    $url .= "#" . HTTP::Tiny::Util->url_escape($fragment, q'^A-Za-z0-9\\-._~!$&\'()*+,;=:@/?');
     
     return $url;
   }
   
-  private static method substr_replacement : string ($string : string, $offset : int, $length : int = -1, $replacement : string = undef) {
+  method path_query : string () {
     
-    unless ($string) {
-      die "The \$string must be defined.";
+    my $query = $self->query->to_string;
+    
+    my $path_query = $self->path->to_string;
+    
+    if (length $query) {
+      $path_query .= "?$query";
     }
     
-    unless ($offset >= 0) {
-      die "The \$offset must be greater than or equal to 0.";
-    }
-    
-    my $string_length = length $string;
-    if ($length < 0) {
-      $length = $string_length - $offset;
-    }
-    
-    unless ($offset + $length <= $string_length) {
-      die "The \$offset + the \$length must be less than or equal to the length of the \$string.";
-    }
-    
-    my $substring = (string)undef;
-    if ($replacement) {
-      
-      $substring = Fn->substr($string, 0, $offset) . $replacement . Fn->substr($string, $length - $offset);
-    }
-    else {
-      $substring = (mutable string)new_string_len($length);
-      Fn->memcpy($substring, 0, $string, $offset, $length);
-    }
-    
-    return $substring;
+    return $path_query;
   }
   
-  private method to_string : string () {
+  method set_path_query : void ($pq : string) {
     
-    my $scheme = $self->{scheme};
-    my $auth = $self->{auth};
-    my $host = $self->{host};
-    my $port = $self->{port};
-    my $path = $self->{path};
-    my $path_string = "";
-    if ($path) {
-      $path_string = $path->to_string;
+    if (my $match = Re->m($pq, "^([^?#]*)(?:\?([^#]*))?")) {
+      if ($match->cap2) {
+        $self->set_path(HTTP::Tiny::Path->new($match->cap1));
+        $self->set_query(HTTP::Tiny::Parameters->new($match->cap2));
+      }
+      else {
+        $self->set_path(HTTP::Tiny::Path->new($match->cap1));
+      }
     }
     
-    my $buffer = StringBuffer->new;
-    
-    $buffer->push("$scheme://");
-    
-    if ($auth && length $auth) {
-      $buffer->push("$auth@");
-    }
-    
-    $buffer->push("$host");
-    
-    if ($port >= 0) {
-      $buffer->push(":$port");
-    }
-    
-    $buffer->push("$path_string");
-    
-    my $string = $buffer->to_string;
-    
-    return $string;
   }
   
   method clone : HTTP::Tiny::URL () {
@@ -238,10 +163,12 @@ class HTTP::Tiny::URL {
   
   method set_host_port : void ($host_port : string) {
     
-    if (my $replace_info = Re->s($host_port, ":(\d+)$", "")) {
+    my $host_port_ref = [$host_port];
+    if (my $replace_info = Re->s($host_port_ref, ":(\d+)$", "")) {
       my $match = $replace_info->match;
       $self->set_port((int)$match->cap1);
     }
+    $host_port = $host_port_ref->[0];
     
     my $host = HTTP::Tiny::Util->url_unescape($host_port);
     
@@ -298,6 +225,55 @@ class HTTP::Tiny::URL {
     $self->set_host($host);
   }
   
+  method is_abs : int () {
+    return !!$self->scheme;
+  }
+  
+  method parse : void ($url : string) {
+    
+    # Official regex from RFC 3986
+    if (my $match = Re->m($url, "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")) {
+      
+      if ($match->cap2) {
+        $self->set_scheme($match->cap2);
+      }
+      
+      if ($match->cap5) {
+        $self->set_path(HTTP::Tiny::Path->new($match->cap5));
+      }
+      
+      if ($match->cap7) {
+        $self->set_query(HTTP::Tiny::Parameters->new($match->cap7));
+      }
+      
+      if ($match->cap9) {
+        $self->set_fragment(HTTP::Tiny::Util->url_unescape($match->cap9));
+      }
+      
+      if (my $auth = $match->cap4) {
+        
+        my $auth_ref = [$auth];
+        if (my $replace_info = Re->s($auth_ref, "^([^\@]+)\@", "")) {
+          my $match = $replace_info->match;
+          $self->set_userinfo(HTTP::Tiny::Util->url_unescape($match->cap1)) ;
+        }
+        $auth = $auth_ref->[0];
+        
+        $self->set_host_port($auth);
+      }
+    }
+  }
+
+  method protocol : string () {
+    
+    my $protocol = "";
+    if (my $scheme = $self->scheme) {
+      $protocol = Fn->lc($scheme);
+    }
+    
+    return $protocol;
+  }
+
 }
 
 __END__

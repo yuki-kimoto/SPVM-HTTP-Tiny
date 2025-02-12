@@ -221,7 +221,7 @@ $error
       my $url_string    = $match->cap2;
       my $http_version  = $match->cap3;
       
-      my $url = HTTP::Tiny::URL->parse($url_string);
+      my $url = HTTP::Tiny::URL->new($url_string);
       
       $request = HTTP::Tiny::Message::Request->new({method => $method, url => $url});
       

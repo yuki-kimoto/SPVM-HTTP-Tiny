@@ -326,7 +326,9 @@ class HTTP::Tiny {
       $headers->add("user-agent" => $agent);
     }
     
-    my $url = HTTP::Tiny::URL->parse($url_string);
+    my $url = HTTP::Tiny::URL->new($url_string);
+    
+    $url->set_port(80);
     
     my $request = HTTP::Tiny::Message::Request->new({
       method    => $method,
