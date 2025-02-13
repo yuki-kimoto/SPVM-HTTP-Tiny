@@ -4,27 +4,64 @@
 class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
   version_from HTTP::Tiny;
   
+  use HTTP::Tiny::Asset::File;
+  
   # Fields
-  has auto_upgrade : byte;
+  has auto_upgrade : rw byte;
   
-  has max_memory_size : int;
+  has max_memory_size : rw int;
   
-  has mtime : long;
+  has mtime : rw long;
+  
+  has content_buffer : StringBuffer;
+  
+  has frozen : byte;
   
   # Class Methods
-  static method new : HTTP::Tiny::Asset::Memory ($options : object[] = undef) {
-    
-    my $options_h = Hash->new($options);
+  static method new : HTTP::Tiny::Asset::Memory () {
     
     my $self = new HTTP::Tiny::Asset::Memory;
     
-    $self->{max_memory_size} = $options_h->get_or_default_int("max_memory_size", 262144);
+    $self->{max_memory_size} = 262144;
     
-    $self->{mtime} = $options_h->get_or_default_long("mtime", CommandInfo->BASETIME);
+    $self->{mtime} = CommandInfo->BASETIME;
+    
+    $self->{content_buffer} = StringBuffer->new;
     
     return $self;
   }
   
+  method add_chunk : HTTP::Tiny::Asset ($chunk : string) {
+    
+    unless ($chunk) {
+      die "The chunk \$chunk must be defined.";
+    }
+    
+    if ($self->{frozen}) {
+      die "Asset has been upgraded and is now frozen.";
+    }
+    
+    if ($self->auto_upgrade && ($self->size + length $chunk) > $self->max_memory_size) {
+      my $file = HTTP::Tiny::Asset::File->new;
+      
+      # $self->emit(upgrade => $file);
+      
+      $self->{frozen} = 1;
+      
+      $file->add_chunk($self->slurp . $chunk);
+      
+      return $file;
+    }
+    
+    $self->{content_buffer}->push($chunk);
+    
+    return $self;
+  }
+  
+  method size : long () {
+    return $self->{content_buffer}->length;
+  }
+
 }
 
 __END__

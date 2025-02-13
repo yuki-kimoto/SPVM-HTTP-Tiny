@@ -1,6 +1,24 @@
 # Copyright (c) 2025 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Asset::File {
+class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   version_from HTTP::Tiny;
+  
+  # Class Methods
+  static method new : HTTP::Tiny::Asset::File () {
+    
+    my $self = new HTTP::Tiny::Asset::File;
+    
+    return $self;
+  }
+  
+  method add_chunk : HTTP::Tiny::Asset ($chunk : string) {
+    
+  }
+  
 }
+
+__END__
+
+TODO
+

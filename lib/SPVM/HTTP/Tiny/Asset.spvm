@@ -10,7 +10,7 @@ class HTTP::Tiny::Asset {
   has start_range : rw long;
   
   # Instance Methods
-  method add_chunk : void ($chunk : string) { die "Not implemented."; }
+  method add_chunk : HTTP::Tiny::Asset ($chunk : string) { die "Not implemented."; }
   
   method contains : int ($string : string)  { die "Not implemented."; }
   
