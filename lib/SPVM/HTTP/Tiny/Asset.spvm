@@ -6,8 +6,10 @@ class HTTP::Tiny::Asset {
   
   # Fields
   has end_range : rw long;
+  
   has start_range : rw long;
   
+  # Instance Methods
   method add_chunk : void ($chunk : string) { die "Not implemented."; }
   
   method contains : int ($string : string)  { die "Not implemented."; }
