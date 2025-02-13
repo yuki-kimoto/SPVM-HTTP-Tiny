@@ -5,6 +5,7 @@ class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
   version_from HTTP::Tiny;
   
   use HTTP::Tiny::Asset::File;
+  use IO;
   
   # Fields
   has auto_upgrade : rw byte;
@@ -116,6 +117,15 @@ class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
   
   method size : long () {
     return $self->{content_buffer}->length;
+  }
+  
+  method move_to : void ($file : string) {
+    
+    my $content = $self->{content_buffer}->to_string;
+    
+    my $fh = IO->open(">", $file);
+    
+    $fh->print($content);
   }
 
 }
