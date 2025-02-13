@@ -84,7 +84,36 @@ class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
     
     return $pos;
   }
-
+  
+  method get_chunk : string ($offset : long, $max : int = 131072) {
+    
+    my $start = $self->start_range;
+    
+    unless ($start <= Fn->INT_MAX) {
+      die "The start_range field must be less than or equal to Fn->INT_MAX.";
+    }
+    
+    my $end = $self->end_range;
+    
+    unless ($end <= Fn->INT_MAX) {
+      die "The end_range field must be less than or equal to Fn->INT_MAX.";
+    }
+    
+    unless ($offset <= Fn->INT_MAX) {
+      die "The offset \$offset must be less than or equal to Fn->INT_MAX.";
+    }
+    
+    $offset += $start;
+    
+    if ($end >= 0) {
+      if (($offset + $max) > $end) {
+        $max = (int)$end + 1 - (int)$offset;
+      }
+    }
+    
+    return $self->{content_buffer}->substr((int)$offset, $max);
+  }
+  
   method size : long () {
     return $self->{content_buffer}->length;
   }
