@@ -115,10 +115,6 @@ class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
     return $self->{content_buffer}->substr((int)$offset, $max);
   }
   
-  method size : long () {
-    return $self->{content_buffer}->length;
-  }
-  
   method move_to : void ($file : string) {
     
     my $content = $self->{content_buffer}->to_string;
@@ -126,6 +122,17 @@ class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
     my $fh = IO->open(">", $file);
     
     $fh->print($content);
+  }
+  
+  method size : long () {
+    return $self->{content_buffer}->length;
+  }
+  
+  method slurp : string () {
+    
+    my $content = $self->{content_buffer}->to_string;
+    
+    return $content;
   }
 
 }
