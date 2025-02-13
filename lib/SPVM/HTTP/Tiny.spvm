@@ -24,6 +24,9 @@ class HTTP::Tiny {
   use HTTP::Tiny::Headers;
   use HTTP::Tiny::Path;
   use HTTP::Tiny::Parameters;
+  use HTTP::Tiny::Asset;
+  use HTTP::Tiny::Asset::File;
+  use HTTP::Tiny::Asset::Memory;
   
   # Fields
   has agent : rw string;
