@@ -12,7 +12,7 @@ class HTTP::Tiny::Asset {
   # Instance Methods
   method add_chunk : HTTP::Tiny::Asset ($chunk : string) { die "Not implemented."; }
   
-  method contains : int ($string : string)  { die "Not implemented."; }
+  method contains : int ($string : string) { die "Not implemented."; }
   
   method get_chunk : string ($offset : long, $max : int)  { die "Not implemented."; }
   
