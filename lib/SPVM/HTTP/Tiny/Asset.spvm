@@ -32,6 +32,6 @@ class HTTP::Tiny::Asset {
   
   method slurp : string () { die "Not implemented."; }
   
-  method to_file : void () { die "Not implemented."; }
+  method to_file : HTTP::Tiny::Asset::File () { die "Not implemented."; }
   
 }
