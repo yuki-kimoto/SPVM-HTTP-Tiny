@@ -19,7 +19,7 @@ class HTTP::Tiny::Asset::Memory extends HTTP::Tiny::Asset {
   has frozen : byte;
   
   # Class Methods
-  static method new : HTTP::Tiny::Asset::Memory ($options : object[]) {
+  static method new : HTTP::Tiny::Asset::Memory ($options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     

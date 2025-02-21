@@ -4,23 +4,39 @@
 class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   version_from HTTP::Tiny;
   
+  use Sys::IO::Constant as IOC;
+  use File::Spec;
+  
   # Fields
-  has cleanup : byte;
+  has cleanup : ro byte;
   
-  has path : rw string;
+  has path : ro string;
   
-  has handle : IO::File;
+  has handle : ro IO::File;
   
   # Class Methods
   static method new : HTTP::Tiny::Asset::File () {
     
     my $self = new HTTP::Tiny::Asset::File;
     
+    my $self = shift;
+
+    # Open existing file
+    my $path = $self->path;
+    return Mojo::File->new($path)->open('<') if defined $path && -e $path;
+
+    $self->cleanup(1) unless defined $self->cleanup;
+
+    # Create a specific file
+    return Mojo::File->new($path)->open('+>>') if defined $path;
+
+    # Create a temporary file
+    my $file = tempfile DIR => $self->tmpdir, TEMPLATE => 'mojo.tmp.XXXXXXXXXXXXXXXX', UNLINK => 0;
+    $self->path($file->to_string);
+    return $file->open('+>>');
+    
     return $self;
   }
-  
-  use Sys::IO::Constant as IOC;
-  use File::Spec;
   
   # Instance Methods
   method handle : IO::File () {
