@@ -6,6 +6,7 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   
   use Sys::IO::Constant as IOC;
   use File::Spec;
+  use File::Temp;
   
   # Fields
   has cleanup : ro byte;
@@ -14,55 +15,84 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   
   has handle : ro IO::File;
   
+  has tmpdir : string;
+  
   # Class Methods
-  static method new : HTTP::Tiny::Asset::File () {
+  static method new : HTTP::Tiny::Asset::File ($options : object[] = undef) {
     
     my $self = new HTTP::Tiny::Asset::File;
     
-    my $self = shift;
-
-    # Open existing file
-    my $path = $self->path;
-    return Mojo::File->new($path)->open('<') if defined $path && -e $path;
-
-    $self->cleanup(1) unless defined $self->cleanup;
-
-    # Create a specific file
-    return Mojo::File->new($path)->open('+>>') if defined $path;
-
-    # Create a temporary file
-    my $file = tempfile DIR => $self->tmpdir, TEMPLATE => 'mojo.tmp.XXXXXXXXXXXXXXXX', UNLINK => 0;
-    $self->path($file->to_string);
-    return $file->open('+>>');
+    $self->init($options);
     
     return $self;
   }
   
   # Instance Methods
-  method handle : IO::File () {
-  
+  method init : void ($options : object[] = undef) {
+    
+    my $options_h = Hash->new($options);
+    
+    if ($options_h->exists("cleanup")) {
+      $self->{cleanup} = (byte)$options_h->get_int("cleanup");
+    }
+    else {
+      $self->{cleanup} = 1;
+    }
+    
+    my $path = $options_h->get_or_default_string("path", undef);
+    my $handle = (IO::File)undef;
+    if ($path) {
+      if (Sys->e($path)) {
+        $handle = IO->open("<", $path);
+      }
+      else {
+        $handle = IO->open("+>>", $path);
+      }
+      
+      $self->{path} = $path;
+    }
+    else {
+      $self->{tmpdir} = File::Spec->tmpdir;
+      
+      my $tmp_file = File::Temp->new({DIR => $self->{tmpdir}, TEMPLATE => "mojo.tmp.XXXXXXXXXXXXXXXX", UNLINK => 0});
+      
+      $self->{path} = $tmp_file->filename;
+      
+      $handle = $tmp_file;
+      
+      $handle->open($self->{path}, "+>>");
+    }
+    
+    $self->{handle} = $handle;
+    
   }
   
   method add_chunk : HTTP::Tiny::Asset ($chunk : string) {
+    
   }
   
   method contains : int ($string : string) {
+    
   }
   
   method get_chunk : string ($offset : long, $max : int = 131072) {
+    
   }
   
   method move_to : void ($file : string) {
+    
   }
   
   method size : long () {
+    
   }
   
   method slurp : string () {
+    
   }
   
   method to_file : HTTP::Tiny::Asset::File () {
-  
+    
   }
   
 }
