@@ -67,8 +67,13 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
     
   }
   
-  method add_chunk : HTTP::Tiny::Asset ($chunk : string) {
+  method add_chunk : HTTP::Tiny::Asset::File ($chunk : string) {
     
+    my $handle = $self->{handle};
+    
+    $handle->write($chunk);
+    
+    return $self;
   }
   
   method contains : int ($string : string) {
