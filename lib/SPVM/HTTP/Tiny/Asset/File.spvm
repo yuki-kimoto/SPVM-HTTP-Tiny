@@ -32,6 +32,8 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   # Instance Methods
   method init : void ($options : object[] = undef) {
     
+    $self->SUPER::init;
+    
     my $options_h = Hash->new($options);
     
     if ($options_h->exists("cleanup")) {
