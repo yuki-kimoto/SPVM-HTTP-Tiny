@@ -118,6 +118,10 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
     
   }
   
+  method is_file : int () {
+    return 1;
+  }
+  
   method move_to : void ($file : string) {
     
   }
