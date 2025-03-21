@@ -157,6 +157,7 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   
   method to_file : HTTP::Tiny::Asset::File () {
     
+    return $self;
   }
   
 }
