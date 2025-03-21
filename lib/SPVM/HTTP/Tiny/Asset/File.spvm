@@ -77,7 +77,41 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   }
   
   method contains : int ($string : string) {
+
+=pod TODO
+
+    my $handle = $self->{handle};
     
+    $handle->seek($self->start_range, IOC->SEEK_SET);
+    
+    # Calculate window size
+    my $end  = $self->end_range // $self->size;
+    my $len  = length $string;
+    my $size = $len > 131072 ? $len : 131072;
+    $size = $end - $self->start_range if $size > $end - $self->start_range;
+    
+    # Sliding window search
+    my $offset = 0;
+    my $start  = $handle->sysread(my $window, $len);
+    while ($offset < $end) {
+      
+      # Read as much as possible
+      my $diff = $end - ($start + $offset);
+      my $read = $handle->sysread(my $buffer, $diff < $size ? $diff : $size);
+      $window .= $buffer;
+      
+      # Search window
+      my $pos = index $window, $string;
+      return $offset + $pos if $pos >= 0;
+      return -1             if $read == 0 || ($offset += $read) == $end;
+      
+      # Resize window
+      substr $window, 0, $read, '';
+    }
+
+=cut
+
+    return -1;
   }
   
   method get_chunk : string ($offset : long, $max : int = 131072) {
