@@ -153,6 +153,21 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   
   method slurp : string () {
     
+    my $handle = $self->{handle};
+    
+    $handle->seek(0, IOC->SEEK_SET);
+    
+    my $content_buffer = StringBuffer->new;
+    my $read_buffer = new_string_len 13107;
+    
+    while (my $read_length = $handle->read($read_buffer)) {
+      my $offset = 0;
+      $content_buffer->push($read_buffer, $offset, $read_length);
+    }
+    
+    my $content = $content_buffer->to_string;
+    
+    return $content;
   }
   
   method to_file : HTTP::Tiny::Asset::File () {
