@@ -55,6 +55,7 @@ WriteMakefile(
     'SPVM::Time::Piece' => '0.003',
     'SPVM::Time::Local' => '0.112',
     'SPVM::File::Temp' => '0.026',
+    'SPVM::File::Copy' => '0.022',
   },
 );
 

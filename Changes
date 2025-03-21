@@ -1,6 +1,7 @@
 0.008 2025-03-21
   [Requirement Changes]
     * Require SPVM::File::Temp 0.026.
+    * Require SPVM::File::Copy 0.022.
 0.007 2025-02-21
   [Requirement Changes]
     * Require SPVM 0.990045.
