@@ -81,40 +81,64 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   }
   
   method contains : int ($string : string) {
-
-=pod TODO
-
+    
     my $handle = $self->{handle};
     
-    $handle->seek($self->start_range, IOC->SEEK_SET);
+    my $start_range = $self->{start_range};
     
-    # Calculate window size
-    my $end  = $self->end_range // $self->size;
+    if ($start_range < 0) {
+      $start_range = 0;
+    }
+    
+    $handle->seek($start_range, IOC->SEEK_SET);
+    
+    my $end = 0;
+    my $end_range = $self->{end_range};
+    if ($end_range < 0) {
+      $end_range = $self->size;
+    }
+    
     my $len  = length $string;
-    my $size = $len > 131072 ? $len : 131072;
-    $size = $end - $self->start_range if $size > $end - $self->start_range;
+    my $size = 131072;
+    if ($len > $size) {
+      $size = $len;
+    }
     
-    # Sliding window search
+    if ($size > $end_range - $start_range) {
+      $size = (int)($end_range - $start_range);
+    }
+    
     my $offset = 0;
-    my $start  = $handle->sysread(my $window, $len);
-    while ($offset < $end) {
+    my $window_len = $len * 2;
+    my $window = new_string_len $window_len;
+    my $start_read_length = $handle->read($window, $len);
+    my $tmp_buffer = new_string_len $size;
+    my $window_string_length = $start_read_length;
+    while ($offset < $end_range) {
       
-      # Read as much as possible
-      my $diff = $end - ($start + $offset);
-      my $read = $handle->sysread(my $buffer, $diff < $size ? $diff : $size);
-      $window .= $buffer;
+      my $diff = (int)($end_range - ($start_read_length + $offset));
+      unless ($diff < $size) {
+        $diff = $size;
+      }
+      
+      my $read_length = $handle->read($tmp_buffer, $diff);
+      $window_string_length += $read_length;
+      Fn->memcpy($tmp_buffer, 0, $window, $window_string_length, $read_length);
       
       # Search window
-      my $pos = index $window, $string;
-      return $offset + $pos if $pos >= 0;
-      return -1             if $read == 0 || ($offset += $read) == $end;
+      my $pos = Fn->index($window, $string, 0, $window_string_length);
       
-      # Resize window
-      substr $window, 0, $read, '';
+      if ($pos >= 0) {
+        return $offset + $pos;
+      }
+      
+      if ($read_length == 0 || ($offset += $read_length) == $end_range) {
+        return -1;
+      }
+      
+      Fn->memmove($window, $offset, $window, 0, $read_length);
     }
-
-=cut
-
+    
     return -1;
   }
   
