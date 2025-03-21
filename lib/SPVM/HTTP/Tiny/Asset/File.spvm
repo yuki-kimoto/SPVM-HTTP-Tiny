@@ -8,6 +8,7 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   use File::Spec;
   use File::Temp;
   use File::Copy;
+  use Sys;
   
   # Fields
   has cleanup : ro byte;
@@ -139,6 +140,15 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   
   method size : long () {
     
+    my $handle = $self->{handle};
+    
+    my $fd = $handle->fileno;
+    
+    my $stat = Sys->fstat($fd);
+    
+    my $size = $stat->st_size;
+    
+    return $size;
   }
   
   method slurp : string () {
