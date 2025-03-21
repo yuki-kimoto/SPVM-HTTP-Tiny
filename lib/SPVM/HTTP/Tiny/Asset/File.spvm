@@ -118,6 +118,42 @@ class HTTP::Tiny::Asset::File extends HTTP::Tiny::Asset {
   
   method get_chunk : string ($offset : long, $max : int = 131072) {
     
+    my $start_range = $self->{start_range};
+    
+    if ($start_range >= 0) {
+      $offset += $start_range;
+    }
+    
+    my $handle = $self->{handle};
+    
+    $handle->seek($offset, IOC->SEEK_SET);
+    
+    my $buffer = new_string_len $max;
+    
+    my $end = $self->end_range;
+    
+    if ($end >= 0) {
+      
+      my $chunk_size = (int)($end + 1 - $offset);
+      
+      if ($chunk_size <= 0) {
+        $buffer = new_string_len 0;
+      }
+      else {
+        if ($chunk_size <= $max) {
+          $max = $chunk_size;
+        }
+        
+        my $read_length = $handle->read($buffer, $max);
+        Fn->shorten($buffer, $read_length);
+      }
+    }
+    else {
+      my $read_length = $handle->read($buffer, $max);
+      Fn->shorten($buffer, $read_length);
+    }
+    
+    return $buffer;
   }
   
   method is_file : int () {
