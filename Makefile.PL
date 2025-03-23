@@ -56,6 +56,7 @@ WriteMakefile(
     'SPVM::Time::Local' => '0.112',
     'SPVM::File::Temp' => '0.026',
     'SPVM::File::Copy' => '0.022',
+    'SPVM::Digest::SHA' => '0.065',
   },
 );
 
