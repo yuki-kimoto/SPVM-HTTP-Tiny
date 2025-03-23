@@ -49,12 +49,98 @@ class HTTP::Tiny::Util {
     return $string_ref->[0];
   }
   
+  private enum {
+    PC_BASE         = 36,
+    PC_TMIN         = 1,
+    PC_TMAX         = 26,
+    PC_SKEW         = 38,
+    PC_DAMP         = 700,
+    PC_INITIAL_BIAS = 72,
+    PC_INITIAL_N    = 128,
+  }
+  
   static method punycode_decode : string ($string : string) {
-    die "TODO.";
+    
+    my $n = &PC_INITIAL_N;
+    my $i = 0;
+    my $bias = &PC_INITIAL_BIAS;
+    
+    my $output_buffer = StringBuffer->new;
+    
+    my $string_ref = [$string];
+    if (my $_ = Re->s($string_ref, ["(.*)\x2d", "s"], "")) {
+      $string = $string_ref->[0];
+      my $m = $_->match;
+      
+      my $items = Fn->split("", $m->cap1);
+      
+      for my $_ (@$items) {
+        $output_buffer->push($_);
+      }
+    }
+    
+    while (length $string) {
+      my $oldi = $i;
+      my $w = 1;
+      
+      for (my $k = &PC_BASE; 1; $k += &PC_BASE) {
+        my $digit = Fn->ord(Fn->substr($string, 0, 1, ""));
+        if ($digit < 0x40) {
+          $digit = $digit + (26 - 0x30);
+        }
+        else {
+          $digit = ($digit & 0x1f) - 1;
+        }
+        $i += $digit * $w;
+        my $t = $k - $bias;
+        if ($t < &PC_TMIN) {
+          $t = &PC_TMIN;
+        }
+        elsif ($t > &PC_TMAX) {
+          $t = &PC_TMAX;
+        }
+        
+        if ($digit < $t) {
+          last;
+        }
+        
+        $w *= &PC_BASE - $t;
+      }
+      
+      $bias = &_adapt($i - $oldi, $output_buffer->length + 1, $oldi == 0);
+      $n += $i / ($output_buffer->length + 1);
+      $i = $i % ($output_buffer->length + 1);
+      
+      $output_buffer->replace($i++, 0, Fn->chr($n));
+    }
+    
+    my $output = $output_buffer->to_string;
+    
+    return $output;  
   }
   
   static method punycode_encode : string ($string : string) {
     die "TODO.";
   }
   
+  static method _adapt : int ($delta : int, $numpoints : int, $firsttime : int) {
+
+=pod TODO
+
+    my ($delta, $numpoints, $firsttime) = @_;
+    use integer;
+    
+    $delta = $firsttime ? $delta / PC_DAMP : $delta / 2;
+    $delta += $delta / $numpoints;
+    my $k = 0;
+    while ($delta > ((PC_BASE - PC_TMIN) * PC_TMAX) / 2) {
+      $delta /= PC_BASE - PC_TMIN;
+      $k     += PC_BASE;
+    }
+    
+    return $k + (((PC_BASE - PC_TMIN + 1) * $delta) / ($delta + PC_SKEW));
+=cut
+  
+  }
+
 }
