@@ -45,6 +45,12 @@ lib/SPVM/HTTP/Tiny/Response.pm
 lib/SPVM/HTTP/Tiny/Response.spvm
 lib/SPVM/HTTP/Tiny/Status.pm
 lib/SPVM/HTTP/Tiny/Status.spvm
+lib/SPVM/HTTP/Tiny/Transaction.pm
+lib/SPVM/HTTP/Tiny/Transaction.spvm
+lib/SPVM/HTTP/Tiny/Transaction/HTTP.pm
+lib/SPVM/HTTP/Tiny/Transaction/HTTP.spvm
+lib/SPVM/HTTP/Tiny/Transaction/WebSocket.pm
+lib/SPVM/HTTP/Tiny/Transaction/WebSocket.spvm
 lib/SPVM/HTTP/Tiny/URL.pm
 lib/SPVM/HTTP/Tiny/URL.spvm
 lib/SPVM/HTTP/Tiny/Util.pm
