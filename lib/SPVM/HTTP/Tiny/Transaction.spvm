@@ -84,6 +84,49 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
     die "Not implemented.";
   }
   
+  method remote_address : string () {
+    
+    unless ($self->req->reverse_proxy) {
+      return $self->original_remote_address;
+    }
+    
+    my $x_forwarded_for = $self->req->headers->header("X-Forwarded-For");
+    unless ($x_forwarded_for) {
+      $x_forwarded_for = "";
+    }
+    
+    my $addrs   = Re->split("\s*,\s*", $x_forwarded_for);
+    my $trusted = $self->req->trusted_proxies;
+    
+    unless (@$trusted) {
+      if (@$addrs) {
+        return $addrs->[@$addrs - 1];
+      }
+      else {
+        return $self->original_remote_address;
+      }
+    }
+    
+    $addrs = Array->merge_string($addrs, [$self->original_remote_address]);
+    
+    Fn->reverse_inplace($addrs);
+    
+    for my $addr (@$addrs) {
+      my $matches = Fn->grep([$addr : string] method : int ($_ : string) { return HTTP::Tiny::Util->network_contains($_, $addr); }, $trusted);
+      
+      unless (@$matches) {
+        return $addr ;
+      }
+    }
+    
+    return $addrs->[0];
+  }
+  
+  method set_remote_address : void ($remote_address : string) {
+    
+    $self->{original_remote_address} = $remote_address;
+  }
+  
   method result : HTTP::Tiny::Message::Response () {
     my $err  = $self->error;
     

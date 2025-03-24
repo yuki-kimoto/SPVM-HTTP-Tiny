@@ -25,7 +25,7 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   has request_id : int;
   
-  has trusted_proxies : string[];
+  has trusted_proxies : ro string[];
   
   has via_proxy : byte;
   
