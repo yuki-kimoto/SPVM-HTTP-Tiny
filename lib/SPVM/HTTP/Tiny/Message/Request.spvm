@@ -10,6 +10,7 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   use HTTP::Tiny::Headers;
   use Digest::SHA;
+  use HTTP::Tiny::Cookie::Request;
   
   # Fields
   has method : ro string;

@@ -13,6 +13,8 @@ lib/SPVM/HTTP/Tiny/Asset/File.pm
 lib/SPVM/HTTP/Tiny/Asset/File.spvm
 lib/SPVM/HTTP/Tiny/Asset/Memory.pm
 lib/SPVM/HTTP/Tiny/Asset/Memory.spvm
+lib/SPVM/HTTP/Tiny/Cookie/Request.pm
+lib/SPVM/HTTP/Tiny/Cookie/Request.spvm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.pm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.spvm
 lib/SPVM/HTTP/Tiny/Daemon.pm
