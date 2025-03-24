@@ -13,9 +13,21 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   use HTTP::Tiny::Cookie::Request;
   
   # Fields
+  has env : ro Hash of string;
+  
   has method : ro string;
   
+  has proxy : ro HTTP::Tiny::URL;
+  
+  has reverse_proxy : ro byte;
+  
   has url : ro HTTP::Tiny::URL;
+  
+  has request_id : int;
+  
+  has trusted_proxies : string[];
+  
+  has via_proxy : byte;
   
   # Class Methods
   static method new : HTTP::Tiny::Message::Request ($options : object[]) {
