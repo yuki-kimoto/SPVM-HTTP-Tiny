@@ -7,6 +7,7 @@ class HTTP::Tiny::Message {
   version_from HTTP::Tiny;
   
   use HTTP::Tiny::Headers;
+  use Hash;
   
   # Fields
   has headers : ro protected HTTP::Tiny::Headers;
@@ -16,6 +17,11 @@ class HTTP::Tiny::Message {
   # Instance Methods
   method content : string () {
     return $self->{content_buffer}->to_string;
+  }
+  
+  method error : Hash () {
+    
+    die "TODO.";
   }
   
 }

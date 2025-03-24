@@ -7,6 +7,7 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
   use HTTP::Tiny::Message::Request;
   use HTTP::Tiny::Message::Response;
   use HTTP::Tiny::Util;
+  use Hash;
   
   # Fields
   has kept_alive : ro byte;
@@ -19,9 +20,13 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
   
   has remote_port : ro int;
   
-  has req : HTTP::Tiny::Message::Request;
+  has req : ro HTTP::Tiny::Message::Request;
   
-  has res : HTTP::Tiny::Message::Response;
+  has res : ro HTTP::Tiny::Message::Response;
+  
+  has completed : byte;
+  
+  has connection : ro int;
   
   # Class Methods
   static method new : HTTP::Tiny::Transaction () {
@@ -35,6 +40,66 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
     return $self;
   }
   
+  # Instance Methods
+  method client_read : void () { die "Not implemented."; }
+  
+  method client_write : void () { die "Not implemented."; }
+  
+  method closed : void () {
+    
+    $self->completed;
+    
+    $self->emit("finish");
+  }
+  
+  method completed : void () {
+    $self->{completed} = 1;
+  }
+  
+  method set_connection : void ($id : int) {
+    
+    $self->{connection} = $id;
+    
+    $self->emit(connection => [(object)$id]);
+    
+  }
+  
+  method error : Hash () {
+    
+    my $error = $self->{req}->error;
+    
+    unless ($error) {
+      $error = $self->{res}->error;
+    }
+    
+    return $error;
+  }
+  
+  method is_finished : int () {
+    
+    return !!$self->{completed};
+  }
+  
+  method is_websocket : int () {
+    die "Not implemented.";
+  }
+  
+  method result : HTTP::Tiny::Message::Response () {
+    my $err  = $self->error;
+    
+    if (!$err || $err->get_int("code")) {
+      die $err->get_string("message");
+    }
+    
+    my $result = $self->res;
+    
+    return $result;
+  }
+  
+  method server_read : void () { die "Not implemented."; }
+  
+  method server_write : void () { die "Not implemented."; }
+
 }
 
 __END__
