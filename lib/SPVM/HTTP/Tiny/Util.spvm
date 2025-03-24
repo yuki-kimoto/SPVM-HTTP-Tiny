@@ -199,23 +199,22 @@ class HTTP::Tiny::Util {
   }
   
   static method _adapt : int ($delta : int, $numpoints : int, $firsttime : int) {
-
-=pod TODO
-
-    my ($delta, $numpoints, $firsttime) = @_;
-    use integer;
     
-    $delta = $firsttime ? $delta / PC_DAMP : $delta / 2;
-    $delta += $delta / $numpoints;
-    my $k = 0;
-    while ($delta > ((PC_BASE - PC_TMIN) * PC_TMAX) / 2) {
-      $delta /= PC_BASE - PC_TMIN;
-      $k     += PC_BASE;
+    if ($firsttime) {
+      $delta = $delta / &PC_DAMP;
+    }
+    else {
+      $delta = $delta / 2;
     }
     
-    return $k + (((PC_BASE - PC_TMIN + 1) * $delta) / ($delta + PC_SKEW));
-=cut
-  
+    $delta += $delta / $numpoints;
+    my $k = 0;
+    while ($delta > ((&PC_BASE - &PC_TMIN) * &PC_TMAX) / 2) {
+      $delta /= &PC_BASE - &PC_TMIN;
+      $k     += &PC_BASE;
+    }
+    
+    return $k + (((&PC_BASE - &PC_TMIN + 1) * $delta) / ($delta + &PC_SKEW));
   }
 
 }
