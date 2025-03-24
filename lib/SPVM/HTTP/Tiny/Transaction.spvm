@@ -4,6 +4,36 @@
 class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
   version_from HTTP::Tiny;
   
+  use HTTP::Tiny::Message::Request;
+  use HTTP::Tiny::Message::Response;
+  use HTTP::Tiny::Util;
+  
+  # Fields
+  has kept_alive : ro byte;
+  
+  has local_address : ro string;
+  
+  has local_port : ro int;
+  
+  has original_remote_address : ro string;
+  
+  has remote_port : ro int;
+  
+  has req : HTTP::Tiny::Message::Request;
+  
+  has res : HTTP::Tiny::Message::Response;
+  
+  # Class Methods
+  static method new : HTTP::Tiny::Transaction () {
+    
+    my $self = new HTTP::Tiny::Transaction;
+    
+    $self->{req} = HTTP::Tiny::Message::Request->new;
+    
+    $self->{res} = HTTP::Tiny::Message::Response->new;
+    
+    return $self;
+  }
   
 }
 

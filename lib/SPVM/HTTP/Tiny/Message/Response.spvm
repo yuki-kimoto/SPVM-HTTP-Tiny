@@ -19,7 +19,7 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   has success : ro byte;
   
   # Class Methods
-  private static method new : HTTP::Tiny::Message::Response () {
+  static method new : HTTP::Tiny::Message::Response () {
     
     my $self = new HTTP::Tiny::Message::Response;
     

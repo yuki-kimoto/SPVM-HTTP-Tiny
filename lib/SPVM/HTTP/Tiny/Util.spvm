@@ -216,5 +216,9 @@ class HTTP::Tiny::Util {
     
     return $k + (((&PC_BASE - &PC_TMIN + 1) * $delta) / ($delta + &PC_SKEW));
   }
-
+  
+  static method network_contains : int ($cidr : string, $addr : string) {
+    
+    die "[TODO]Not implemented.";
+  }
 }

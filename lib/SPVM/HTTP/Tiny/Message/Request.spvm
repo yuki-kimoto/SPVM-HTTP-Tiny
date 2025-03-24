@@ -30,7 +30,7 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   has via_proxy : byte;
   
   # Class Methods
-  static method new : HTTP::Tiny::Message::Request ($options : object[]) {
+  static method new : HTTP::Tiny::Message::Request ($options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
