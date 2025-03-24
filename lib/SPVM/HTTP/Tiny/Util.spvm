@@ -120,7 +120,82 @@ class HTTP::Tiny::Util {
   }
   
   static method punycode_encode : string ($string : string) {
-    die "TODO.";
+    
+    my $n = &PC_INITIAL_N;
+    my $delta = 0;
+    my $bias = &PC_INITIAL_BIAS;
+    
+    my $input_obj = Fn->map(method : Int ($_ : string) { return (Int)Fn->ord($_); }, Fn->split("", $string));
+    
+    my $string_ref = [$string];
+    Re->s($string_ref, ["[^\x00-\x7f]+", "gs"], "");
+    $string = $string_ref->[0];
+    my $h = my $basic = length $string;
+    if ($basic > 0) {
+      $string .= "\x2d";
+    }
+    
+    my $input_obj_grep = (Int[])Fn->grep(method : int ($_ : Int) { return (int)$_ >= &PC_INITIAL_N; }, $input_obj);
+    
+    my $input = Array->to_array_int($input_obj_grep);
+    
+    Sort->sort_int_asc($input);
+    
+    for my $m (@$input) {
+      if ($m < $n) {
+        next;
+      }
+      $delta += ($m - $n) * ($h + 1);
+      $n = $m;
+      
+      for my $c (@$input) {
+        
+        if    ($c < $n) { $delta++; }
+        elsif ($c == $n) {
+          my $q = $delta;
+          
+          for (my $k = &PC_BASE; 1; $k += &PC_BASE) {
+            my $t = $k - $bias;
+            if ($t < &PC_TMIN) {
+              $t = &PC_TMIN;
+            }
+            elsif ( $t > &PC_TMAX) {
+              $t = &PC_TMAX;
+            }
+            if ($q < $t) {
+              last;
+            }
+            my $o = $t + (($q - $t) % (&PC_BASE - $t));
+            my $o_plus = 0;
+            if ($o < 26) {
+              $o_plus = 0x61;
+            }
+            else {
+              $o_plus = 0x30 - 26;
+            }
+            $string .= Fn->chr($o + $o_plus);
+            $q = ($q - $t) / (&PC_BASE - $t);
+          }
+          
+          my $q_plus = 0;
+          if ($q < 26) {
+            $q_plus = 0x61;
+          }
+          else {
+            $q_plus = 0x30 - 26;
+          }
+          $string .= Fn->chr($q + $q_plus);
+          $bias  = &_adapt($delta, $h + 1, $h == $basic);
+          $delta = 0;
+          $h++;
+        }
+      }
+      
+      $delta++;
+      $n++;
+    }
+    
+    return $string;
   }
   
   static method _adapt : int ($delta : int, $numpoints : int, $firsttime : int) {
