@@ -166,7 +166,19 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
     
     return (HTTP::Tiny::Transaction::HTTP[])$redirects_list->to_array;
   }
-
+  
+  method resume : void () {
+    
+    if ($self->{writing} == -1) {
+      die "[Unexpected Error";
+    }
+    
+    $self->{writing} = 1;
+    
+    $self->emit("resume");
+    
+  }
+  
 }
 
 __END__
