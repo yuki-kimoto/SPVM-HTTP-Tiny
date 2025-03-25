@@ -37,6 +37,10 @@ class HTTP::Tiny::Message {
     die "TODO";
   }
   
+  method get_body_chunk : string ($offset : int) {
+    
+    die "TODO";
+  }
 }
 
 __END__

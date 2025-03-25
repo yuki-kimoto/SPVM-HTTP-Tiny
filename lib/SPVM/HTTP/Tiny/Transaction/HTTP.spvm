@@ -73,9 +73,33 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
     die "TODO";
   }
   
-  method _body : string ($msg : HTTP::Tiny::Message, $server : int) {
+  method _body : string ($msg : HTTP::Tiny::Message, $finish : int) {
     
-    die "TODO";
+    # Prepare body chunk
+    my $buffer = $msg->get_body_chunk($self->{offset});
+    
+    if ($buffer) {
+      $self->{offset} += length $buffer;
+    }
+    
+    unless ($buffer) {
+      $self->{writing} = 0 ;
+    }
+    
+    if ($finish) {
+      if ($buffer && !length $buffer) {
+        $self->completed;
+      }
+      else {
+        $self->{writing} = 0;
+      }
+    }
+    
+    unless ($buffer) {
+      $buffer = "";
+    }
+    
+    return $buffer;
   }
   
   method is_empty : int () {
