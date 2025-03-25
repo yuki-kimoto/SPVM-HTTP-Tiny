@@ -1,17 +1,111 @@
 # Copyright (c) 2025 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Content {
+class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   version_from HTTP::Tiny;
   
   allow HTTP::Tiny::Transaction::HTTP;
   
+  use Native::MethodCall;
+  
+  # Class Variables
+  our $BOUNDARY_RE : Regex;
+  INIT {
+    $BOUNDARY_RE = Regex->new("multipart.*boundary\s*=\s*(?:\"([^\"]+)\"|([\w'(),.:?\-+/]+))", "i");
+  }
+
   # Fields
+  has auto_decompress : ro byte;
+  
+  has auto_relax : ro byte;
+  
+  has relaxed : ro byte;
+  
   has skip_body : ro byte;
+  
+  has headers : ro HTTP::Tiny::Headers;
+  
+  has max_buffer_size : int;
+  
+  has max_leftover_size : int;
+  
+  # Undocumented Fields
+  has dynamic : byte;
+  
+  # Instance Methods
+  protected method init : void ($options : object[] = undef) {
+    
+    my $options_h = Hash->new($options);
+    
+    $self->{headers} = HTTP::Tiny::Headers->new;
+    
+    if ($options_h->exists("max_buffer_size")) {
+      my $max_buffer_size = $options_h->get_int("max_buffer_size");
+      
+      unless ($max_buffer_size > 0) {
+        die "The value of max_buffer_size option must be a positive value.";
+      }
+    }
+    else {
+      $self->{max_buffer_size} = 262144;
+    }
+    
+    if ($options_h->exists("max_leftover_size")) {
+      my $max_leftover_size = $options_h->get_int("max_leftover_size");
+      
+      unless ($max_leftover_size > 0) {
+        die "The value of max_leftover_size option must be a positive value.";
+      }
+    }
+    else {
+      $self->{max_leftover_size} = 262144;
+    }
+    
+    
+  }
+  
+  method body_contains : void () { die "Not impelmented"; }
+  
+  method body_size : void () { die "Not impelmented."; }
+  
+  method boundary : string () {
+    
+    my $content_type = $self->headers->content_type;
+    unless ($content_type) {
+      $content_type = "";
+    }
+    
+    my $boundary = (string)undef;
+    if (my $_ = $BOUNDARY_RE->match($content_type)) {
+      $boundary = $_->cap1;
+      unless ($boundary) {
+        $boundary = $_->cap2;
+      }
+    }
+    
+    return $boundary;
+  }
   
   method leftovers : string () {
     die "TODO";
   }
+  
+  method clone : HTTP::Tiny::Content () {
+    if ($self->is_dynamic) {
+      return undef;
+    }
+    
+    my $clone = (HTTP::Tiny::Content)Native::MethodCall->new_proto($self, [(object){headers => $self->headers->clone}]);
+    
+    return $clone;
+  }
+  
+  method is_dynamic : int () {
+  
+    return !!$self->{dynamic};
+  }
+
+  
 }
 
 __END__
