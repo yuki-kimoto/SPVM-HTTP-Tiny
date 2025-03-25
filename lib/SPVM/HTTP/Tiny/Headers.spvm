@@ -146,4 +146,9 @@ class HTTP::Tiny::Headers {
     return $clone;
   }
   
+  method upgrade : int () {
+    
+    die "TODO";
+  }
+  
 }

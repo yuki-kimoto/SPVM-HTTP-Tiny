@@ -3,4 +3,13 @@
 
 class HTTP::Tiny::Content {
   version_from HTTP::Tiny;
+  
+  allow HTTP::Tiny::Transaction::HTTP;
+  
+  # Fields
+  has skip_body : ro byte;
+  
+  method leftovers : string () {
+    die "TODO";
+  }
 }
