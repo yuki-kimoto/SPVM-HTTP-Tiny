@@ -5,7 +5,7 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
   version_from HTTP::Tiny;
   
   # Field
-  has previous : HTTP::Tiny::Transaction::HTTP;
+  has previous : ro HTTP::Tiny::Transaction::HTTP;
   
   has writing : byte;
   
@@ -153,6 +153,18 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
     }
     
     return 1;
+  }
+  
+  method redirects : HTTP::Tiny::Transaction::HTTP[] () {
+    my $previous = $self;
+    
+    my $redirects_list = List->new(new HTTP::Tiny::Transaction::HTTP[0]);
+    
+    while ($previous = $previous->previous) {
+      $redirects_list->unshift($previous);
+    }
+    
+    return (HTTP::Tiny::Transaction::HTTP[])$redirects_list->to_array;
   }
 
 }
