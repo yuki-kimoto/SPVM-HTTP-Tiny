@@ -65,7 +65,19 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
   
   method _start_line : string ($msg : HTTP::Tiny::Message) {
     
-    die "TODO";
+    my $buffer  = $msg->get_start_line_chunk($self->{offset});
+    my $written = length $buffer;
+    
+    $self->{write}  -= $written;
+    $self->{offset} += $written;
+    
+    if ($self->{write} <= 0) {
+      $self->{http_state} = "headers";
+      $self->{write} = $msg->header_size;
+      $self->{offset} = 0;
+    }
+    
+    return $buffer;
   }
   
   method _headers : string ($msg : HTTP::Tiny::Message, $head : int) {
