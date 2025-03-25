@@ -27,6 +27,11 @@ class HTTP::Tiny::Message {
   method start_line_size : int () {
     die "TODO";
   }
+  
+  method version : string () {
+    
+  }
+  
 }
 
 __END__

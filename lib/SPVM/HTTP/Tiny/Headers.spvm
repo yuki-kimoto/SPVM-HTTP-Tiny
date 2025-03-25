@@ -151,4 +151,9 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
+  method connection : string () {
+    
+    die "TODO";
+  }
+  
 }
