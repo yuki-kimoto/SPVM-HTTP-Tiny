@@ -141,7 +141,7 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
   
   method server_read : void ($chunk : string) { die "Not implemented."; }
   
-  method server_write : void () { die "Not implemented."; }
+  method server_write : string ($server : int) { die "Not implemented."; }
 
 }
 
