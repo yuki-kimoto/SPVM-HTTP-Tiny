@@ -4,9 +4,15 @@
 class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
   version_from HTTP::Tiny;
   
+  use HTTP::Tiny::Message::Response;
+  use HTTP::Tiny::Message::Request;
+  use HTTP::Tiny::Headers;
+  use HTTP::Tiny::Content;
+  
   # Field
   has previous : ro HTTP::Tiny::Transaction::HTTP;
   
+  # Undocumented Fields
   has writing : byte;
   
   has offset : int;
