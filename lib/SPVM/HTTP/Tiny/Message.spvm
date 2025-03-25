@@ -41,6 +41,12 @@ class HTTP::Tiny::Message {
     
     die "TODO";
   }
+  
+  method get_header_chunk : string ($offset : int) {
+    
+    die "TODO";
+  }
+  
 }
 
 __END__
