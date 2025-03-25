@@ -79,11 +79,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     die "TODO";
   }
   
-  method is_finished : int () {
-    
-    die "TODO";
-  }
-  
   method is_info : int () {
     
     die "TODO";

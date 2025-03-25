@@ -15,6 +15,8 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
   
   has http_state : string;
   
+  has handled : byte;
+  
   static method new : HTTP::Tiny::Transaction::HTTP () {
     
     my $self = new HTTP::Tiny::Transaction::HTTP;
@@ -179,6 +181,20 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
     
   }
   
+  method server_read : void ($chunk : string) {
+    
+    my $req = $self->req;
+    
+    unless ($req->error) {
+      $req->parse($chunk);
+    }
+    
+    if ($req->is_finished && !$self->{handled}++) {
+      $self->emit("request");
+    }
+    
+  }
+
 }
 
 __END__

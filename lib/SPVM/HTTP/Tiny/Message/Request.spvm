@@ -49,6 +49,11 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return $self;
   }
   
+  method parse : void ($chunk : string) {
+    
+    die "TODO";
+  }
+  
 }
 
 __END__

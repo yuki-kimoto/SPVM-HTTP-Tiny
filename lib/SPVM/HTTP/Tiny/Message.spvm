@@ -32,6 +32,11 @@ class HTTP::Tiny::Message {
     
   }
   
+  method is_finished : int () {
+    
+    die "TODO";
+  }
+  
 }
 
 __END__
