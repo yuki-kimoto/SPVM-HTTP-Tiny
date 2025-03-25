@@ -165,4 +165,12 @@ class HTTP::Tiny::Headers {
     
     die "TODO";
   }
+  
+  method transfer_encoding : string () {
+    
+  }
+  
+  method content_encoding : string () {
+    
+  }
 }

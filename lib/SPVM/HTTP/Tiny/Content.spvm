@@ -13,7 +13,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   INIT {
     $BOUNDARY_RE = Regex->new("multipart.*boundary\s*=\s*(?:\"([^\"]+)\"|([\w'(),.:?\-+/]+))", "i");
   }
-
+  
   # Fields
   has auto_decompress : ro byte;
   
@@ -33,8 +33,16 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has eof : byte;
   
+  has state : string;
+  
   # Undocumented Fields
   has dynamic : byte;
+  
+  has header_buffer : string;
+  
+  has limit : byte;
+  
+  has buffer : string;
   
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
@@ -90,10 +98,6 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $boundary;
   }
   
-  method leftovers : string () {
-    die "TODO";
-  }
-  
   method clone : HTTP::Tiny::Content () {
     if ($self->is_dynamic) {
       return undef;
@@ -135,11 +139,90 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $chunk;
   }
   
+  method get_body_chunk : void (){ die "Not implemented."; }
+  
+  method get_header_chunk : string ($offset : int) {
+    
+    $self->_headers;
+    
+    my $headers = $self->headers;
+    
+    my $header_buffer = $self->{header_buffer};
+    
+    my $chunk = Fn->substr($header_buffer, $offset, 131072 - $offset);
+    
+    return $chunk;
+  }
+  
+  method _headers : void () {
+    die "TODO";
+  }
+  
+  method header_size : int () {
+    
+    $self->_headers;
+    
+    return length $self->{header_buffer};
+  }
+  
+  method headers_contain : int ($offset : int) {
+    
+    $self->_headers;
+    
+    my $header_buffer = $self->{header_buffer};
+    
+    return Fn->index($header_buffer, $offset) >= 0;
+  }
+  
+  method is_chunked : int () {
+    return !!$self->headers->transfer_encoding;
+  }
+  
+  method is_compressed : int () {
+    
+    $self->_headers;
+    
+    my $_ = $self->headers->content_encoding;
+    unless ($_) { $_ = ""; }
+    my $content_encoding = Fn->lc($_);
+    
+    return $content_encoding eq "gzip";
+  }
+  
   method is_dynamic : int () {
   
     return !!$self->{dynamic};
   }
   
+  method is_finished : int () {
+    
+    my $_ = $self->{state};
+    unless ($_) { $_ = ""; }
+    my $state = $_;
+    
+    return $state eq "finished";
+  }
+  
+  method is_limit_exceeded : int () {
+    
+    return !!$self->{limit};
+  }
+  
+  method is_multipart : int () { die "Not implemented"; }
+  
+  method is_parsing_body : int () {
+    
+    my $_ = $self->{state};
+    unless ($_) { $_ = ""; }
+    my $state = $_;
+    
+    return $state eq "body";
+  }
+  
+  method leftovers : string () {
+    
+    return $self->{buffer};
+  }
   
 }
 
