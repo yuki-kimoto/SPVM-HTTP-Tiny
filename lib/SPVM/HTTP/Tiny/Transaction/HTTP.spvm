@@ -7,6 +7,24 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
   # Field
   has previous : HTTP::Tiny::Transaction::HTTP;
   
+  has writing : byte;
+  
+  has offset : int;
+  
+  has write : int;
+  
+  has http_state : string;
+  
+  static method new : HTTP::Tiny::Transaction::HTTP () {
+    
+    my $self = new HTTP::Tiny::Transaction::HTTP;
+    
+    $self->{writing} = -1;
+    
+    return $self;
+  }
+  
+  # Instance Methods
   method client_read : void ($chunk : string) {
     
     my $res = $self->res;
@@ -38,7 +56,73 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
     $self->client_read($leftovers);
   }
   
+  method client_write : string ($server : int) {
+    
+    $self->_write(0);
+  }
   
+  method _write : string ($server : int) {
+    
+    unless ($server) {
+      if ($self->{writing} == -1) {
+        $self->{writing} = 1;
+      }
+    }
+    unless ($self->{writing}) {
+      return "";
+    }
+    
+    my $msg = (HTTP::Tiny::Message)undef;
+    if ($server) {
+      $msg = $self->res;
+    }
+    else {
+      $msg = $self->req;
+    }
+    
+    unless ($self->{http_state}) {
+      $self->{http_state} = "start_line";
+      $self->{write} = $msg->start_line_size;
+    }
+    
+    # Start-line
+    my $chunk = "";
+    if ($self->{http_state} eq "start_line") {
+      $chunk .= $self->_start_line($msg);
+    }
+    
+    # Headers
+    if ($self->{http_state} eq "headers") {
+      $chunk .= $self->_headers($msg, $server);
+    }
+    
+    # Body
+    if ($self->{http_state} eq "body") {
+      $chunk .= $self->_body($msg, $server);
+    }
+    
+    return $chunk;
+  }
+  
+  method _start_line : string ($msg : HTTP::Tiny::Message) {
+    
+    die "TODO";
+  }
+  
+  method _headers : string ($msg : HTTP::Tiny::Message, $server : int) {
+    
+    die "TODO";
+  }
+  
+  method _body : string ($msg : HTTP::Tiny::Message, $server : int) {
+    
+    die "TODO";
+  }
+  
+  method is_empty : int () {
+    return !!(Fn->uc($self->req->method) eq "HEAD" || $self->res->is_empty);
+  }
+
 }
 
 __END__

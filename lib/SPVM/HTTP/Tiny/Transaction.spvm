@@ -43,7 +43,7 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
   # Instance Methods
   method client_read : void ($chunk : string) { die "Not implemented."; }
   
-  method client_write : void () { die "Not implemented."; }
+  method client_write : string ($server : int) { die "Not implemented."; }
   
   method closed : void () {
     

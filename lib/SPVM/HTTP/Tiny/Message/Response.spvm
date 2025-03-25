@@ -88,4 +88,9 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     die "TODO";
   }
+  
+  method is_empty : int () {
+    
+    die "TODO";
+  }
 }
