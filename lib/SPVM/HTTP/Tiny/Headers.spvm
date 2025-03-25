@@ -160,4 +160,9 @@ class HTTP::Tiny::Headers {
     
     die "TODO";
   }
+  
+  method content_length : string () {
+    
+    die "TODO";
+  }
 }

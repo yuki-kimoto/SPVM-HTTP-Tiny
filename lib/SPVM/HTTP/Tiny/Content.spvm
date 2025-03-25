@@ -29,6 +29,10 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has max_leftover_size : int;
   
+  has body_buffer : string;
+  
+  has eof : byte;
+  
   # Undocumented Fields
   has dynamic : byte;
   
@@ -100,11 +104,42 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $clone;
   }
   
+  method generate_body_chunk : string ($offset : int) {
+    
+    unless ($self->{body_buffer}) {
+      $self->{body_buffer} = "";
+    }
+    
+    unless (length $self->{body_buffer}) {
+      $self->emit(drain => [(object)$offset]);
+    }
+    
+    if (length $self->{body_buffer}) {
+      my $body_buffer = $self->{body_buffer};
+      $self->{body_buffer} = undef;
+      return $body_buffer;
+    }
+    
+    if ($self->{eof}) {
+      return "";
+    }
+    
+    my $content_length = $self->headers->content_length;
+    
+    my $chunk = "";
+    eval { Fn->to_int($content_length); }
+    if ($@) {
+      $chunk = undef;
+    }
+    
+    return $chunk;
+  }
+  
   method is_dynamic : int () {
   
     return !!$self->{dynamic};
   }
-
+  
   
 }
 
