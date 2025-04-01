@@ -52,6 +52,10 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has size : int;
   
+  has raw_size : int;
+  
+  has header_size : int;
+  
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
     
@@ -320,6 +324,23 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     $self->parse($chunk);
   }
   
+  method progress : int () {
+    
+    my $state = $self->{state};
+    
+    unless ($state) {
+      return 0;
+    }
+    
+    unless ($state eq "body" || $state eq "finished") {
+      return 0;
+    }
+    
+    my $progress = $self->{raw_size} - $self->{header_size};
+    
+    return $progress;
+  }
+  
   private method _parse_until_body : void ($chunk : string) {
     
   }
@@ -332,18 +353,6 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
   }
   
-  method progress : int () {
-
-=pod TODO
-
-    return 0 unless my $state = $self->{state};
-    return 0 unless $state eq 'body' || $state eq 'finished';
-    return $self->{raw_size} - ($self->{header_size} || 0);
-
-=cut
-
-  }
-
 }
 
 __END__
