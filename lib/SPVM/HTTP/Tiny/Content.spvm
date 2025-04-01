@@ -27,7 +27,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has max_buffer_size : int;
   
-  has max_leftover_size : int;
+  has max_leftover_size : ro int;
   
   has body_buffer : string;
   
@@ -43,6 +43,14 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   has limit : byte;
   
   has buffer : string;
+  
+  has real_size : int;
+  
+  has pre_buffer : string;
+  
+  has chunk_state : string;
+  
+  has size : int;
   
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
@@ -73,6 +81,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
       $self->{max_leftover_size} = 262144;
     }
     
+    $self->{buffer} = "";
     
   }
   
@@ -224,6 +233,110 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $self->{buffer};
   }
   
+  method parse : void ($chunk : string) {
+    
+    $self->_parse_until_body($chunk);
+    
+    if ($self->{state} eq "headers") {
+      return;
+    }
+    
+    if ($self->is_chunked && $self->{state} ne "headers") {
+      $self->_parse_chunked;
+      
+      my $_ = $self->{chunk_state};
+      unless ($_) { $_ = ""; }
+      my $chunk_state = $_;
+      
+      if ($chunk_state eq "finished") {
+        $self->{state} = "finished";
+      }
+    }
+    
+    # Not chunked, pass through to second buffer
+    else {
+      $self->{real_size} += length $self->{pre_buffer};
+      my $limit = $self->is_finished && length($self->{buffer}) > $self->max_leftover_size;
+      unless ($limit) {
+        $self->{buffer} .= $self->{pre_buffer};
+        $self->{pre_buffer} = "";
+      }
+    }
+    
+    # No content
+    if ($self->skip_body) {
+      $self->{state} = "finished";
+      return;
+    }
+    
+    # Relaxed parsing
+    my $headers = $self->headers;
+    my $_     = $headers->content_length;
+    unless ($_) { $_ = ""; }
+    my $content_length = $_;
+    
+    if ($self->auto_relax && !length $content_length) {
+      my $_ = $headers->connection;
+      unless ($_) { $_ = ""; }
+      my $connection = Fn->lc($_);
+      
+      if ($connection eq "close" || !$connection) {
+        $self->{relaxed} = 1 ;
+      }
+    }
+    
+    if ($self->is_chunked || $self->relaxed) {
+      $self->_decompress($self->{buffer});
+      $self->{size} += length $self->{buffer};
+      $self->{buffer} = "";
+      return;
+    }
+    
+    # Normal content
+    my $len = 0;
+    eval { $len = Fn->to_int($content_length); }
+    
+    if (my $need = ($len - $self->{size}) > 0) {
+      my $len   = length $self->{buffer};
+      if ($need > $len) {
+        $need = $len;
+      }
+      my $chunk = Fn->substr($self->{buffer}, 0, $need, "");
+      $self->_decompress($chunk);
+      $self->{size} += length $chunk;
+    }
+    
+    if ($len <= $self->progress) {
+      $self->{state} = "finished";
+    }
+    
+    return;
+  }
+  
+  private method _parse_until_body : void ($chunk : string) {
+    
+  }
+  
+  private method _parse_chunked : void () {
+    
+  }
+  
+  private method _decompress : void ($chunk : string) {
+    
+  }
+  
+  method progress : int () {
+
+=pod TODO
+
+    return 0 unless my $state = $self->{state};
+    return 0 unless $state eq 'body' || $state eq 'finished';
+    return $self->{raw_size} - ($self->{header_size} || 0);
+
+=cut
+
+  }
+
 }
 
 __END__
