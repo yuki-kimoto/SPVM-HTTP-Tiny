@@ -10,6 +10,11 @@ class HTTP::Tiny::EventEmitter {
     die "[TODO]";
   }
   
+  method once : void ($name : string, $cb : object) {
+    
+    die "TODO";
+  }
+
 }
 
 __END__

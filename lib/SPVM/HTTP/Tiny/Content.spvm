@@ -353,6 +353,24 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
   }
   
+  method write : void ($chunk : string, $cb : object) {
+    
+    $self->{dynamic} = 1;
+    
+    if ($chunk) {
+      $self->{body_buffer} .= $chunk;
+    }
+    
+    if ($cb) {
+      $self->once(drain => $cb);
+    }
+    
+    if ($chunk && !length $chunk) {
+      $self->{eof} = 1;
+    }
+    
+  }
+
 }
 
 __END__
