@@ -101,7 +101,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
   }
   
-  method body_contains : void () { die "Not impelmented"; }
+  method body_contains : int ($chunk : string) { die "Not impelmented"; }
   
   method body_size : void () { die "Not impelmented."; }
   

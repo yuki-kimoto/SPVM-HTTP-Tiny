@@ -36,7 +36,12 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     return $self;
   }
-
+  
+  method body_contains : int ($chunk : string) {
+  
+    return $self->asset->contains($chunk) >= 0;
+  }
+  
 }
 
 __END__
