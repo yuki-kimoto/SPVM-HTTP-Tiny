@@ -64,6 +64,8 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has gz : object;
   
+  has chunk_len : int;
+  
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
     
@@ -458,11 +460,75 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     $self->{header_buffer} = $headers ? "$headers\x0d\x0a\x0d\x0a" : "\x0d\x0a";
   }
   
-  private method _parse_until_body : void ($chunk : string) {
+  private method _parse_chunked : void () {
     
+    # Trailing headers
+    if (($self->{chunk_state} // "") eq "trailing_headers") {
+      $self->_parse_chunked_trailing_headers;
+      return;
+    }
+    
+    while (my $len = length $self->{pre_buffer}) {
+      
+      # Start new chunk (ignore the chunk extension)
+      unless ($self->{chunk_len}) {
+        
+        my $pre_buffer_ref = [$self->{pre_buffer}];
+        my $_ = Re->s($pre_buffer_ref, "^(?:\x0d?\x0a)?([0-9a-fA-F]+).*\x0a", "");
+        $self->{pre_buffer} = $pre_buffer_ref->[0];
+        unless ($_) {
+          last;
+        }
+        
+        if ($self->{chunk_len} = Fn->hex($_->match->cap1)) {
+          next;
+        }
+        
+        # Last chunk
+        $self->{chunk_state} = "trailing_headers";
+        last;
+      }
+      
+      # Remove as much as possible from payload
+      if ($self->{chunk_len} < $len) {
+        $len = $self->{chunk_len};
+      }
+      
+      $self->{buffer} .= Fn->substr($self->{pre_buffer}, 0, $len, "");
+      $self->{real_size} += $len;
+      $self->{chunk_len} -= $len;
+    }
+    
+    # Trailing headers
+    if (($self->{chunk_state} // "") eq "trailing_headers") {
+      $self->_parse_chunked_trailing_headers;
+    }
+    
+    # Check buffer size
+    if (length($self->{pre_buffer} // "") > $self->max_buffer_size) {
+      $self->{state} = "finished";
+      $self->{limit} = 1;
+    }
   }
   
-  private method _parse_chunked : void () {
+  method _parse_chunked_trailing_headers : void () {
+
+=pod TODO
+
+    my $headers = $self->headers->parse(delete $self->{pre_buffer});
+    return unless $headers->is_finished;
+    $self->{chunk_state} = 'finished';
+
+    # Take care of leftover and replace Transfer-Encoding with Content-Length
+    $self->{buffer} .= $headers->leftovers;
+    $headers->remove('Transfer-Encoding');
+    $headers->content_length($self->{real_size}) unless $headers->content_length;
+
+=cut
+
+  }
+
+  private method _parse_until_body : void ($chunk : string) {
     
   }
   
