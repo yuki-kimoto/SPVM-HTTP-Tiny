@@ -56,6 +56,8 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has header_size : int;
   
+  has chunked : byte;
+  
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
     
@@ -329,18 +331,6 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $progress;
   }
   
-  private method _parse_until_body : void ($chunk : string) {
-    
-  }
-  
-  private method _parse_chunked : void () {
-    
-  }
-  
-  private method _decompress : void ($chunk : string) {
-    
-  }
-  
   method write : void ($chunk : string, $cb : object) {
     
     $self->{dynamic} = 1;
@@ -358,7 +348,57 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     }
     
   }
+  
+  method write_chunk : void ($chunk : string, $cb : object) {
+    
+    unless ($self->{chunked}) {
+      $self->headers->set_transfer_encoding("chunked");
+    }
+    
+    $self->{chunked} = 1;
+    $self->{dynamic} = 1;
+    
+    if ($chunk) {
+      $self->{body_buffer} .= $self->_build_chunk($chunk);
+    }
+    
+    if ($cb) {
+      $self->once(drain => $cb);
+    }
+    
+    if ($chunk && !length $chunk) {
+      $self->{eof} = 1;
+    }
+    
+  }
+  
+  method _build_chunk : string ($chunk : string) {
 
+=pod TODO
+
+    # End
+    return "\x0d\x0a0\x0d\x0a\x0d\x0a" unless length $chunk;
+    
+    # First chunk has no leading CRLF
+    my $crlf = $self->{chunks}++ ? "\x0d\x0a" : '';
+    return $crlf . sprintf('%x', length $chunk) . "\x0d\x0a$chunk";
+
+=cut
+
+  }
+
+  private method _parse_until_body : void ($chunk : string) {
+    
+  }
+  
+  private method _parse_chunked : void () {
+    
+  }
+  
+  private method _decompress : void ($chunk : string) {
+    
+  }
+  
 }
 
 __END__

@@ -168,9 +168,17 @@ class HTTP::Tiny::Headers {
   
   method transfer_encoding : string () {
     
+    die "TODO";
   }
   
   method content_encoding : string () {
     
+    die "TODO";
   }
+  
+  method set_transfer_encoding : string ($value : string) {
+    
+    die "TODO";
+  }
+  
 }
