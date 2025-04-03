@@ -15,6 +15,8 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
   # Undocumented Fields
   has read : object;
   
+  has body_size : long;
+  
   static method new : HTTP::Tiny::Content::Single ($options : object[] = undef) {
     
     my $self = new HTTP::Tiny::Content::Single;
@@ -42,6 +44,21 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     return $self->asset->contains($chunk) >= 0;
   }
   
+  method body_size : long () {
+    
+    if ($self->is_dynamic) {
+      my $content_length = $self->headers->content_length;
+      my $body_size = 0;
+      eval { $body_size = Fn->to_int($content_length); };
+      
+      return $body_size;
+    }
+    
+    $self->{body_size} = $self->asset->size;
+    
+    return $self->{body_size};
+  }
+
 }
 
 __END__
