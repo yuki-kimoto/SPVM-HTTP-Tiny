@@ -58,6 +58,8 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has chunked : byte;
   
+  has chunks : byte;
+  
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
     
@@ -373,18 +375,16 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   }
   
   method _build_chunk : string ($chunk : string) {
-
-=pod TODO
-
+    
     # End
-    return "\x0d\x0a0\x0d\x0a\x0d\x0a" unless length $chunk;
+    unless (length $chunk) {
+      return "\x0d\x0a0\x0d\x0a\x0d\x0a";
+    }
     
     # First chunk has no leading CRLF
-    my $crlf = $self->{chunks}++ ? "\x0d\x0a" : '';
-    return $crlf . sprintf('%x', length $chunk) . "\x0d\x0a$chunk";
-
-=cut
-
+    my $crlf = $self->{chunks}++ ? "\x0d\x0a" : "";
+    
+    return $crlf . Fn->sprintf("%x", [(object)length $chunk]) . "\x0d\x0a$chunk";
   }
 
   private method _parse_until_body : void ($chunk : string) {
