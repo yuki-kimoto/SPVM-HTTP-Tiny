@@ -175,10 +175,6 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $chunk;
   }
   
-  method _headers : void () {
-    die "TODO";
-  }
-  
   method header_size : int () {
     
     $self->_headers;
@@ -449,6 +445,17 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     die "TODO";
     # $gz->total_out;
     
+  }
+  
+  method _headers : void () {
+    
+    if ($self->{header_buffer}) {
+      return;
+    }
+    
+    my $headers = $self->headers->to_string;
+    
+    $self->{header_buffer} = $headers ? "$headers\x0d\x0a\x0d\x0a" : "\x0d\x0a";
   }
   
   private method _parse_until_body : void ($chunk : string) {
