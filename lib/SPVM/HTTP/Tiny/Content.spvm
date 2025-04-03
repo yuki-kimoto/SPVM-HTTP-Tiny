@@ -195,9 +195,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
     $self->_headers;
     
-    my $_ = $self->headers->content_encoding;
-    unless ($_) { $_ = ""; }
-    my $content_encoding = Fn->lc($_);
+    my $content_encoding = Fn->lc($self->headers->content_encoding // "");
     
     return $content_encoding eq "gzip";
   }
@@ -209,9 +207,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   method is_finished : int () {
     
-    my $_ = $self->{state};
-    unless ($_) { $_ = ""; }
-    my $state = $_;
+    my $state = $self->{state} // "";
     
     return $state eq "finished";
   }
@@ -225,9 +221,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   method is_parsing_body : int () {
     
-    my $_ = $self->{state};
-    unless ($_) { $_ = ""; }
-    my $state = $_;
+    my $state = $self->{state} // "";
     
     return $state eq "body";
   }
@@ -248,9 +242,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     if ($self->is_chunked && $self->{state} ne "headers") {
       $self->_parse_chunked;
       
-      my $_ = $self->{chunk_state};
-      unless ($_) { $_ = ""; }
-      my $chunk_state = $_;
+      my $chunk_state = $self->{chunk_state} // "";
       
       if ($chunk_state eq "finished") {
         $self->{state} = "finished";
@@ -275,14 +267,10 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
     # Relaxed parsing
     my $headers = $self->headers;
-    my $_     = $headers->content_length;
-    unless ($_) { $_ = ""; }
-    my $content_length = $_;
+    my $content_length = $headers->content_length // "";
     
     if ($self->auto_relax && !length $content_length) {
-      my $_ = $headers->connection;
-      unless ($_) { $_ = ""; }
-      my $connection = Fn->lc($_);
+      my $connection = Fn->lc($headers->connection // "");
       
       if ($connection eq "close" || !$connection) {
         $self->{relaxed} = 1 ;
