@@ -1,11 +1,42 @@
 # Copyright (c) 2025 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Content::Single {
+class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
   version_from HTTP::Tiny;
   
   use HTTP::Tiny::Asset::Memory;
   use HTTP::Tiny::Content::MultiPart;
+  
+  # Fields
+  has asset : rw HTTP::Tiny::Asset;
+  
+  has auto_upgrade : ro byte;
+  
+  # Undocumented Fields
+  has read : object;
+  
+  static method new : HTTP::Tiny::Content::Single ($options : object[] = undef) {
+    
+    my $self = new HTTP::Tiny::Content::Single;
+    
+    $self->{auto_upgrade} = 1;
+    
+    $self->{asset} = HTTP::Tiny::Asset::Memory->new({auto_upgrade => 1});
+    
+    $self->init($options);
+    
+    $self->{read} = method : void ($args : object[]){
+      my $that = $args->[0]->(HTTP::Tiny::Content::Single);
+      my $chunk = $args->[1]->(string);
+      
+      $that->set_asset($that->asset->add_chunk($chunk));
+    };
+    
+    $self->on(read => $self->{read});
+    
+    return $self;
+  }
+
 }
 
 __END__

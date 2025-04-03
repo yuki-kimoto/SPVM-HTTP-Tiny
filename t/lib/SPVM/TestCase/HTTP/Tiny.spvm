@@ -7,6 +7,7 @@ class TestCase::HTTP::Tiny {
   
   use HTTP::Tiny::Transaction;
   use HTTP::Tiny::Transaction::HTTP;
+  use HTTP::Tiny::Content::Single;
   
   our $RESULT : IntList;
   

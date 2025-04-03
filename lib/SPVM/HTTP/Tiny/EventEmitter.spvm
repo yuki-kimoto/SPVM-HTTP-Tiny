@@ -14,6 +14,11 @@ class HTTP::Tiny::EventEmitter {
     
     die "TODO";
   }
+  
+  method on : void ($name : string, $cb : object) {
+    
+    die "TODO";
+  }
 
 }
 
