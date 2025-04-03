@@ -164,7 +164,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $chunk;
   }
   
-  method get_body_chunk : void (){ die "Not implemented."; }
+  method get_body_chunk : string ($offset : int) { die "Not implemented."; }
   
   method get_header_chunk : string ($offset : int) {
     

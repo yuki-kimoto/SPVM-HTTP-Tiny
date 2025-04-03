@@ -70,6 +70,15 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     return $clone;
   }
+  
+  method get_body_chunk : string ($offset : int) {
+    
+    if ($self->is_dynamic) {
+      return $self->generate_body_chunk($offset) ;
+    }
+    
+    return $self->asset->get_chunk($offset);
+  }
 
 }
 
