@@ -20,6 +20,11 @@ class HTTP::Tiny::EventEmitter {
     die "TODO";
   }
 
+  method unsubscribe : void ($name : string, $cb : object) {
+    
+    die "TODO";
+  }
+  
 }
 
 __END__

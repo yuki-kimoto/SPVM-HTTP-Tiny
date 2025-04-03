@@ -3,6 +3,20 @@
 
 class HTTP::Tiny::Content::MultiPart {
   version_from HTTP::Tiny;
+  
+  static method new : HTTP::Tiny::Content::MultiPart ($options : object[] = undef) {
+    
+    die "TODO";
+    
+    my $self = new HTTP::Tiny::Content::MultiPart;
+    
+    return $self;
+  }
+  
+  method parse : void ($chunk : string) {
+    
+    die "TODO";
+  }
 }
 
 __END__

@@ -79,6 +79,30 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     return $self->asset->get_chunk($offset);
   }
+  
+  method parse : void ($chunk : string) {
+    
+    # Parse headers
+    $self->_parse_until_body($chunk);
+    
+    # Parse body
+    unless ($self->auto_upgrade && $self->boundary) {
+      $self->SUPER::parse(undef);
+      return;
+    }
+    
+    # Content needs to be upgraded to multipart
+    $self->unsubscribe(read => $self->{read});
+    
+    # TODO
+    # my $multi = Mojo::Content::MultiPart->new(%$self);
+    
+    my $multi = HTTP::Tiny::Content::MultiPart->new;
+    
+    $self->emit(upgrade => [(object)$multi]);
+    
+    $multi->parse(undef);
+  }
 
 }
 
