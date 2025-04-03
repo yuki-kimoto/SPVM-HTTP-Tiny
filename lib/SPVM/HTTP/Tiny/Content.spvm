@@ -25,7 +25,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has headers : ro HTTP::Tiny::Headers;
   
-  has max_buffer_size : int;
+  has max_buffer_size : ro int;
   
   has max_leftover_size : ro int;
   
@@ -48,6 +48,8 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has pre_buffer : string;
   
+  has post_buffer : string;
+  
   has chunk_state : string;
   
   has size : int;
@@ -59,6 +61,8 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   has chunked : byte;
   
   has chunks : byte;
+  
+  has gz : object;
   
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
@@ -386,16 +390,72 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
     return $crlf . Fn->sprintf("%x", [(object)length $chunk]) . "\x0d\x0a$chunk";
   }
-
+  
+  private method _decompress : void ($chunk : string) {
+    
+    # No compression
+    unless ($self->auto_decompress && $self->is_compressed) {
+      $self->emit(read => [(object)$chunk]);
+      return;
+    }
+    
+    # Decompress
+    $self->{post_buffer} .= $chunk;
+    $self->{gz} = $self->{gz} // &_new_compress_raw_zlib_inflate;
+    my $gz     = $self->{gz};
+    my $post_buffer_ref = [$self->{post_buffer}];
+    my $out_ref = [(string)undef];
+    my $status = &_inflate($gz, $post_buffer_ref,$out_ref);
+    my $out = $out_ref->[0];
+    if ($out) {
+      $self->emit(read => [(object)$out]) ;
+    }
+    
+    # Replace Content-Encoding with Content-Length
+    if ($status == &Z_STREAM_END) {
+      $self->headers->set_content_length(&_total_out($gz));
+      $self->headers->remove("Content-Encoding") ;
+    }
+    
+    # Check buffer size
+    if (length($self->{post_buffer} // "") > $self->max_buffer_size) {
+      $self->{state} = "finished";
+      $self->{limit} = 1;
+    }
+  }
+  
+  private static method Z_STREAM_END : int () {
+    
+    die "TODO";
+    
+    # TODO
+  }
+  
+  private static method _new_compress_raw_zlib_inflate : object () {
+    
+    die "TODO";
+    # return Compress::Raw::Zlib::Inflate->new(WindowBits => WANT_GZIP);
+  }
+  
+  private static method _inflate : int ($compress_raw_zlib_inflate : object, $post_buffer_ref : string[], $out_ref : string[]) {
+    
+    die "TODO";
+    # my $status = $gz->inflate(\$self->{post_buffer}, my $out);
+    # return $status;
+  }
+  
+  private static method _total_out : int ($compress_raw_zlib_inflate : object) {
+    
+    die "TODO";
+    # $gz->total_out;
+    
+  }
+  
   private method _parse_until_body : void ($chunk : string) {
     
   }
   
   private method _parse_chunked : void () {
-    
-  }
-  
-  private method _decompress : void ($chunk : string) {
     
   }
   
