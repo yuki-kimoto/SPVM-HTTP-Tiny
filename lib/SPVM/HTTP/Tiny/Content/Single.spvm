@@ -58,6 +58,18 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     return $self->{body_size};
   }
+  
+  method clone : HTTP::Tiny::Content::Single () {
+    
+    my $clone = (HTTP::Tiny::Content::Single)$self->SUPER::clone;
+    unless ($clone) {
+      return undef;
+    }
+    
+    $clone->{asset} = $self->asset;
+    
+    return $clone;
+  }
 
 }
 
