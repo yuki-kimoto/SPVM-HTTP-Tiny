@@ -186,4 +186,19 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
+  method parse : void ($chunk : string) {
+    
+    die "TODO";
+  }
+  
+  method is_finished : int () {
+    
+    die "TODO";
+  }
+  
+  method leftovers : string () {
+    
+    die "TODO";
+  }
+  
 }

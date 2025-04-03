@@ -512,22 +512,26 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   }
   
   method _parse_chunked_trailing_headers : void () {
-
-=pod TODO
-
-    my $headers = $self->headers->parse(delete $self->{pre_buffer});
-    return unless $headers->is_finished;
-    $self->{chunk_state} = 'finished';
-
+    
+    my $pre_buffer = $self->{pre_buffer};
+    $self->{pre_buffer} = undef;
+    
+    my $headers = $self->headers;
+    $headers->parse($pre_buffer);
+    
+    unless ($headers->is_finished) {
+      return;
+    }
+    $self->{chunk_state} = "finished";
+    
     # Take care of leftover and replace Transfer-Encoding with Content-Length
     $self->{buffer} .= $headers->leftovers;
-    $headers->remove('Transfer-Encoding');
-    $headers->content_length($self->{real_size}) unless $headers->content_length;
-
-=cut
-
+    $headers->remove("Transfer-Encoding");
+    unless ($headers->content_length) {
+      $headers->set_content_length($self->{real_size});
+    }
   }
-
+  
   private method _parse_until_body : void ($chunk : string) {
     
   }
