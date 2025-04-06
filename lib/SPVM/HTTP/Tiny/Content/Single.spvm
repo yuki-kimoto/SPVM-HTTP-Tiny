@@ -4,6 +4,8 @@
 class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
   version_from HTTP::Tiny;
   
+  allow HTTP::Tiny::Content::MultiPart;
+  
   use HTTP::Tiny::Asset::Memory;
   use HTTP::Tiny::Content::MultiPart;
   
@@ -94,10 +96,7 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     # Content needs to be upgraded to multipart
     $self->unsubscribe(read => $self->{read});
     
-    # TODO
-    # my $multi = Mojo::Content::MultiPart->new(%$self);
-    
-    my $multi = HTTP::Tiny::Content::MultiPart->new;
+    my $multi = HTTP::Tiny::Content::MultiPart->new_from_single($self);
     
     $self->emit(upgrade => [(object)$multi]);
     

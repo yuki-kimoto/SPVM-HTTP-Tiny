@@ -1,14 +1,25 @@
 # Copyright (c) 2025 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Content::MultiPart {
+class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
   version_from HTTP::Tiny;
+  
+  use HTTP::Tiny::Content::Single;
   
   static method new : HTTP::Tiny::Content::MultiPart ($options : object[] = undef) {
     
     die "TODO";
     
     my $self = new HTTP::Tiny::Content::MultiPart;
+    
+    return $self;
+  }
+  
+  static method new_from_single : HTTP::Tiny::Content::MultiPart ($single : HTTP::Tiny::Content::Single, $options : object[] = undef) {
+    
+    my $self = new HTTP::Tiny::Content::MultiPart;
+    
+    copy_fields $self, $single, HTTP::Tiny::Content;
     
     return $self;
   }
