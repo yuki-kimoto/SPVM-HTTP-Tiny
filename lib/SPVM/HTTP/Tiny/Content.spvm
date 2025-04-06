@@ -239,12 +239,12 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $self->{buffer};
   }
   
-  method parse : void ($chunk : string) {
+  method parse : HTTP::Tiny::Content ($chunk : string) {
     
     $self->_parse_until_body($chunk);
     
     if ($self->{state} eq "headers") {
-      return;
+      return $self;
     }
     
     if ($self->is_chunked && $self->{state} ne "headers") {
@@ -270,7 +270,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     # No content
     if ($self->skip_body) {
       $self->{state} = "finished";
-      return;
+      return $self;
     }
     
     # Relaxed parsing
@@ -289,7 +289,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
       $self->_decompress($self->{buffer});
       $self->{size} += length $self->{buffer};
       $self->{buffer} = "";
-      return;
+      return $self;
     }
     
     # Normal content
@@ -310,7 +310,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
       $self->{state} = "finished";
     }
     
-    return;
+    return $self;
   }
   
   method parse_body : void ($chunk : string) {

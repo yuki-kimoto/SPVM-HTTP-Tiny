@@ -24,7 +24,7 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     return $self;
   }
   
-  method parse : void ($chunk : string) {
+  method parse : HTTP::Tiny::Content ($chunk : string) {
     
     die "TODO";
   }

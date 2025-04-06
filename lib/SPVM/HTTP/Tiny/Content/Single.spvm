@@ -82,7 +82,7 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     return $self->asset->get_chunk($offset);
   }
   
-  method parse : void ($chunk : string) {
+  method parse : HTTP::Tiny::Content ($chunk : string) {
     
     # Parse headers
     $self->_parse_until_body($chunk);
@@ -90,7 +90,7 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     # Parse body
     unless ($self->auto_upgrade && $self->boundary) {
       $self->SUPER::parse(undef);
-      return;
+      return (HTTP::Tiny::Content)$self;
     }
     
     # Content needs to be upgraded to multipart
@@ -101,6 +101,8 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     $self->emit(upgrade => [(object)$multi]);
     
     $multi->parse(undef);
+    
+    return (HTTP::Tiny::Content)$multi;
   }
 
 }
