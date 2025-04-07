@@ -271,6 +271,23 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     
     return 0;
   }
+  
+  method _parse_multipart_preamble : int ($boundary : string) {
+    
+    # No boundary yet
+    my $pos = -1;
+    if (($pos = Fn->index($self->{multipart}, "--$boundary")) < 0) {
+      return 0;
+    }
+    
+    # Replace preamble with carriage return and line feed
+    Fn->substr($self->{multipart}, 0, $pos, "\x0d\x0a");
+    
+    # Parse boundary
+    $self->{multi_state} = "multipart_boundary";
+    
+    return 1;
+  }
 
 }
 
