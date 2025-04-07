@@ -49,6 +49,52 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     
     return 0;
   }
+  
+  method body_size : int () {
+    
+    # Check for existing Content-Length header
+    if (my $len = $self->headers->content_length) {
+      return Fn->to_int($len);
+    }
+    
+    # Calculate length of whole body
+    my $len = my $boundary_len = length($self->build_boundary) + 6;
+    
+    for my $_ (@{$self->{parts}}) {
+      $len += $_->header_size + $_->body_size + $boundary_len;
+    }
+    
+    return $len;
+  }
+
+  method build_boundary : string () {
+
+=pod TODO
+
+    my $self = shift;
+
+    # Check for existing boundary
+    my $boundary;
+    return $boundary if defined($boundary = $self->boundary);
+
+    # Generate and check boundary
+    my $size = 1;
+    do {
+      $boundary = b64_encode join('', map chr(rand 256), 1 .. $size++ * 3);
+      $boundary =~ s/\W/X/g;
+    } while $self->body_contains($boundary);
+
+    # Add boundary to Content-Type header
+    my $headers = $self->headers;
+    my ($before, $after) = ('multipart/mixed', '');
+    ($before, $after) = ($1, $2) if ($headers->content_type // '') =~ m!^(.*multipart/[^;]+)(.*)$!;
+    $headers->content_type("$before; boundary=$boundary$after");
+
+    return $boundary;
+
+=cut
+
+  }
 
 }
 
