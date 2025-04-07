@@ -120,6 +120,19 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     return $nums;
   }
   
+  method clone : HTTP::Tiny::Content::MultiPart () {
+  
+    my $clone = (HTTP::Tiny::Content::MultiPart)$self->SUPER::clone();
+    
+    unless ($clone) {
+      return undef;
+    }
+    
+    $clone->{parts} = $self->{parts};
+    
+    return $clone;
+  }
+
 }
 
 __END__
