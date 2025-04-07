@@ -6,6 +6,11 @@ class HTTP::Tiny::Util {
   
   use Re;
   use Hash;
+  use MIME::Base64;
+  
+  static method b64_encode : string ($string : string, $eol : string = undef) {
+    return MIME::Base64->encode_base64($string, $eol);
+  }
   
   static method url_escape : string ($string : string, $pattern : string = undef) {
     

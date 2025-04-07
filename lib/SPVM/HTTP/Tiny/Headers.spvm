@@ -186,6 +186,11 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
+  method set_content_type : string ($value : string) {
+    
+    die "TODO";
+  }
+  
   method parse : void ($chunk : string) {
     
     die "TODO";

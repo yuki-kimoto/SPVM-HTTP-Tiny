@@ -68,34 +68,58 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
   }
 
   method build_boundary : string () {
-
-=pod TODO
-
-    my $self = shift;
-
+    
     # Check for existing boundary
-    my $boundary;
-    return $boundary if defined($boundary = $self->boundary);
-
+    my $boundary = $self->boundary;
+    if ($boundary) {
+      return $boundary;
+    }
     # Generate and check boundary
     my $size = 1;
-    do {
-      $boundary = b64_encode join('', map chr(rand 256), 1 .. $size++ * 3);
-      $boundary =~ s/\W/X/g;
-    } while $self->body_contains($boundary);
-
+    while (1) {
+      
+      my $boundary_ascii = new_string_len($size++ * 3);
+      for (my $i = 0; $i < length $boundary_ascii; $i++) {
+        $boundary_ascii->[$i] = Fn->chr((int)Sys->rand(256))->[0];
+      }
+      $boundary = HTTP::Tiny::Util->b64_encode($boundary_ascii);
+      my $boundary_ref = [$boundary];
+      Re->s($boundary_ref, ["\W", "g"], "X");
+      $boundary = $boundary_ref->[0];
+      
+      unless ($self->body_contains($boundary)) {
+        last;
+      }
+    }
+    
     # Add boundary to Content-Type header
     my $headers = $self->headers;
-    my ($before, $after) = ('multipart/mixed', '');
-    ($before, $after) = ($1, $2) if ($headers->content_type // '') =~ m!^(.*multipart/[^;]+)(.*)$!;
-    $headers->content_type("$before; boundary=$boundary$after");
-
+    my $before = "multipart/mixed";
+    my $after = "";
+    
+    if (my $_ = Re->m($headers->content_type // "", "^(.*multipart/[^;]+)(.*)$")) {
+      $before = $_->cap1;
+      $after = $_->cap2;
+    }
+    
+    $headers->set_content_type("$before; boundary=$boundary$after");
+    
     return $boundary;
-
-=cut
-
   }
-
+  
+  static method _range : int[] ($start : int, $end : int) {
+    
+    my $length = $end - $start + 1;
+    
+    my $nums = new int[$length];
+    
+    for (my $i = 0; $i < $end + 1; $i++) {
+      $nums->[$i] = $start + $i;
+    }
+    
+    return $nums;
+  }
+  
 }
 
 __END__
