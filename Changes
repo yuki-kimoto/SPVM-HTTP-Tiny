@@ -1,5 +1,8 @@
 0.009 2025-04-07
   [Requirement Changes]
+    * Require MIME::Base64 1.003.
+0.009 2025-04-07
+  [Requirement Changes]
     * Require SPVM::Digest::SHA 0.065.
     * Require SPVM 0.990052.
   [Intrnal Changes]
