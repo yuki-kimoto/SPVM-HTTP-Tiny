@@ -9,6 +9,12 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
   # Fields
   has parts : HTTP::Tiny::Content::Single[];
   
+  # Undocumented Fields
+  has last_len : int;
+  has last_part : int;
+  has offset : int;
+  has boundary : string;
+  
   static method new : HTTP::Tiny::Content::MultiPart ($options : object[] = undef) {
     
     die "TODO";
@@ -131,6 +137,64 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     $clone->{parts} = $self->{parts};
     
     return $clone;
+  }
+  
+  method get_body_chunk : string ($offset : int) {
+    
+    # Body generator
+    if ($self->is_dynamic) {
+      return $self->generate_body_chunk($offset);
+    }
+    
+    # First boundary
+    my $boundary     = $self->{boundary} //= $self->build_boundary;
+    my $boundary_len = length($boundary) + 6;
+    my $len          = $boundary_len - 2;
+    if ($len > $offset) {
+      return Fn->substr("--$boundary\x0d\x0a", $offset);
+    }
+    
+    # Skip parts that have already been processed
+    my $start = 0;
+    if ($self->{offset} && $offset > $self->{offset}) {
+      $len = $self->{last_len};
+      $start = 1;
+    }
+    
+    # Prepare content part by part
+    my $parts = $self->{parts};
+    for (my $i = $start; $i < @$parts; $i++) {
+      my $part = $parts->[$i];
+      
+      # Headers
+      my $header_len = $part->header_size;
+      if (($len + $header_len) > $offset) {
+        return $part->get_header_chunk($offset - $len);
+      }
+      $len += $header_len;
+      
+      # Content
+      my $content_len = $part->body_size;
+      if (($len + $content_len) > $offset) {
+        return $part->get_body_chunk($offset - $len);
+      }
+      $len += $content_len;
+      
+      # Boundary
+      if (@$parts - 1 == $i) {
+        $boundary .= "--";
+        $boundary_len += 2;
+      }
+      
+      if (($len + $boundary_len) > $offset) {
+        return Fn->substr("\x0d\x0a--$boundary\x0d\x0a", $offset - $len);
+      }
+      $len += $boundary_len;
+      
+      $self->{last_len} = $len;
+      $self->{last_part} = $i;
+      $self->{offset} = $offset;
+    }
   }
 
 }
