@@ -196,6 +196,10 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
       $self->{offset} = $offset;
     }
   }
+  
+  method is_multipart : int () {
+    return 1;
+  }
 
 }
 
