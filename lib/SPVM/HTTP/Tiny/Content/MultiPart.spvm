@@ -245,6 +245,33 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
   method _read : void ($chunk : string) {
     
   }
+  
+  method _parse_multipart_boundary : int ($boundary : string) {
+    
+    # Boundary begins
+    if (Fn->index($self->{multipart}, "\x0d\x0a--$boundary\x0d\x0a") == 0) {
+      Fn->substr($self->{multipart}, 0, length($boundary) + 6, "");
+      
+      # New part
+      my $part = HTTP::Tiny::Content::Single->new;
+      $part->{relaxed} = 1;
+      $self->emit(part => [(object)$part]);
+      $self->{parts} = (HTTP::Tiny::Content[])Array->merge_object($self->{parts}, [$part]);
+      $self->{multi_state} = "multipart_body";
+      
+      return 1;
+    }
+    
+    # Boundary ends
+    my $end = "\x0d\x0a--$boundary--";
+    if (Fn->index($self->{multipart}, $end) == 0) {
+      Fn->substr($self->{multipart}, 0, length $end, "");
+      $self->{multi_state} = "finished";
+    }
+    
+    return 0;
+  }
+
 }
 
 __END__
