@@ -6,6 +6,9 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
   
   use HTTP::Tiny::Content::Single;
   
+  # Fields
+  has parts : HTTP::Tiny::Content::Single[];
+  
   static method new : HTTP::Tiny::Content::MultiPart ($options : object[] = undef) {
     
     die "TODO";
@@ -28,6 +31,25 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     
     die "TODO";
   }
+  
+  method body_contains : int ($chunk : string) {
+    
+    my $parts = $self->{parts};
+    
+    for my $part (@$parts) {
+      
+      if ($part->headers_contain($chunk)) {
+        return 1;
+      }
+      elsif ($part->body_contains($chunk)) {
+        return 1;
+      }
+      
+    }
+    
+    return 0;
+  }
+
 }
 
 __END__

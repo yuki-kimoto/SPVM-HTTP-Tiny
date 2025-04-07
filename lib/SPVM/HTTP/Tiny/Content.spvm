@@ -186,13 +186,13 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return length $self->{header_buffer};
   }
   
-  method headers_contain : int ($offset : int) {
+  method headers_contain : int ($chunk : string) {
     
     $self->_headers;
     
     my $header_buffer = $self->{header_buffer};
     
-    return Fn->index($header_buffer, $offset) >= 0;
+    return Fn->index($header_buffer, $chunk) >= 0;
   }
   
   method is_chunked : int () {
