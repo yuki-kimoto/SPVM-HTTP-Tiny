@@ -19,8 +19,12 @@ lib/SPVM/HTTP/Tiny/Content/MultiPart.pm
 lib/SPVM/HTTP/Tiny/Content/MultiPart.spvm
 lib/SPVM/HTTP/Tiny/Content/Single.pm
 lib/SPVM/HTTP/Tiny/Content/Single.spvm
+lib/SPVM/HTTP/Tiny/Cookie.pm
+lib/SPVM/HTTP/Tiny/Cookie.spvm
 lib/SPVM/HTTP/Tiny/Cookie/Request.pm
 lib/SPVM/HTTP/Tiny/Cookie/Request.spvm
+lib/SPVM/HTTP/Tiny/Cookie/Response.pm
+lib/SPVM/HTTP/Tiny/Cookie/Response.spvm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.pm
 lib/SPVM/HTTP/Tiny/CookieJar/Interface.spvm
 lib/SPVM/HTTP/Tiny/Daemon.pm
