@@ -18,9 +18,33 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   # Fields
   has headers : ro HTTP::Tiny::Headers;
   
+  has content : HTTP::Tiny::Content;
+  
+  has max_line_size : int;
+  
+  has max_message_size : int;
+  
+  has version : string;
+  
+  # Old Fields
   has content_buffer : StringBuffer;
   
   # Instance Methods
+  protected method init : void ($options : object[] = undef) {
+    
+    $self->{version} //= "1.1";
+    
+    if ($self->{max_message_size} < 0) {
+      $self->{max_message_size} = 16777216;
+    }
+    
+    if ($self->{max_line_size} < 0) {
+      $self->{max_line_size} = 8192;
+    }
+    $self->{content} = HTTP::Tiny::Content::Single->new;
+    
+  }
+  
   method content_v0 : string () {
     return $self->{content_buffer}->to_string;
   }
