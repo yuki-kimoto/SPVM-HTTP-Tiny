@@ -1,14 +1,19 @@
 # Copyright (c) 2023 [--user-name]
 # MIT License
 
-class HTTP::Tiny::Message {
+class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   allow HTTP::Tiny::Daemon;
   
   version_from HTTP::Tiny;
   
-  use HTTP::Tiny::Headers;
   use Hash;
+  use HTTP::Tiny::Headers;
   use HTTP::Tiny::Upload;
+  use HTTP::Tiny::Asset::Memory;
+  use HTTP::Tiny::Content::Single;
+  use HTTP::Tiny::Parameters;
+  use HTTP::Tiny::Upload;
+  use JSON;
   
   # Fields
   has headers : ro protected HTTP::Tiny::Headers;
