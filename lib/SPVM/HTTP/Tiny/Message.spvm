@@ -143,7 +143,23 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     return $self->content->body_size;
   }
-
+  
+  method build_body : string () {
+    
+    $self->_build("get_body_chunk");
+  }
+  
+  method build_headers : string () {
+    $self->_build("get_header_chunk");
+  }
+  
+  method build_start_line : string () {
+    $self->_build("get_start_line_chunk");
+  }
+  
+  method _build : string ($method : string) {
+  
+  }
 }
 
 __END__
