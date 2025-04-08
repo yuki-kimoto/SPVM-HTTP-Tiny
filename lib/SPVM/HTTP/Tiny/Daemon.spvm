@@ -71,7 +71,7 @@ class HTTP::Tiny::Daemon {
       die "The HTTP response \$res must be defined.";
     }
     
-    my $content = $res->content;
+    my $content = $res->content_v0;
     
     my $chunked = 0;
     

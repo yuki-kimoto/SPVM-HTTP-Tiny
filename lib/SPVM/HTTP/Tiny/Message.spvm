@@ -15,7 +15,7 @@ class HTTP::Tiny::Message {
   has content_buffer : protected StringBuffer;
   
   # Instance Methods
-  method content : string () {
+  method content_v0 : string () {
     return $self->{content_buffer}->to_string;
   }
   
