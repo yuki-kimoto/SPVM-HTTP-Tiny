@@ -8,6 +8,7 @@ class HTTP::Tiny::Message {
   
   use HTTP::Tiny::Headers;
   use Hash;
+  use HTTP::Tiny::Upload;
   
   # Fields
   has headers : ro protected HTTP::Tiny::Headers;
