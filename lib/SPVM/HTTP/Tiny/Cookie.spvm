@@ -3,4 +3,14 @@
 
 class HTTP::Tiny::Cookie {
   version_from HTTP::Tiny;
+  
+  # Fields
+  has name : string;
+  
+  has value : string;
+  
+  method parse : void ($string : string) { die "Not implemented."; }
+  
+  method to_string : string () { die "Not implemented."; }
+  
 }
