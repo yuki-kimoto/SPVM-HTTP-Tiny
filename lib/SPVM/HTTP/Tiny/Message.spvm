@@ -16,9 +16,9 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   use JSON;
   
   # Fields
-  has headers : ro protected HTTP::Tiny::Headers;
+  has headers : ro HTTP::Tiny::Headers;
   
-  has content_buffer : protected StringBuffer;
+  has content_buffer : StringBuffer;
   
   # Instance Methods
   method content_v0 : string () {
