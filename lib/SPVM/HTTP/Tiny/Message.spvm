@@ -26,6 +26,9 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has version : string;
   
+  # Undocumented Fields
+  has body_params : HTTP::Tiny::Parameters;
+  
   # Old Fields
   has content_buffer : StringBuffer;
   
@@ -106,7 +109,35 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     }
     
   }
-
+  
+  method body_params : HTTP::Tiny::Parameters () {
+    
+    if ($self->{body_params}) {
+      return $self->{body_params};
+    }
+    
+    my $params = $self->{body_params} = HTTP::Tiny::Parameters->new;
+    
+    # "application/x-www-form-urlencoded"
+    my $type = $self->headers->content_type // "";
+    if (Re->m($type, ["application/x-www-form-urlencoded", "i"])) {
+      $params->parse($self->content->(HTTP::Tiny::Content::Single)->asset->slurp);
+    }
+    
+    # "multipart/form-data"
+    elsif (Re->m($type, ["multipart/form-data", "i"])) {
+      my $formdata = $self->_parse_formdata;
+      for my $_ (@$formdata) {
+        $params->append([$_->[0], $_->[1]]);
+      }
+    }
+    
+    return $params;
+  }
+  
+  method _parse_formdata : string[] () {
+    
+  }
 }
 
 __END__
