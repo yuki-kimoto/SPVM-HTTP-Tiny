@@ -18,7 +18,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   # Fields
   has headers : ro HTTP::Tiny::Headers;
   
-  has content : HTTP::Tiny::Content;
+  has content : ro HTTP::Tiny::Content;
   
   has max_line_size : int;
   
@@ -86,6 +86,27 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     die "TODO";
   }
+  
+  method body : string () {
+    
+    my $content = $self->content;
+    
+    return $content->is_multipart ? "" : $content->(HTTP::Tiny::Content::Single)->asset->slurp;
+  }
+  
+  method set_body : void ($body : string) {
+    
+    my $content = $self->content;
+    if ($content->is_multipart) {
+      my $content = HTTP::Tiny::Content::Single->new;
+      $self->{content} = $content;
+      my $asset = HTTP::Tiny::Asset::Memory->new;
+      $asset->add_chunk($body);
+      $content->set_asset($asset);
+    }
+    
+  }
+
 }
 
 __END__
