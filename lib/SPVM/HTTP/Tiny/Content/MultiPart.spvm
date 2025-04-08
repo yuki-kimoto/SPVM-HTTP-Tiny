@@ -242,10 +242,6 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     return 1;
   }
   
-  method _read : void ($chunk : string) {
-    
-  }
-  
   method _parse_multipart_boundary : int ($boundary : string) {
     
     # Boundary begins
@@ -289,6 +285,46 @@ class HTTP::Tiny::Content::MultiPart extends HTTP::Tiny::Content {
     return 1;
   }
 
+  method _read : void ($chunk : string) {
+    
+    $self->{multipart} .= $chunk;
+    
+    my $boundary = $self->boundary;
+    while (1) {
+      
+      if (($self->{multi_state} //= "multipart_preamble") eq "finished") {
+        last;
+      }
+      
+      # Preamble
+      if ($self->{multi_state} eq "multipart_preamble") {
+        unless ($self->_parse_multipart_preamble($boundary)) {
+          last;
+        }
+      }
+      
+      # Boundary
+      elsif ($self->{multi_state} eq "multipart_boundary") {
+        unless ($self->_parse_multipart_boundary($boundary)) {
+          last;
+        }
+      }
+      
+      # Body
+      elsif ($self->{multi_state} eq "multipart_body") {
+        unless ($self->_parse_multipart_body($boundary)) {
+          last;
+        }
+      }
+    }
+    
+    # Check buffer size
+    if (length($self->{multipart} // "") > $self->max_buffer_size) {
+      $self->{state} = "finished";
+      $self->{limit} = 1;
+    }
+  }
+  
 }
 
 __END__
