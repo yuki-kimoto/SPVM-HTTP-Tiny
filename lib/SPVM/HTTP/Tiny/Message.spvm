@@ -138,6 +138,12 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   method _parse_formdata : string[] () {
     
   }
+  
+  method body_size : int () {
+    
+    return $self->content->body_size;
+  }
+
 }
 
 __END__
