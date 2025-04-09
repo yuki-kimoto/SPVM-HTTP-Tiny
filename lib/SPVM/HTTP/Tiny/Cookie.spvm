@@ -5,9 +5,9 @@ class HTTP::Tiny::Cookie {
   version_from HTTP::Tiny;
   
   # Fields
-  has name : string;
+  has name : ro string;
   
-  has value : string;
+  has value : ro string;
   
   method parse : HTTP::Tiny::Cookie[] ($string : string) { die "Not implemented."; }
   

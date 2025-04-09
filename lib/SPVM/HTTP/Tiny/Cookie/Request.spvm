@@ -40,6 +40,18 @@ class HTTP::Tiny::Cookie::Request extends HTTP::Tiny::Cookie {
     return $cookies->to_array->(HTTP::Tiny::Cookie::Request[]);
   }
   
+  method to_string : string () {
+    
+    my $name = $self->name;
+    unless (length($name // "")) {
+      return "";
+    }
+    
+    my $value = $self->value // "";
+    
+    return Fn->join("=", [$name, Re->m($value, "[,;\" ]") ? HTTP::Tiny::Util->quote($value) : $value]);
+  }
+
 }
 
 __END__
