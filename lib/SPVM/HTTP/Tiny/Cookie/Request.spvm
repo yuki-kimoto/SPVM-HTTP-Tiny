@@ -4,6 +4,8 @@
 class HTTP::Tiny::Cookie::Request extends HTTP::Tiny::Cookie {
   version_from HTTP::Tiny;
   
+  use HTTP::Tiny::Util;
+  
   static method new : HTTP::Tiny::Cookie::Request () {
     
     my $self = new HTTP::Tiny::Cookie::Request;
@@ -11,9 +13,31 @@ class HTTP::Tiny::Cookie::Request extends HTTP::Tiny::Cookie {
     return $self;
   }
   
-  method parse : void ($string : string) {
+  method parse : HTTP::Tiny::Cookie::Request[] ($str : string) {
     
-    # TODO
+    my $cookies = List->new(new HTTP::Tiny::Cookie::Request[0]);
+    
+    my $tree = HTTP::Tiny::Util->split_header($str // "");
+    
+    my $pairs = StringList->new;
+    for my $pair (@$tree) {
+      $pairs->push_array($pair);
+    }
+    
+    for (my $i = 0; $i < $pairs->length; $i++) {
+      my $name = $pairs->get($i);
+      my $value = $pairs->get($i + 1);
+      
+      if (Re->m($name, "^\$")) {
+        next;
+      }
+      
+      my $cookie = HTTP::Tiny::Cookie::Request->new;
+      $cookie->{name} = $name;
+      $cookie->{value} = $value // "";
+    }
+    
+    return $cookies->to_array->(HTTP::Tiny::Cookie::Request[]);
   }
   
 }
