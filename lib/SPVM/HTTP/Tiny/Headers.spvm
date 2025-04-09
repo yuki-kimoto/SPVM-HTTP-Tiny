@@ -12,6 +12,8 @@ class HTTP::Tiny::Headers {
   use Sort;
   use Regex;
   use StringBuffer;
+  use HTTP::Tiny::Cookie::Request;
+  use HTTP::Tiny::Cookie::Response;
   
   # Fields
   has headers_h : Hash;

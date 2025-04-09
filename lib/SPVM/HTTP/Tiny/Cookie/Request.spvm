@@ -24,7 +24,7 @@ class HTTP::Tiny::Cookie::Request extends HTTP::Tiny::Cookie {
       $pairs->push_array($pair);
     }
     
-    for (my $i = 0; $i < $pairs->length; $i++) {
+    for (my $i = 0; $i < $pairs->length; $i += 2) {
       my $name = $pairs->get($i);
       my $value = $pairs->get($i + 1);
       

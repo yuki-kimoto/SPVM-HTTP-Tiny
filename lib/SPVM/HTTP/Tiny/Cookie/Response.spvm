@@ -1,8 +1,110 @@
 # Copyright (c) 2025 Yuki Kimoto
 # MIT License
 
-class HTTP::Tiny::Cookie::Response {
+class HTTP::Tiny::Cookie::Response extends HTTP::Tiny::Cookie {
   version_from HTTP::Tiny;
+  
+  use HTTP::Tiny::Util;
+  
+  # Class Variables
+  our $ATTRS : Hash;
+  INIT {
+    $ATTRS = Hash->new({
+      domain => 1,
+      expires => 1,
+      httponly => 1,
+      "max-age" => 1,
+      path => 1,
+      samesite => 1,
+      secure => 1,
+    });
+  }
+  
+  # Fields
+  has domain : string;
+  
+  has expires : long;
+  
+  has host_only : byte;
+  
+  has httponly : byte;
+  
+  has max_age : int;
+  
+  has path : string;
+  
+  has samesite : string;
+  
+  has secure : byte;
+  
+  # Class Methods
+  static method new : HTTP::Tiny::Cookie::Response () {
+    
+    my $self = new HTTP::Tiny::Cookie::Response;
+    
+    return $self;
+  }
+  
+  # Instance Methods
+  method parse : HTTP::Tiny::Cookie::Response[] ($str : string) {
+    
+    my $cookies = List->new(new HTTP::Tiny::Cookie::Request[0]);
+    
+    my $tree = HTTP::Tiny::Util->split_cookie_header($str // "");
+    
+    for (my $i = 0; $i < @$tree; $i += 2) {
+      my $pairs = $tree->[$i];
+      my $name = $pairs->[0];
+      my $value = $pairs->[1];
+      
+      my $cookie = HTTP::Tiny::Cookie::Response->new;
+      $cookie->{name} = $name;
+      $cookie->{value} = $value // "";
+      
+      for (my $j = 2; $j < @$tree; $j += 2) {
+        my $name = $pairs->[$j];
+        my $value = $pairs->[$j + 1];
+        
+        my $attr = Fn->lc($name);
+        unless ($ATTRS->exists($attr)) {
+          next;
+        }
+        
+        if ($attr eq "domain") {
+          if ($value) {
+            my $value_ref = [$value];
+            Re->s($value_ref, "^\.", "");
+            $value = $value_ref->[0];
+            $cookie->{domain} = $value;
+          }
+        }
+        elsif ($attr eq "expires") {
+          $cookie->{expires} = HTTP::Tiny::Date->new($value // "")->epoch;
+        }
+        elsif ($attr eq "httponly") {
+          $cookie->{httponly} = 1;
+        }
+        elsif ($attr eq "max-age") {
+          $cookie->{max_age} = Fn->to_int($value);
+        }
+        elsif ($attr eq "path") {
+          $cookie->{path} = $value;
+        }
+        elsif ($attr eq "samesite") {
+          $cookie->{samesite} = $value;
+        }
+        elsif ($attr eq "secure") {
+          $cookie->{secure} = 1;
+        }
+      }
+      
+      $cookies->push($cookie);
+      
+    }
+    
+    return $cookies->to_array->(HTTP::Tiny::Cookie::Response[]);
+  }
+    
 }
 
 __END__
