@@ -21,21 +21,21 @@ class HTTP::Tiny::Cookie::Response extends HTTP::Tiny::Cookie {
   }
   
   # Fields
-  has domain : string;
+  has domain : ro string;
   
-  has expires : long;
+  has expires : ro long;
   
-  has host_only : byte;
+  has host_only : ro byte;
   
-  has httponly : byte;
+  has httponly : ro byte;
   
-  has max_age : int;
+  has max_age : ro int;
   
-  has path : string;
+  has path : ro string;
   
-  has samesite : string;
+  has samesite : ro string;
   
-  has secure : byte;
+  has secure : ro byte;
   
   # Class Methods
   static method new : HTTP::Tiny::Cookie::Response () {
@@ -104,7 +104,52 @@ class HTTP::Tiny::Cookie::Response extends HTTP::Tiny::Cookie {
     
     return $cookies->to_array->(HTTP::Tiny::Cookie::Response[]);
   }
+  
+  method to_string : string () {
     
+    # Name and value
+    my $name = $self->name;
+    unless (length $name) {
+      return "";
+    }
+    my $value  = $self->value // "";
+    my $cookie = Fn->join("=", [$name, Re->m($value, "[,;\" ]") ? HTTP::Tiny::Util->quote($value) : $value]);
+    
+    # "expires"
+    my $expires = $self->expires;
+    if ($expires >= 0) {
+      $cookie .= "; expires=" . HTTP::Tiny::Date->new($expires)->to_string;
+    }
+    
+    # "domain"
+    if (my $domain = $self->domain) { $cookie .= "; domain=$domain"; }
+    
+    # "path"
+    if (my $path = $self->path) { $cookie .= "; path=$path"; }
+    
+    # "secure"
+    if ($self->secure) {
+      $cookie .= "; secure";
+    }
+    
+    # "HttpOnly"
+    if ($self->httponly) {
+      $cookie .= "; HttpOnly";
+    }
+    
+    # "Same-Site"
+    if (my $samesite = $self->samesite) {
+      $cookie .= "; SameSite=$samesite";
+    }
+    
+    # "Max-Age"
+    if ((my $max = $self->max_age) >= 0) {
+      $cookie .= "; Max-Age=$max";
+    }
+    
+    return $cookie;
+  }
+  
 }
 
 __END__
