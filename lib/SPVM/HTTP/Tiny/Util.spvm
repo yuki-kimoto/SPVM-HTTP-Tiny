@@ -293,18 +293,36 @@ class HTTP::Tiny::Util {
   }
   
   static method unquote : string ($str : string) {
-
-=pod TODO
-
-    return $str unless $str =~ s/^"(.*)"$/$1/g;
-    $str                    =~ s/\\\\/\\/g;
-    $str                    =~ s/\\"/"/g;
+    
+    my $str_ref = [$str];
+    my $_ = Re->s($str_ref, ["^\"(.*)\"$", "g"], method : string ($regex : Regex, $match : Regex::Match) {
+      return $match->cap1;
+    });
+    
+    unless ($_) {
+      return $str;
+    }
+    
+    Re->s($str_ref, ["\\\\\\\\", "g"], "\\");
+    
+    Re->s($str_ref, ["\\\\\"", "g"], "\"");
+    
+    $str = $str_ref->[0];
+    
     return $str;
-
-=cut
-
   }
-
+  
+  static method quote : string ($str : string) {
+    
+    my $str_ref = [$str];
+    Re->s($str, ["([\"\\\\])", "g"], method : string ($regex : Regex, $match : Regex::Match) {
+      return "\\" . $match->cap1;
+    });
+    $str = $str_ref->[0];
+    
+    return "\"$str\"";
+  }
+  
 }
 
 __END__
