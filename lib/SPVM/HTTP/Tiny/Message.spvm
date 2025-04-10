@@ -68,10 +68,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     return $self->{content_buffer}->to_string;
   }
   
-  method start_line_size : int () {
-    die "TODO";
-  }
-  
   method body : string () {
     
     my $content = $self->content;
@@ -373,6 +369,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     }
     $content->(HTTP::Tiny::Content::Single)->asset->move_to($path);
   }
+  
+  method start_line_size : int () { die "Not implemented."; }
 
 }
 
