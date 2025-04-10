@@ -213,4 +213,8 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
+  method is_limit_exceeded : int () {
+    
+    die "TODO";
+  }
 }

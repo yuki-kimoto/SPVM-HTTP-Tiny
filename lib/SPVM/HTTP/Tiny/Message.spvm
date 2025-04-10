@@ -18,9 +18,9 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   # Fields
   has content : ro HTTP::Tiny::Content;
   
-  has max_line_size : int;
+  has max_line_size : ro int;
   
-  has max_message_size : int;
+  has max_message_size : ro int;
   
   has version : ro string;
   
@@ -33,12 +33,15 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has fix : byte;
   
-  # Undocumented Fields
   has body_params : HTTP::Tiny::Parameters;
   
   has limit : byte;
   
   has json : object;
+  
+  has raw_size : int;
+  
+  has buffer : string;
   
   # Old Fields
   has content_buffer : StringBuffer;
@@ -211,7 +214,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     return (HTTP::Tiny::Upload[])$self->_cache("uploads", 1, $name);
   }
   
-  method extract_start_line : void () { die "Not implemented."; }
+  method extract_start_line : int ($str_ref : string[]) { die "Not implemented."; }
   
   method finish : void () {
     
@@ -290,7 +293,78 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     return $data;
   }
+  
+  method parse : void ($chunk : string) {
+    
+    if ($self->{error}) {
+      return;
+    }
+    
+    $self->{raw_size} += length $chunk;
+    
+    $self->{buffer} .= $chunk;
 
+    # Start-line
+    unless ($self->{state}) {
+      
+      # Check start-line size
+      my $len = Fn->index($self->{buffer}, "\x0a");
+      if ($len < 0) {
+        $len = length $self->{buffer};
+      }
+      if ($len > $self->max_line_size) {
+        $self->_limit("Maximum start-line size exceeded");
+        return;
+      }
+      my $buffer_ref = [$self->{buffer}];
+      if ($self->extract_start_line($buffer_ref)) {
+        $self->{state} = "content";
+      }
+      $self->{buffer} = $buffer_ref->[0];
+    }
+    
+    # Content
+    my $state = $self->{state} // "";
+    if ($state eq "content" || $state eq "finished") {
+      my $buffer = $self->{buffer};
+      $self->{buffer} = undef;
+      my $content = $self->content;
+      $content->parse($buffer);
+      $self->{content} = $content;
+    }
+    
+    # Check message size
+    my $max = $self->max_message_size;
+    if ($max && $max < $self->{raw_size}) {
+      $self->_limit("Maximum message size exceeded");
+      return;
+    }
+    
+    # Check header size
+    if ($self->headers->is_limit_exceeded) {
+      $self->_limit("Maximum header size exceeded");
+      return;
+    }
+    
+    # Check buffer size
+    if ($self->content->is_limit_exceeded) {
+      $self->_limit("Maximum buffer size exceeded");
+      return;
+    }
+    
+    $self->emit("progress");
+    
+    if ($self->content->is_finished) {
+      $self->finish;
+    }
+  }
+  
+  method _limit : void ($message : string) {
+    ++$self->{limit};
+    $self->set_error(Hash->new({message => $message}));
+  }
+  
+  
 }
 
 __END__
