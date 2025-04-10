@@ -22,7 +22,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has max_message_size : int;
   
-  has version : string;
+  has version : ro string;
   
   has error : ro Hash;
   
@@ -63,10 +63,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   method start_line_size : int () {
     die "TODO";
-  }
-  
-  method version : string () {
-    
   }
   
   method body : string () {
