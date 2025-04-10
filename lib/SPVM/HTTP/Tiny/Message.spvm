@@ -383,7 +383,10 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     return $self->build_start_line . $self->build_headers . $self->build_body;
   }
-
+  
+  method upload : HTTP::Tiny::Upload ($name : string) { return (HTTP::Tiny::Upload)$self->_cache("uploads", 0, $name); }
+  
+  
 }
 
 __END__
