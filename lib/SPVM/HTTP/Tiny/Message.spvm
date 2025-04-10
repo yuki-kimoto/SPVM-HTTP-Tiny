@@ -378,6 +378,11 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     return $body;
   }
+  
+  method to_string : string () {
+    
+    return $self->build_start_line . $self->build_headers . $self->build_body;
+  }
 
 }
 
