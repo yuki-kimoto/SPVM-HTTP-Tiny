@@ -33,6 +33,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has finished : byte;
   
+  has fix : byte;
+  
   # Undocumented Fields
   has body_params : HTTP::Tiny::Parameters;
   
@@ -226,6 +228,16 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->finish;
   }
   
+  method every_cookie : HTTP::Tiny::Cookie[] ($name : string) {
+    return (HTTP::Tiny::Cookie[])$self->_cache("cookies", 1, $name);
+  }
+  
+  method every_upload : HTTP::Tiny::Upload[] ($name : string) {
+    return (HTTP::Tiny::Upload[])$self->_cache("uploads", 1, $name);
+  }
+  
+  method extract_start_line : void () { die "Not implemented."; }
+  
   method finish : void () {
     
     $self->{state} = "finished";
@@ -236,14 +248,21 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     }
   }
   
-  method every_cookie : HTTP::Tiny::Cookie[] ($name : string) {
-    return (HTTP::Tiny::Cookie[])$self->_cache("cookies", 1, $name);
+  method fix_headers : void () {
+    
+    if ($self->{fix}++) {
+      return;
+    }
+    
+    # Content-Length or Connection (unless chunked transfer encoding is used)
+    my $content = $self->content;
+    my $headers = $content->headers;
+    if    ($content->is_multipart)                           { $headers->remove("Content-Length"); }
+    elsif ($content->is_chunked || $headers->content_length) { return; }
+    if    ($content->is_dynamic)                             { $headers->set_connection("close"); }
+    else                                                     { $headers->set_content_length($self->body_size); }
   }
-  
-  method every_upload : HTTP::Tiny::Upload[] ($name : string) {
-    return (HTTP::Tiny::Upload[])$self->_cache("uploads", 1, $name);
-  }
-  
+
 }
 
 __END__

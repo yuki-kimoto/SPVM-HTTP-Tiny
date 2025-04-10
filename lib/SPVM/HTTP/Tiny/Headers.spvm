@@ -158,6 +158,11 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
+  method set_connection : void ($value : string) {
+    
+    die "TODO";
+  }
+  
   method content_type : string () {
     
     die "TODO";
