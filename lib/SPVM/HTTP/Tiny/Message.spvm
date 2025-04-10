@@ -74,11 +74,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     die "TODO";
   }
   
-  method get_body_chunk : string ($offset : int) {
-    
-    die "TODO";
-  }
-  
   method get_header_chunk : string ($offset : int) {
     
     die "TODO";
@@ -261,6 +256,19 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     elsif ($content->is_chunked || $headers->content_length) { return; }
     if    ($content->is_dynamic)                             { $headers->set_connection("close"); }
     else                                                     { $headers->set_content_length($self->body_size); }
+  }
+  
+  method get_body_chunk : string ($offset : int) {
+    
+    $self->emit("progress", [(object)"body", $offset]);
+    my $chunk = $self->content->get_body_chunk($offset);
+    if (!$chunk || length $chunk) {
+      return $chunk;
+    }
+    
+    $self->finish;
+    
+    return $chunk;
   }
 
 }
