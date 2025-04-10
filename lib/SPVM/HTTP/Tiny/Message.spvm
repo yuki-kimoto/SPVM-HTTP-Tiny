@@ -36,6 +36,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   # Undocumented Fields
   has body_params : HTTP::Tiny::Parameters;
   
+  has limit : byte;
+  
   # Old Fields
   has content_buffer : StringBuffer;
   
@@ -274,6 +276,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     return ($self->{state} // "") eq "finished";
   }
   
+  method is_limit_exceeded : int () { return $self->{limit}; }
   
 }
 
