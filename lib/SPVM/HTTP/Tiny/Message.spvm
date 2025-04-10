@@ -38,6 +38,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has limit : byte;
   
+  has json : object;
+  
   # Old Fields
   has content_buffer : StringBuffer;
   
@@ -278,6 +280,17 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   method is_limit_exceeded : int () { return $self->{limit}; }
   
+  method json : object () {
+    
+    if ($self->content->is_multipart) {
+      return undef;
+    }
+    
+    my $data = $self->{json} //= JSON->new->decode($self->body);
+    
+    return $data;
+  }
+
 }
 
 __END__
