@@ -364,7 +364,16 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->set_error(Hash->new({message => $message}));
   }
   
-  
+  method save_to : void ($path : string) {
+    
+    my $content = $self->content;
+    
+    if ($content->is_multipart) {
+      die "Multipart content cannot be saved to files";
+    }
+    $content->(HTTP::Tiny::Content::Single)->asset->move_to($path);
+  }
+
 }
 
 __END__
