@@ -26,6 +26,13 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has version : string;
   
+  has error : ro Hash;
+  
+  # Undocumented Fields
+  has state : string;
+  
+  has finished : byte;
+  
   # Undocumented Fields
   has body_params : HTTP::Tiny::Parameters;
   
@@ -50,11 +57,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   method content_v0 : string () {
     return $self->{content_buffer}->to_string;
-  }
-  
-  method error : Hash () {
-    
-    die "TODO.";
   }
   
   method start_line_size : int () {
@@ -215,6 +217,25 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     return (HTTP::Tiny::Cookie)$self->_cache("cookies", 0, $name);
   }
   
+  method cookies : HTTP::Tiny::Cookie[] () { die "Not implemented."; }
+  
+  method set_error : void ($error : Hash) {
+    
+    $self->{error} = $error;
+    
+    $self->finish;
+  }
+  
+  method finish : void () {
+    
+    $self->{state} = "finished";
+    
+    unless ($self->{finished}) {
+      $self->emit("finish");
+      $self->{finished}++;
+    }
+  }
+
 }
 
 __END__
