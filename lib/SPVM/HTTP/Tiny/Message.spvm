@@ -235,7 +235,15 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
       $self->{finished}++;
     }
   }
-
+  
+  method every_cookie : HTTP::Tiny::Cookie[] ($name : string) {
+    return (HTTP::Tiny::Cookie[])$self->_cache("cookies", 1, $name);
+  }
+  
+  method every_upload : HTTP::Tiny::Upload[] ($name : string) {
+    return (HTTP::Tiny::Upload[])$self->_cache("uploads", 1, $name);
+  }
+  
 }
 
 __END__
