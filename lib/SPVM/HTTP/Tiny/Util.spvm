@@ -28,6 +28,14 @@ class HTTP::Tiny::Util {
     return MIME::Base64->encode_base64($string, $eol);
   }
   
+  static method b64_decode : string ($string : string) {
+    return MIME::Base64->decode_base64($string);
+  }
+  
+  static method sha1_sum : string ($string : string) {
+    return Digest::SHA->sha1_hex($string);
+  }
+  
   static method url_escape : string ($string : string, $pattern : string = undef) {
     
     unless ($string) {
