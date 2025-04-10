@@ -371,6 +371,13 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   }
   
   method start_line_size : int () { die "Not implemented."; }
+  
+  method text : string () {
+    
+    my $body = $self->body;
+    
+    return $body;
+  }
 
 }
 
