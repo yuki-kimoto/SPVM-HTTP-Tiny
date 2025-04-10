@@ -11,6 +11,7 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   use HTTP::Tiny::Headers;
   use Digest::SHA;
   use HTTP::Tiny::Cookie::Request;
+  use HTTP::Tiny::URL;
   
   # Fields
   has env : ro Hash of string;
