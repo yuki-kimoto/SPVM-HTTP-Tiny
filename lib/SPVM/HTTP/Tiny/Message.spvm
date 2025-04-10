@@ -106,14 +106,14 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     elsif (Re->m($type, ["multipart/form-data", "i"])) {
       my $formdata = $self->_parse_formdata;
       for my $_ (@$formdata) {
-        $params->append([$_->[0], $_->[1]]);
+        $params->append([$_->(object[])->[0], $_->(object[])->[1]]);
       }
     }
     
     return $params;
   }
   
-  method _parse_formdata : string[] () {
+  method _parse_formdata : object[] ($upload : int = 0) {
     
   }
   
@@ -385,6 +385,22 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   }
   
   method upload : HTTP::Tiny::Upload ($name : string) { return (HTTP::Tiny::Upload)$self->_cache("uploads", 0, $name); }
+  
+  method uploads : HTTP::Tiny::Upload[] ($name : string) {
+    
+    my $uploads = List->new(new HTTP::Tiny::Upload[0]);
+    for my $data (@{$self->_parse_formdata(1)}) {
+      my $upload = HTTP::Tiny::Upload->new({
+        name     => $data->(object[])->[0],
+        filename => $data->(object[])->[2],
+        asset    => $data->(object[])->[1]->(HTTP::Tiny::Content::Single)->asset,
+        headers  => $data->(object[])->[1]->(HTTP::Tiny::Content)->headers
+      });
+      $uploads->push($upload);
+    }
+    
+    return $uploads->to_array->(HTTP::Tiny::Upload[]);
+  }
   
   
 }
