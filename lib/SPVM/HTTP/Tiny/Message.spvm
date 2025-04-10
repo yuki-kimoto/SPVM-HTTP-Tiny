@@ -69,11 +69,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
   }
   
-  method is_finished : int () {
-    
-    die "TODO";
-  }
-  
   method body : string () {
     
     my $content = $self->content;
@@ -277,6 +272,12 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   method headers : HTTP::Tiny::Headers () {
     return $self->content->headers;
   }
+  
+  method is_finished : int () {
+    
+    return ($self->{state} // "") eq "finished";
+  }
+  
   
 }
 
