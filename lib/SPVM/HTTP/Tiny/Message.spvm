@@ -135,42 +135,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->_build("get_start_line_chunk");
   }
   
-  method _build : string ($method : string) {
-    
-    my $buffer = StringBuffer->new;
-    my $offset = 0;
-    
-    while (1) {
-      
-      my $chunk = (string)undef;
-      if ($method eq "get_body_chunk") {
-        $chunk = $self->get_body_chunk($offset);
-      }
-      elsif ($method eq "get_header_chunk") {
-        $chunk = $self->get_header_chunk($offset);
-      }
-      elsif ($method eq "get_start_line_chunk") {
-        $chunk = $self->get_start_line_chunk($offset);
-      }
-      
-      # No chunk yet, try again
-      unless ($chunk) {
-        next;
-      }
-      
-      # End of part
-      my $len = length $chunk;
-      unless ($len) {
-        last;
-      }
-      
-      $offset += $len;
-      $buffer->push($chunk);
-    }
-    
-    return $buffer->to_string;
-  }
-  
   method _cache : object ($method : string, $all : int, $name : string) {
 
 =pod TODO
@@ -402,6 +366,41 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     return $uploads->to_array->(HTTP::Tiny::Upload[]);
   }
   
+  method _build : string ($method : string) {
+    
+    my $buffer = StringBuffer->new;
+    my $offset = 0;
+    
+    while (1) {
+      
+      my $chunk = (string)undef;
+      if ($method eq "get_body_chunk") {
+        $chunk = $self->get_body_chunk($offset);
+      }
+      elsif ($method eq "get_header_chunk") {
+        $chunk = $self->get_header_chunk($offset);
+      }
+      elsif ($method eq "get_start_line_chunk") {
+        $chunk = $self->get_start_line_chunk($offset);
+      }
+      
+      # No chunk yet, try again
+      unless ($chunk) {
+        next;
+      }
+      
+      # End of part
+      my $len = length $chunk;
+      unless ($len) {
+        last;
+      }
+      
+      $offset += $len;
+      $buffer->push($chunk);
+    }
+    
+    return $buffer->to_string;
+  }
   
 }
 
