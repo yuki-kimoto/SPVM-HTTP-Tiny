@@ -192,6 +192,29 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     return $buffer->to_string;
   }
+  
+  method _cache : object ($method : string, $all : int, $name : string) {
+
+=pod TODO
+    
+    # Cache objects by name
+    unless ($self->{$method}) {
+      $self->{$method} = {};
+      push @{$self->{$method}{$_->name}}, $_ for @{$self->$method};
+    }
+    
+    my $objects = $self->{$method}{$name} // [];
+    return $all ? $objects : $objects->[-1];
+    
+=cut
+    
+  }
+    
+  method cookie : HTTP::Tiny::Cookie ($name : string) {
+    
+    return (HTTP::Tiny::Cookie)$self->_cache("cookies", 0, $name);
+  }
+  
 }
 
 __END__
