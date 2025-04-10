@@ -16,8 +16,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   use JSON;
   
   # Fields
-  has headers : ro HTTP::Tiny::Headers;
-  
   has content : ro HTTP::Tiny::Content;
   
   has max_line_size : int;
@@ -40,6 +38,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   # Old Fields
   has content_buffer : StringBuffer;
+  
+  has headers_v0 : ro HTTP::Tiny::Headers;
   
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
@@ -103,7 +103,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     my $params = $self->{body_params} = HTTP::Tiny::Parameters->new;
     
     # "application/x-www-form-urlencoded"
-    my $type = $self->headers->content_type // "";
+    my $type = $self->headers_new->content_type // "";
     if (Re->m($type, ["application/x-www-form-urlencoded", "i"])) {
       $params->parse($self->content->(HTTP::Tiny::Content::Single)->asset->slurp);
     }
@@ -272,6 +272,10 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->fix_headers;
     
     return $self->content->header_size;
+  }
+  
+  method headers_new : HTTP::Tiny::Headers () {
+    return $self->content->headers;
   }
   
 }

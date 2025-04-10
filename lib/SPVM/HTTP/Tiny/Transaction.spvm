@@ -90,7 +90,7 @@ class HTTP::Tiny::Transaction extends HTTP::Tiny::EventEmitter {
       return $self->original_remote_address;
     }
     
-    my $x_forwarded_for = $self->req->headers->header("X-Forwarded-For");
+    my $x_forwarded_for = $self->req->headers_new->header("X-Forwarded-For");
     unless ($x_forwarded_for) {
       $x_forwarded_for = "";
     }

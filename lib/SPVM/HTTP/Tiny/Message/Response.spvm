@@ -31,7 +31,7 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     $self->{content_buffer} = StringBuffer->new;
     
-    $self->{headers} = HTTP::Tiny::Headers->new;
+    $self->{headers_v0} = HTTP::Tiny::Headers->new;
     
     return $self;
   }
