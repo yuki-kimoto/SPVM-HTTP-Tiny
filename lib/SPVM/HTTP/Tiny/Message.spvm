@@ -43,6 +43,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   has buffer : string;
   
+  has _cache : Hash;
+  
   # Old Fields
   has content_buffer : StringBuffer;
   
@@ -62,6 +64,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     }
     $self->{content} = HTTP::Tiny::Content::Single->new;
     
+    $self->{_cache} = Hash->new;
   }
   
   method content_v0 : string () {
@@ -135,23 +138,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->_build("get_start_line_chunk");
   }
   
-  method _cache : object ($method : string, $all : int, $name : string) {
-
-=pod TODO
-    
-    # Cache objects by name
-    unless ($self->{$method}) {
-      $self->{$method} = {};
-      push @{$self->{$method}{$_->name}}, $_ for @{$self->$method};
-    }
-    
-    my $objects = $self->{$method}{$name} // [];
-    return $all ? $objects : $objects->[-1];
-    
-=cut
-    
-  }
-    
   method cookie : HTTP::Tiny::Cookie ($name : string) {
     
     return (HTTP::Tiny::Cookie)$self->_cache("cookies", 0, $name);
@@ -350,7 +336,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   method upload : HTTP::Tiny::Upload ($name : string) { return (HTTP::Tiny::Upload)$self->_cache("uploads", 0, $name); }
   
-  method uploads : HTTP::Tiny::Upload[] ($name : string) {
+  method uploads : HTTP::Tiny::Upload[] () {
     
     my $uploads = List->new(new HTTP::Tiny::Upload[0]);
     for my $data (@{$self->_parse_formdata(1)}) {
@@ -400,6 +386,55 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     }
     
     return $buffer->to_string;
+  }
+  
+  method _cache : object ($method : string, $all : int, $name : string) {
+    
+    # Cache objects by name
+    my $caches = (Hash)$self->{_cache}->get($method);
+    
+    unless ($caches) {
+      $caches = Hash->new;
+      
+      my $items = (object[])undef;
+      if ($method eq "uploads") {
+        $items = $self->uploads;
+      }
+      elsif ($method eq "cookies") {
+        $items = $self->cookies;
+      }
+      
+      for my $_ (@$items) {
+        my $name = (string)undef;
+        if ($method eq "uploads") {
+          $name = $_->(HTTP::Tiny::Upload)->name;
+        }
+        elsif ($method eq "cookies") {
+          $name = $_->(HTTP::Tiny::Cookie)->name;
+        }
+        
+        my $list = (List)$caches->get($name);
+        unless ($list) {
+          $list = List->new;
+        }
+        $list->push($_);
+      }
+    }
+    
+    my $objects_list = $caches->get($name)->(List) // List->new;
+    my $objects = $objects_list->to_array;
+    
+    if ($all) {
+      return $objects;
+    }
+    else {
+      if (@$objects > 0) {
+        return $objects->[@$objects - 1];
+      }
+      else {
+        return undef;
+      }
+    }
   }
   
 }

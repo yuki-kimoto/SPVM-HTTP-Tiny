@@ -11,7 +11,7 @@ class HTTP::Tiny::Upload {
   
   has headers : ro HTTP::Tiny::Headers;
   
-  has name : string;
+  has name : ro string;
   
   # Class Methods
   static method new : HTTP::Tiny::Upload ($options : object[] = undef) {
