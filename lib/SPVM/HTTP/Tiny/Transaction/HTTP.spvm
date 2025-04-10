@@ -46,7 +46,7 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
       return;
     }
     
-    if (!$res->is_info || $res->headers_new->upgrade) {
+    if (!$res->is_info || $res->headers->upgrade) {
       $self->completed;
       return;
     }
@@ -149,13 +149,13 @@ class HTTP::Tiny::Transaction::HTTP extends HTTP::Tiny::Transaction {
     my $req      = $self->req;
     my $res      = $self->res;
     
-    my $req_conn = $req->headers_new->connection;
+    my $req_conn = $req->headers->connection;
     unless ($req_conn) {
       $req_conn = "";
     }
     $req_conn = Fn->lc($req_conn);
     
-    my $res_conn = $res->headers_new->connection;
+    my $res_conn = $res->headers->connection;
     unless ($res_conn) {
       $res_conn = "";
     }

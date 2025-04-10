@@ -103,7 +103,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     my $params = $self->{body_params} = HTTP::Tiny::Parameters->new;
     
     # "application/x-www-form-urlencoded"
-    my $type = $self->headers_new->content_type // "";
+    my $type = $self->headers->content_type // "";
     if (Re->m($type, ["application/x-www-form-urlencoded", "i"])) {
       $params->parse($self->content->(HTTP::Tiny::Content::Single)->asset->slurp);
     }
@@ -274,7 +274,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     return $self->content->header_size;
   }
   
-  method headers_new : HTTP::Tiny::Headers () {
+  method headers : HTTP::Tiny::Headers () {
     return $self->content->headers;
   }
   
