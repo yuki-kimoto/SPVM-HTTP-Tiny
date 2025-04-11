@@ -109,7 +109,47 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   method query_params : HTTP::Tiny::Parameters () { return $self->url->query; }
   
-  
+  method extract_start_line : int ($bufref : string[]) {
+    
+    # Ignore any leading empty lines
+    my $_ = Re->s($bufref, "^\s*(.*?)\x0d?\x0a", "");
+    unless ($_) {
+      return 0;
+    }
+    my $start_line = $_->match->cap1;
+    
+    # We have a (hopefully) full request-line
+    my $_ = Re->m($start_line, "^(\S+)\s+(\S+)\s+HTTP\/(\d\.\d)$");
+    unless ($_) {
+      $self->set_error(Hash->new({message => "Bad request start-line"}));
+      
+      return 0;
+    }
+    
+    my $method = $_->cap1;
+    my $target = $_->cap2;
+    my $version = $_->cap3;
+    $self->{method} = $method;
+    $self->{version} = $version;
+    
+    my $url = $self->url;
+    
+    if ($method eq "CONNECT") {
+      $url->set_host_port($target);
+      return 1;
+    }
+    
+    if (Re->m($target, "^[^:\/?#]+:")) {
+      $url->parse($target);
+      $url->set_fragment(undef);
+      return 1;
+    }
+    
+    $url->set_path_query($target);
+    
+    return 1;
+  }
+
 }
 
 __END__
