@@ -247,6 +247,9 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     
     return ($url->protocol // $url->base->protocol) eq "https";
   }
+  
+  method is_xhr : int () { return Re->m(($self->headers->header("X-Requested-With") // ""),  ["XMLHttpRequest", "i"]) ? 1 : 0; }
+
 
 }
 
