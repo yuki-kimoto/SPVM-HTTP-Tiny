@@ -272,7 +272,9 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   method is_server_error : int () { return $self->_status_class([500]); }
   
   method is_success : int () { return $self->_status_class([200]); }
-
+  
+  method start_line_size : int () { return length ($self->_start_line, $self->{start_buffer}); }
+ 
 }
 
 __END__
