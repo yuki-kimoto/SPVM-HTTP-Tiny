@@ -158,11 +158,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     die "TODO";
   }
   
-  method is_empty : int () {
-    
-    die "TODO";
-  }
-  
   method cookies : HTTP::Tiny::Cookie::Response[] () {
     
     # Parse cookies
@@ -265,6 +260,15 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   method _status_class : int ($code : int) {
     
+  }
+  
+  method is_empty : int ($code : int = -1) {
+    
+    if ($code < 0) {
+      return 0;
+    }
+    
+    return $self->is_info || $code == 204 || $code == 304;
   }
 
 }
