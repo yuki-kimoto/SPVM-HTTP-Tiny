@@ -247,10 +247,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     return Fn->substr($self->{start_buffer}, $offset, 131072);
   }
   
-  method _start_line : void () {
-    
-  }
-  
   method is_client_error : int ($code : int) { return $self->_status_class([400]); }
   
   method _status_class : int ($codes : int[]) {
@@ -275,6 +271,20 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   method start_line_size : int () { return length ($self->_start_line, $self->{start_buffer}); }
  
+  method _start_line : void () {
+    
+    if ($self->{start_buffer}) {
+      return;
+    }
+    
+    my $code = (my $_ = $self->code) != 0 ? $_ : 404;
+    
+    my $msg = $self->message // $self->default_message;
+    
+    my $version = $self->version;
+    $self->{start_buffer} = "HTTP/$version $code $msg\x0d\x0a";
+  }
+
 }
 
 __END__
