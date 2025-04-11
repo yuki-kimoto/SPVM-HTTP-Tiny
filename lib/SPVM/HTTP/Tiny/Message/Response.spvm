@@ -271,6 +271,8 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   method is_redirect : int () { return $self->_status_class([300]); }
   method is_server_error : int () { return $self->_status_class([500]); }
   
+  method is_success : int () { return $self->_status_class([200]); }
+
 }
 
 __END__
