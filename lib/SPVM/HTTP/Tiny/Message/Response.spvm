@@ -249,17 +249,15 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   method is_client_error : int ($code : int) { return $self->_status_class([400]); }
   
-  method _status_class : int ($codes : int[]) {
+  method is_empty : int () {
     
-  }
-  
-  method is_empty : int ($code : int = -1) {
+    my $self_code = $self->code;
     
-    if ($code < 0) {
+    unless ($self_code > 0) {
       return 0;
     }
     
-    return $self->is_info || $code == 204 || $code == 304;
+    return $self->is_info || $self_code == 204 || $self_code == 304;
   }
   
   method is_error : int () { return $self->_status_class([400, 500]); }
@@ -284,7 +282,24 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     my $version = $self->version;
     $self->{start_buffer} = "HTTP/$version $code $msg\x0d\x0a";
   }
-
+  
+  method _status_class : int ($codes : int[]) {
+    
+    my $self_code = $self->code;
+    
+    unless ($self_code > 0) {
+      return 0;
+    }
+    
+    for my $code (@$codes) {
+      if ($self_code >= $code && $self_code < $code + 100) {
+        return 1;
+      }
+    }
+    
+    return 0;
+  }
+  
 }
 
 __END__
