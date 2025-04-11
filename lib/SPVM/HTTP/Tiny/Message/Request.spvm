@@ -235,7 +235,16 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return $self;
 
 =cut
-
+    
+  }
+  
+  method is_handshake : int () { return Fn->lc($self->headers->upgrade // "") eq "websocket"; }
+  
+  method is_secure : int () {
+    
+    my $url = $self->url;
+    
+    return ($url->protocol // $url->base->protocol) eq "https";
   }
 
 }
