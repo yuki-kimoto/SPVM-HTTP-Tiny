@@ -16,6 +16,8 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   # Fields
   has code: ro int;
   
+  has message : string;
+  
   has protocol : ro string;
   
   has success : ro byte;
