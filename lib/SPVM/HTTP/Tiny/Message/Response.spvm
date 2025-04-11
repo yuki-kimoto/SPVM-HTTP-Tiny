@@ -260,6 +260,12 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   method _start_line : void () {
     
   }
+  
+  method is_client_error : int ($code : int) { return $self->_status_class(400); }
+  
+  method _status_class : int ($code : int) {
+    
+  }
 
 }
 
