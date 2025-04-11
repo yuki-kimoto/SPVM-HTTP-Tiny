@@ -168,8 +168,18 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     return HTTP::Tiny::Cookie::Response->parse($headers->set_cookie);
   }
   
-  
-
+  method default_message : string ($code : int = -1) {
+    if ($code < 0) {
+      $code = $self->code;
+      if ($code < 0) {
+        $code = 404;
+      }
+    }
+    
+    my $message = $MESSAGES_H->get_string($code) // "";
+    
+    return $message;
+  }
 }
 
 __END__
