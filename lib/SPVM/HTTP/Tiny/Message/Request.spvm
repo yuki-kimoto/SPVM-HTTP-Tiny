@@ -33,6 +33,8 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   # Undocumented Fields
   has params : HTTP::Tiny::Parameters;
   
+  has start_buffer : string;
+  
   # Class Methods
   static method new : HTTP::Tiny::Message::Request ($options : object[] = undef) {
     
@@ -194,6 +196,48 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return;
   }
   
+  method get_start_line_chunk : string ($offset : int) {
+    
+    $self->_start_line;
+    
+    $self->emit(progress => [(object)"start_line", $offset]);
+    
+    return Fn->substr($self->{start_buffer}, $offset, 131072);
+  }
+
+  method _start_line : void () {
+
+=pod
+
+    my $self = shift;
+
+    return $self if defined $self->{start_buffer};
+
+    # Path
+    my $url  = $self->url;
+    my $path = $url->path_query;
+    $path = "/$path" unless $path =~ m!^/!;
+
+    # CONNECT
+    my $method = uc $self->method;
+    if ($method eq 'CONNECT') {
+      my $port = $url->port // ($url->protocol eq 'https' ? '443' : '80');
+      $path = $url->ihost . ":$port";
+    }
+
+    # Proxy
+    elsif ($self->proxy && $self->via_proxy && $url->protocol ne 'https') {
+      $path = $url->clone->userinfo(undef) unless $self->is_handshake;
+    }
+
+    $self->{start_buffer} = "$method $path HTTP/@{[$self->version]}\x0d\x0a";
+
+    return $self;
+
+=cut
+
+  }
+
 }
 
 __END__
