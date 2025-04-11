@@ -153,11 +153,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     die "TODO";
   }
   
-  method is_info : int () {
-    
-    die "TODO";
-  }
-  
   method cookies : HTTP::Tiny::Cookie::Response[] () {
     
     # Parse cookies
@@ -256,9 +251,9 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
   }
   
-  method is_client_error : int ($code : int) { return $self->_status_class(400); }
+  method is_client_error : int ($code : int) { return $self->_status_class([400]); }
   
-  method _status_class : int ($code : int) {
+  method _status_class : int ($codes : int[]) {
     
   }
   
@@ -270,7 +265,12 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     return $self->is_info || $code == 204 || $code == 304;
   }
-
+  
+  method is_error : int () { return $self->_status_class([400, 500]); }
+  method is_info : int () { return $self->_status_class([100]); }
+  method is_redirect : int () { return $self->_status_class([300]); }
+  method is_server_error : int () { return $self->_status_class([500]); }
+  
 }
 
 __END__
