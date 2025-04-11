@@ -50,6 +50,30 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return $self;
   }
   
+  method clone : HTTP::Tiny::Message::Request () {
+    
+    # Dynamic requests cannot be cloned
+    my $content = $self->content->clone;
+    unless ($content) {
+      return undef;
+    }
+    
+    my $clone = (
+      my $_ = HTTP::Tiny::Message::Request->new,
+      $_->{content} = $content,
+      $_->{method} = $self->method,
+      $_->{url} = $self->url->clone,
+      $_->{version} = $self->version,
+      $_
+    );
+    
+    if ($self->{proxy}) {
+      $clone->{proxy} = $self->{proxy}->clone ;
+    }
+    
+    return $clone;
+  }
+  
   method parse : void ($chunk : string) {
     
     die "TODO";
