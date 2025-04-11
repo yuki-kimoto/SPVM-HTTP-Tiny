@@ -46,7 +46,7 @@ class HTTP::Tiny::Cookie::Response extends HTTP::Tiny::Cookie {
   }
   
   # Instance Methods
-  method parse : HTTP::Tiny::Cookie::Response[] ($str : string) {
+  static method parse : HTTP::Tiny::Cookie::Response[] ($str : string) {
     
     my $cookies = List->new(new HTTP::Tiny::Cookie::Request[0]);
     

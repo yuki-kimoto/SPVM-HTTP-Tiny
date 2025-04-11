@@ -9,8 +9,6 @@ class HTTP::Tiny::Cookie {
   
   has value : ro string;
   
-  method parse : HTTP::Tiny::Cookie[] ($string : string) { die "Not implemented."; }
-  
   method to_string : string () { die "Not implemented."; }
   
 }

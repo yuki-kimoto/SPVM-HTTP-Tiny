@@ -13,7 +13,7 @@ class HTTP::Tiny::Cookie::Request extends HTTP::Tiny::Cookie {
     return $self;
   }
   
-  method parse : HTTP::Tiny::Cookie::Request[] ($str : string) {
+  static method parse : HTTP::Tiny::Cookie::Request[] ($str : string) {
     
     my $cookies = List->new(new HTTP::Tiny::Cookie::Request[0]);
     

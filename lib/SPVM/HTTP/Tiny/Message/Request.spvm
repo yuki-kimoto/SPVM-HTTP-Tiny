@@ -74,6 +74,18 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return $clone;
   }
   
+  method cookies : HTTP::Tiny::Cookie::Request[] () {
+    
+    # Parse cookies
+    my $headers = $self->headers;
+    
+    my $cookie_header = $headers->cookie;
+    
+    my $cookies = HTTP::Tiny::Cookie::Request->parse($cookie_header);
+    
+    return $cookies;
+  }
+  
   method parse : void ($chunk : string) {
     
     die "TODO";
