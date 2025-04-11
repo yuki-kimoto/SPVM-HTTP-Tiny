@@ -206,36 +206,37 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   }
 
   method _start_line : void () {
-
-=pod
-
-    my $self = shift;
-
-    return $self if defined $self->{start_buffer};
-
+    
+    if ($self->{start_buffer}) {
+      return;
+    }
+    
     # Path
     my $url  = $self->url;
     my $path = $url->path_query;
-    $path = "/$path" unless $path =~ m!^/!;
-
+    unless (Re->m($path, "^/")) {
+      $path = "/$path" ;
+    }
+    
     # CONNECT
-    my $method = uc $self->method;
-    if ($method eq 'CONNECT') {
-      my $port = $url->port // ($url->protocol eq 'https' ? '443' : '80');
+    my $method = Fn->uc($self->method);
+    if ($method eq "CONNECT") {
+      my $port = (string)$url->port // ($url->protocol eq "https" ? "443" : "80");
       $path = $url->ihost . ":$port";
     }
-
-    # Proxy
-    elsif ($self->proxy && $self->via_proxy && $url->protocol ne 'https') {
-      $path = $url->clone->userinfo(undef) unless $self->is_handshake;
-    }
-
-    $self->{start_buffer} = "$method $path HTTP/@{[$self->version]}\x0d\x0a";
-
-    return $self;
-
-=cut
     
+    # Proxy
+    elsif ($self->proxy && $self->via_proxy && $url->protocol ne "https") {
+      unless ($self->is_handshake) {
+        my $url_clone = $url->clone;
+        $url_clone->set_userinfo(undef);
+        $path = $url_clone->to_string;
+      }
+    }
+    
+    my $version = $self->version;
+    
+    $self->{start_buffer} = "$method $path HTTP/$version\x0d\x0a";
   }
   
   method is_handshake : int () { return Fn->lc($self->headers->upgrade // "") eq "websocket"; }
