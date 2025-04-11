@@ -34,7 +34,7 @@ class HTTP::Tiny::Response {
     
     my $res = $self->{response};
     
-    return $res->status;
+    return $res->code;
   }
   
   method success : int () {

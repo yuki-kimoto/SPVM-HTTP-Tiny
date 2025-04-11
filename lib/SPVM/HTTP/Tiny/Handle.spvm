@@ -183,7 +183,7 @@ class HTTP::Tiny::Handle {
     }
     
     $response->{protocol} = $protocol;
-    $response->{status} = Fn->to_int($status);
+    $response->{code} = Fn->to_int($status);
     
     if ($status && $status->[0] == '2') {
       $response->{success} = 1;
