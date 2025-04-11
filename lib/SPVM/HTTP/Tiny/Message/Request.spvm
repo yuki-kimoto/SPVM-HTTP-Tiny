@@ -98,17 +98,6 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   method every_param : string[] ($name : string) { return $self->params->every_param($name); }
   
-  method params : HTTP::Tiny::Parameters () {
-    
-    unless ($self->{params}) {
-      my $params = $self->body_params->clone;
-      $params->append($self->query_params);
-      $self->{params} = $params;
-    }
-    
-    return $self->{params};
-  }
-  
   method query_params : HTTP::Tiny::Parameters () { return $self->url->query; }
   
   method extract_start_line : int ($bufref : string[]) {
@@ -251,8 +240,18 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   method is_xhr : int () { return Re->m(($self->headers->header("X-Requested-With") // ""),  ["XMLHttpRequest", "i"]) ? 1 : 0; }
   
   method param : string ($name : string) { return $self->params->param($name); }
-
-
+  
+  method params : HTTP::Tiny::Parameters () {
+    
+    unless ($self->{params}) {
+      my $params = $self->body_params->clone;
+      $params->append($self->query_params);
+      $self->{params} = $params;
+    }
+    
+    return $self->{params};
+  }
+  
 }
 
 __END__
