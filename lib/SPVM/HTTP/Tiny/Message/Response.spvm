@@ -91,6 +91,9 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   has max_message_size : int;
   
+  # Undocumented Fields
+  has start_buffer : string;
+  
   # Old Fields
   has protocol : ro string;
   
@@ -244,6 +247,18 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     if ($self->is_empty) {
       $headers->remove("Content-Length") ;
     }
+  }
+  
+  method get_start_line_chunk : string ($offset : int) {
+    
+    $self->_start_line;
+    $self->emit(progress => [(object)"start_line", $offset]);
+    
+    return Fn->substr($self->{start_buffer}, $offset, 131072);
+  }
+  
+  method _start_line : void () {
+    
   }
 
 }
