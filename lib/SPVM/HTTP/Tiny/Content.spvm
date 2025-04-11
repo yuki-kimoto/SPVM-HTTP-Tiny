@@ -15,13 +15,27 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   }
   
   # Fields
-  has auto_decompress : ro byte;
+  has auto_decompress : wo byte;
+  method auto_decompress : int () {
+    my $_ = $self->{auto_decompress};
+    if ($_ < 0) {
+      die "auto_decompress field is not yet specified.";
+    }
+    return $_;
+  }
   
-  has auto_relax : ro byte;
+  has auto_relax : wo byte;
+  method auto_relax : int () {
+    my $_ = $self->{auto_relax};
+    if ($_ < 0) {
+      die "auto_relax field is not yet specified.";
+    }
+    return $_;
+  }
   
   has relaxed : ro byte;
   
-  has skip_body : ro byte;
+  has skip_body : rw byte;
   
   has headers : ro HTTP::Tiny::Headers;
   

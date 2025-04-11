@@ -180,6 +180,52 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     return $message;
   }
+  
+  method extract_start_line : int ($bufref : string[]) {
+    
+    # We have a full response line
+    my $_ = Re->s($bufref, "^(.*?)\x0d?\x0a", "");
+    unless ($_) {
+      return 0;
+    }
+    my $start_line = $_->match->cap1;
+    
+    my $_ = Re->m($start_line, "^\s*HTTP/(\d\.\d)\s+(\d\d\d)\s*(.+)?$");
+    unless ($_) {
+      $self->set_error(Hash->new({message => "Bad response start-line"}));
+      return 0;
+    }
+    
+    my $version = $_->cap1;
+    my $code = $_->cap2;
+    my $message = $_->cap3;
+    
+    my $content = $self->content;
+    $self->{code} = (int)$code;
+    if ($self->is_empty) {
+      $content->set_skip_body(1);
+    }
+    
+    if (!$content->auto_decompress) {
+      
+    }
+    
+    eval { $content->auto_decompress; }
+    if ($@) {
+      $content->set_auto_decompress(1);
+    }
+    
+    eval { $content->auto_relax; }
+    if ($@) {
+      $content->set_auto_relax(1);
+    }
+    
+    $self->{version} = $version;
+    $self->{message} = $message;
+    
+    return 1;
+  }
+
 }
 
 __END__
