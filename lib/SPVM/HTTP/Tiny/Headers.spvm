@@ -183,17 +183,17 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
-  method set_transfer_encoding : string ($value : string) {
+  method set_transfer_encoding : void ($value : string) {
     
     die "TODO";
   }
   
-  method set_content_length : string ($value : string) {
+  method set_content_length : void ($value : string) {
     
     die "TODO";
   }
   
-  method set_content_type : string ($value : string) {
+  method set_content_type : void ($value : string) {
     
     die "TODO";
   }
@@ -222,6 +222,37 @@ class HTTP::Tiny::Headers {
     
     die "TODO";
   }
+  
+  method set_host : void ($value : string) {
+    
+    die "TODO";
+  }
+  
+  method authorization : string () {
+    
+    die "TODO";
+  }
+  
+  method set_authorization : void ($value : string) {
+    
+    die "TODO";
+  }
+  
+  method proxy_authorization : string () {
+    
+    die "TODO";
+  }
+  
+  method set_proxy_authorization : void ($value : string) {
+    
+    die "TODO";
+  }
+  
+  method host : string () {
+    
+    die "TODO";
+  }
+  
 }
 
 __END__

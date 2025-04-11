@@ -28,7 +28,7 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   has trusted_proxies : ro string[];
   
-  has via_proxy : byte;
+  has via_proxy : ro byte;
   
   # Undocumented Fields
   has params : HTTP::Tiny::Parameters;
@@ -150,6 +150,50 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return 1;
   }
 
+  method fix_headers : void () {
+    
+    if ($self->{fix}) {
+      return;
+    }
+    
+    $self->SUPER::fix_headers;
+    
+    # Empty
+    my $headers = $self->headers;
+    if (($headers->content_length // "") eq "0" && $self->method eq "GET") {
+      $headers->remove("Content-Length");
+    }
+    
+    # Host
+    my $url = $self->url;
+    unless ($headers->host) {
+      $headers->set_host($url->host_port) ;
+    }
+    
+    # Basic authentication
+    if ((my $info = $url->userinfo) && !$headers->authorization) {
+      $headers->set_authorization("Basic " . HTTP::Tiny::Util->b64_encode($info, ""));
+    }
+    
+    # Basic proxy authentication
+    my $proxy = $self->proxy;
+    unless ($proxy && $self->via_proxy) {
+      return;
+    }
+    
+    my $info = $proxy->userinfo;
+    
+    unless ($info) {
+      return;
+    }
+    
+    unless ($headers->proxy_authorization) {
+      $headers->set_proxy_authorization("Basic " . HTTP::Tiny::Util->b64_encode($info, "")) ;
+    }
+    
+    return;
+  }
+  
 }
 
 __END__
