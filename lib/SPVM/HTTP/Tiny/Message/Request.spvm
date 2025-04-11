@@ -91,11 +91,6 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return $cookies;
   }
   
-  method parse : void ($chunk : string) {
-    
-    die "TODO";
-  }
-  
   method every_param : string[] ($name : string) { return $self->params->every_param($name); }
   
   method query_params : HTTP::Tiny::Parameters () { return $self->url->query; }
@@ -252,6 +247,64 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return $self->{params};
   }
   
+  method parse : void ($chunk : string, $env : Hash of string = undef) {
+  
+    # Parse CGI environment
+    if ($env) {
+      $self->{env} = $env;
+      $self->_parse_env($env);
+    }
+    
+    # Parse normal message
+    if (($self->{state} // "") ne "cgi") { $self->SUPER::parse($chunk); }
+    
+    # Parse CGI content
+    else {
+      unless ($env) {
+        $self->{raw_size} += length $chunk;
+      }
+      
+      my $content = $self->content;
+      $content->parse_body($chunk);
+      $self->{content} = $content;
+      $self->SUPER::parse("");
+    }
+
+    # Check if we can fix things that require all headers
+    unless ($self->is_finished) {
+      return;
+    }
+    
+    # Base URL
+    my $base = $self->url->base;
+    unless ($base->scheme) {
+      $base->set_scheme("http");
+    }
+    my $headers = $self->headers;
+    if (!$base->host && (my $host = $headers->host)) { $base->set_host_port($host); }
+    
+    # Basic authentication
+    if (my $basic = &_basic($headers->authorization)) { $base->set_userinfo($basic); }
+    
+    # Basic proxy authentication
+    my $basic = &_basic($headers->proxy_authorization);
+    
+    if ($basic) {
+      $self->{proxy} = (my $_ = HTTP::Tiny::URL->new, $_->set_userinfo($basic), $_);
+    }
+    
+    # "X-Forwarded-Proto"
+    if ($self->reverse_proxy && ($headers->header("X-Forwarded-Proto") // "") eq "https") {
+      $base->set_scheme("https");
+    }
+    
+  }
+  
+  static method _basic : string ($proxy_authorization : string) { $proxy_authorization && (my $_ = Re->m($proxy_authorization, "Basic (.+)$")) ? HTTP::Tiny::Util->b64_decode($_->cap1) : undef; }
+  
+  method _parse_env : void ($env : Hash of string) {
+    
+  }
 }
 
 __END__
