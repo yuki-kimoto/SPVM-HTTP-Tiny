@@ -30,6 +30,9 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   has via_proxy : byte;
   
+  # Undocumented Fields
+  has params : HTTP::Tiny::Parameters;
+  
   # Class Methods
   static method new : HTTP::Tiny::Message::Request ($options : object[] = undef) {
     
@@ -90,6 +93,22 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     
     die "TODO";
   }
+  
+  method every_param : string[] ($name : string) { return $self->params->every_param($name); }
+  
+  method params : HTTP::Tiny::Parameters () {
+    
+    unless ($self->{params}) {
+      my $params = $self->body_params->clone;
+      $params->append($self->query_params);
+      $self->{params} = $params;
+    }
+    
+    return $self->{params};
+  }
+  
+  method query_params : HTTP::Tiny::Parameters () { return $self->url->query; }
+  
   
 }
 
