@@ -226,6 +226,26 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     return 1;
   }
 
+  method fix_headers : void () {
+    
+    if ($self->{fix}) {
+      return;
+    }
+    
+    $self->SUPER::fix_headers;
+    
+    # Date
+    my $headers = $self->headers;
+    unless ($headers->date) {
+      $headers->set_date(HTTP::Tiny::Date->new->to_string) ;
+    }
+    
+    # RFC 7230 3.3.2
+    if ($self->is_empty) {
+      $headers->remove("Content-Length") ;
+    }
+  }
+
 }
 
 __END__

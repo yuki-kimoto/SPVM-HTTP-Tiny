@@ -163,11 +163,6 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
-  method content_type : string () {
-    
-    die "TODO";
-  }
-  
   method content_length : string () {
     
     die "TODO";
@@ -189,11 +184,6 @@ class HTTP::Tiny::Headers {
   }
   
   method set_content_length : void ($value : string) {
-    
-    die "TODO";
-  }
-  
-  method set_content_type : void ($value : string) {
     
     die "TODO";
   }
@@ -257,6 +247,27 @@ class HTTP::Tiny::Headers {
     
     die "TODO";
   }
+  
+  method content_type : string () {
+    
+    die "TODO";
+  }
+  
+  method set_content_type : void ($value : string) {
+    
+    die "TODO";
+  }
+  
+  method date : string () {
+    
+    die "TODO";
+  }
+  
+  method set_date : void ($value : string) {
+    
+    die "TODO";
+  }
+  
 }
 
 __END__

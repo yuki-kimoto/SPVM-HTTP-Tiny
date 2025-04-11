@@ -43,13 +43,13 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has max_leftover_size : ro int;
   
+  # Undocumented Fields
   has body_buffer : string;
   
   has eof : byte;
   
   has state : string;
   
-  # Undocumented Fields
   has dynamic : byte;
   
   has header_buffer : string;
