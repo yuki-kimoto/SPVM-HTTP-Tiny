@@ -304,6 +304,95 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   
   method _parse_env : void ($env : Hash of string) {
     
+    # Bypass normal message parser
+    $self->{state} = "cgi";
+
+    # Extract headers
+    my $headers = $self->headers;
+    my $url     = $self->url;
+    my $base    = $url->base;
+    for my $name (@{$env->keys}) {
+      my $value = $env->get_string($name);
+      my $name_ref = [$name];
+      unless (Re->s($name_ref, ["^HTTP_", "i"], "")) {
+        next;
+      }
+      $name = $name_ref->[0];
+      
+      my $tmp_name = (mutable string)copy $name;
+      Fn->replace_chars($tmp_name, '_', '-');
+      $name = $tmp_name;
+      
+      $headers->set_header($name => $value);
+      
+      # Host/Port
+      if ($name eq "HOST") {
+        my $value_ref = [$value];
+        
+        if (my $_ = Re->s($value_ref, ":(\d+)$", "")) {
+          $value = $value_ref->[0];
+          
+          $base->set_host($value);
+          $base->set_port((int)$_->match->cap1);
+        }
+        else {
+          $base->set_host($value);
+        }
+      }
+    }
+    
+    # Content-Type is a special case on some servers
+    if (length $env->get_string("CONTENT_TYPE")) {
+      $headers->set_content_type($env->get_string("CONTENT_TYPE")) ;
+    }
+    
+    # Content-Length is a special case on some servers
+    if (length $env->get_string("CONTENT_LENGTH")) {
+      $headers->set_content_length($env->get_string("CONTENT_LENGTH")) ;
+    }
+    
+    # Query
+    if (length $env->get_string("QUERY_STRING")) {
+      $url->query->parse($env->get_string("QUERY_STRING")) ;
+    }
+    
+    # Method
+    if (length $env->get_string("REQUEST_METHOD")) {
+      $self->{method} = $env->get_string("REQUEST_METHOD");
+    }
+    
+    # Scheme/Version
+    if (my $_ = Re->m(($env->get_string("SERVER_PROTOCOL") // ""), "^([^/]+)/([^/]+)$")) {
+      $base->set_scheme($_->cap1);
+      $self->{version} = $_->cap2 ;
+    }
+    
+    # HTTPS
+    if (Fn->uc($env->get_string("HTTPS") // "") eq "ON") {
+      $base->set_scheme("https");
+    }
+    
+    # Path
+    my $path = $url->path;
+    $path->parse(length $env->get_string("PATH_INFO") ? $env->get_string("PATH_INFO") : "");
+    
+    # Base path
+    if (my $value = $env->get_string("SCRIPT_NAME")) {
+      
+      # Make sure there is a trailing slash (important for merging)
+      $base->path->parse(Re->m($value, "/$") ? $value : "$value/");
+      
+      # Remove SCRIPT_NAME prefix if necessary
+      my $buffer = $path->to_string;
+      my $value_ref = [$value];
+      Re->s($value_ref, ["^/|/$", "g"], "");
+      $value = $value_ref->[0];
+      my $buffer_ref = [$buffer];
+      Re->s($buffer_ref, "^/?\\Q$value\\E/?", "");
+      Re->s($buffer_ref, "^/", "");
+      $buffer = $buffer_ref->[0];
+      $path->parse($buffer);
+    }
   }
 }
 
