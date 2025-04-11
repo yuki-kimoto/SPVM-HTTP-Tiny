@@ -189,40 +189,6 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     return Fn->substr($self->{start_buffer}, $offset, 131072);
   }
 
-  method _start_line : void () {
-    
-    if ($self->{start_buffer}) {
-      return;
-    }
-    
-    # Path
-    my $url  = $self->url;
-    my $path = $url->path_query;
-    unless (Re->m($path, "^/")) {
-      $path = "/$path" ;
-    }
-    
-    # CONNECT
-    my $method = Fn->uc($self->method);
-    if ($method eq "CONNECT") {
-      my $port = (string)$url->port // ($url->protocol eq "https" ? "443" : "80");
-      $path = $url->ihost . ":$port";
-    }
-    
-    # Proxy
-    elsif ($self->proxy && $self->via_proxy && $url->protocol ne "https") {
-      unless ($self->is_handshake) {
-        my $url_clone = $url->clone;
-        $url_clone->set_userinfo(undef);
-        $path = $url_clone->to_string;
-      }
-    }
-    
-    my $version = $self->version;
-    
-    $self->{start_buffer} = "$method $path HTTP/$version\x0d\x0a";
-  }
-  
   method is_handshake : int () { return Fn->lc($self->headers->upgrade // "") eq "websocket"; }
   
   method is_secure : int () {
@@ -394,6 +360,41 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
       $path->parse($buffer);
     }
   }
+  
+  method _start_line : void () {
+    
+    if ($self->{start_buffer}) {
+      return;
+    }
+    
+    # Path
+    my $url  = $self->url;
+    my $path = $url->path_query;
+    unless (Re->m($path, "^/")) {
+      $path = "/$path" ;
+    }
+    
+    # CONNECT
+    my $method = Fn->uc($self->method);
+    if ($method eq "CONNECT") {
+      my $port = (string)$url->port // ($url->protocol eq "https" ? "443" : "80");
+      $path = $url->ihost . ":$port";
+    }
+    
+    # Proxy
+    elsif ($self->proxy && $self->via_proxy && $url->protocol ne "https") {
+      unless ($self->is_handshake) {
+        my $url_clone = $url->clone;
+        $url_clone->set_userinfo(undef);
+        $path = $url_clone->to_string;
+      }
+    }
+    
+    my $version = $self->version;
+    
+    $self->{start_buffer} = "$method $path HTTP/$version\x0d\x0a";
+  }
+  
 }
 
 __END__
