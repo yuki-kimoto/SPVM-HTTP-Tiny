@@ -37,22 +37,22 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   }
   
   # Instance Methods
-  method reason : string () {
+  method message : string () {
     
     my $status = $self->{code};
     
-    my $reason = HTTP::Tiny::Status->status_message($status);
+    my $message = HTTP::Tiny::Status->status_message($status);
     
-    return $reason;
+    return $message;
   }
   
   method build_start_line : string () {
     
     my $status = $self->{code};
     
-    my $reason = $self->reason;
+    my $message = $self->message;
     
-    my $start_line = "HTTP/1.1 $status $reason\x0d\x0a";
+    my $start_line = "HTTP/1.1 $status $message\x0d\x0a";
     
     return $start_line;
   }
@@ -67,11 +67,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     # TODO
     
     return undef;
-  }
-  
-  private method message : string () {
-    
-    return $self->reason;
   }
   
   method parse : void ($chunk : string) {
