@@ -20,8 +20,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   has success : ro byte;
   
-  has content_v2 : ro HTTP::Tiny::Content;
-  
   # Old Fields
   has protocol : ro string;
   
