@@ -18,10 +18,10 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   has message : string;
   
-  has success : ro byte;
-  
   # Old Fields
   has protocol : ro string;
+  
+  has success : ro byte;
   
   # Class Methods
   static method new : HTTP::Tiny::Message::Response () {
