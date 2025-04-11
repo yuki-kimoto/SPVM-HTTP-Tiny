@@ -253,6 +253,10 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
+  method set_cookie : string () {
+    
+    die "TODO";
+  }
 }
 
 __END__
