@@ -136,6 +136,42 @@ class HTTP::Tiny::Headers {
     }
   }
   
+  # TODO: Currently a header value is managed as a string if it has multiple values.
+  # method every_header : string[] ($name : string) {}
+  
+  method from_hash : HTTP::Tiny::Headers ($hash : Hash) {
+    
+    my $keys = $hash->keys;
+    
+    # Empty hash deletes all headers
+    if (@$keys == 0) {
+      $self->{headers} = Hash->new;
+    }
+    
+    # Merge
+    for my $header (@$keys) {
+      my $value = $hash->get($header);
+      
+      my $values = (string[])undef;
+      if (!$value) {
+        $values = new string[0];
+      }
+      elsif ($value isa string[]) {
+        $values = (string[])$value;
+      }
+      elsif ($value isa string) {
+        $values = [(string)$value];
+      }
+      else {
+        die "The type of the value \$value must be string, string[], or undef type.";
+      }
+      
+      for my $value (@$values) {
+        $self->add($header => $value);
+      }
+    }
+  }
+  
   method remove : void ($name : string) {
     
     unless ($name) {
