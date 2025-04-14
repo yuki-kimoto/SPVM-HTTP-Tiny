@@ -88,15 +88,15 @@ class HTTP::Tiny::Headers {
     
     my $name_lc = Fn->lc($name);
     
-    my $values_list = (StringList)$self->{headers_h}->get($name_lc);
-    
-    unless ($values_list) {
-      $values_list = StringList->new;
+    my $new_value = (string)undef;
+    if (my $cur_value = $self->{headers_h}->get_string($name_lc)) {
+      $new_value = "$cur_value, $value";
+    }
+    else {
+      $new_value = $value;
     }
     
-    $values_list->push($value);
-    
-    $self->{headers_h}->set($name_lc, $values_list);
+    $self->{headers_h}->set($name_lc, $new_value);
   }
   
   method remove : void ($name : string) {
@@ -120,20 +120,9 @@ class HTTP::Tiny::Headers {
     
     my $name_lc = Fn->lc($name);
     
-    my $values_list = (StringList)$self->{headers_h}->get($name_lc);
+    my $value = $self->{headers_h}->get_string($name_lc);
     
-    my $values = (string[])undef;
-    if ($values_list) {
-      $values = $values_list->to_array;
-    }
-    
-    my $value_string = (string)undef;
-    
-    if ($values) {
-      $value_string = Fn->join(",", $values);
-    }
-    
-    return $value_string;
+    return $value;
   }
   
   method set_header : void ($name : string, $value : string) {
@@ -162,9 +151,11 @@ class HTTP::Tiny::Headers {
     my $buffer = StringBuffer->new;
     for my $name (@$names) {
       my $header_string = $self->header($name);
-      $buffer->push("$name:");
-      $buffer->push($header_string);
-      $buffer->push("\r\n");
+      if ($header_string) {
+        $buffer->push("$name:");
+        $buffer->push($header_string);
+        $buffer->push("\r\n");
+      }
     }
     
     my $string = $buffer->to_string;
@@ -216,7 +207,7 @@ class HTTP::Tiny::Headers {
   }
 
   method set_accept : void ($value : string) {
-
+    
     $self->{headers_h}->set("Accept" => $value);
   }
 
