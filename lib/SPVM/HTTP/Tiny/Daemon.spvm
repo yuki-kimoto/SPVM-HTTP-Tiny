@@ -86,18 +86,18 @@ class HTTP::Tiny::Daemon {
     my $request_has_data_callback = 0;
     
     if (Re->m($status, "^(1\d\d|[23]04)$")) {
-        $res->headers_v0->remove("Content-Length");
+        $res->headers->remove("Content-Length");
         $content = "";
     }
     elsif ($request->method eq "HEAD") {
       
     }
     elsif ($request_has_data_callback) {
-      $res->headers_v0->add("Transfer-Encoding" => "chunked");
+      $res->headers->add("Transfer-Encoding" => "chunked");
       $chunked++;
     }
     elsif (length($content)) {
-      $res->headers_v0->add("Content-Length" => length($content));
+      $res->headers->add("Content-Length" => length($content));
     }
     
     my $start_line = $res->build_start_line;
@@ -250,7 +250,7 @@ $error
       
       if (my $match = Re->m($header_line_buffer, "^([^:\s]+)\s*:\s*(.*)")) {
         if ($key) {
-          $request->headers_v0->add($key, $val);
+          $request->headers->add($key, $val);
         }
         
         $key = $match->cap1;
@@ -264,7 +264,7 @@ $error
       }
     }
     if ($key) {
-      $request->headers_v0->add($key, $val);
+      $request->headers->add($key, $val);
     }
     
     if ($request->method eq "HEAD") {
@@ -272,9 +272,9 @@ $error
     }
     
     # Find out how much content to read
-    my $tr_enc  = $request->headers_v0->header("Transfer-Encoding");
-    my $ct_type = $request->headers_v0->header("Content-Type");
-    my $ct_len  = $request->headers_v0->header("Content-Length");
+    my $tr_enc  = $request->headers->header("Transfer-Encoding");
+    my $ct_type = $request->headers->header("Content-Type");
+    my $ct_len  = $request->headers->header("Content-Length");
     
     if ($tr_enc && Fn->lc($tr_enc) eq "chunked") {
       my $body = "";
@@ -318,10 +318,10 @@ $error
       }
       $request->{content_buffer} = StringBuffer->new($body);
       
-      $request->headers_v0->remove("Transfer-Encoding");
+      $request->headers->remove("Transfer-Encoding");
       
-      $request->headers_v0->remove("Content-Length");
-      $request->headers_v0->add("Content-Length", length($body));
+      $request->headers->remove("Content-Length");
+      $request->headers->add("Content-Length", length($body));
       
       # Traler Headers
       my $key = (string)undef;
@@ -338,7 +338,7 @@ $error
         
         if (my $match = Re->m($header_line_buffer, "^([^:\s]+)\s*:\s*(.*)")) {
           if ($key) {
-            $request->headers_v0->add($key, $val);
+            $request->headers->add($key, $val);
           }
           
           $key = $match->cap1;
@@ -352,7 +352,7 @@ $error
         }
       }
       if ($key) {
-        $request->headers_v0->add($key, $val);
+        $request->headers->add($key, $val);
       }
     }
     elsif ($tr_enc) {

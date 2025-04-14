@@ -111,7 +111,7 @@ class HTTP::Tiny::Handle {
     my $method = $request->{method};
     my $url = $request->{url};
     my $url_string = $url->to_string;
-    my $headers = $request->{headers_v0};
+    my $headers = $request->headers;
     
     # HTTP Headers
     {
@@ -191,7 +191,7 @@ class HTTP::Tiny::Handle {
   }
   
   private method read_response_headers : HTTP::Tiny::Headers ($response : HTTP::Tiny::Message::Response) {
-    my $headers = $response->headers_v0;
+    my $headers = $response->headers;
     
     while (1) {
       my $line = $self->readline;
@@ -209,7 +209,7 @@ class HTTP::Tiny::Handle {
       }
     }
     
-    $response->{headers_v0} = $headers;
+    $response->content->set_headers($headers);
   }
   
   private method readline : string () {
@@ -254,7 +254,7 @@ class HTTP::Tiny::Handle {
   
   private method read_response_body : int ($response : HTTP::Tiny::Message::Response) {
     
-    my $content_length_string = $response->headers_v0->header("Content-Length");
+    my $content_length_string = $response->headers->header("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
     
     if ($content_length >= 0) {

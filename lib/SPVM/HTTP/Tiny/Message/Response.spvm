@@ -108,7 +108,9 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     $self->{content_buffer} = StringBuffer->new;
     
-    $self->{headers_v0} = HTTP::Tiny::Headers->new;
+    $self->{content} = HTTP::Tiny::Content::Single->new;
+    
+    $self->content->set_headers(HTTP::Tiny::Headers->new);
     
     $self->{max_message_size} = 2147483647;
     

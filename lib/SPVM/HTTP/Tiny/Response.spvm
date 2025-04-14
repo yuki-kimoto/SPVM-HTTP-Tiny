@@ -62,7 +62,7 @@ class HTTP::Tiny::Response {
     
     my $res = $self->{response};
     
-    return $res->headers_v0;
+    return $res->headers;
   }
   
   method content : string () {

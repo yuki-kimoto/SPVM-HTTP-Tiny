@@ -37,7 +37,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
   
   has skip_body : rw byte;
   
-  has headers : ro HTTP::Tiny::Headers;
+  has headers : rw HTTP::Tiny::Headers;
   
   has max_buffer_size : ro int;
   

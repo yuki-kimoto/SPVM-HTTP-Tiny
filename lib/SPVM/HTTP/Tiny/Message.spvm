@@ -48,8 +48,6 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   # Old Fields
   has content_buffer : StringBuffer;
   
-  has headers_v0 : ro HTTP::Tiny::Headers;
-  
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
     
