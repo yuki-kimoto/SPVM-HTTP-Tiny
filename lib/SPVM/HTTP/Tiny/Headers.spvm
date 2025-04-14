@@ -15,16 +15,6 @@ class HTTP::Tiny::Headers {
   use HTTP::Tiny::Cookie::Request;
   use HTTP::Tiny::Cookie::Response;
   
-  # Hop-by-hop headers
-  our $HOP_BY_HOP : string[];
-  INIT {
-    my $HOP_BY_HOP = ["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te trailer", "transfer-encoding upgrade"];
-    
-    for (my $i = 0; $i < @$HOP_BY_HOP; $i++) {
-      $HOP_BY_HOP->[$i] = Fn->lc($HOP_BY_HOP->[$i]);
-    }
-  }
-  
   # Fields
   has max_line_size : ro int;
   
@@ -120,8 +110,10 @@ class HTTP::Tiny::Headers {
   
   method dehop : void () {
     
-    for my $_ (@$HOP_BY_HOP) {
-      $self->{headers}->delete($_);
+    my $hop_by_hop = ["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te trailer", "transfer-encoding upgrade"];
+    
+    for my $header (@$hop_by_hop) {
+      $self->{headers}->delete($header);
     }
   }
   
