@@ -138,6 +138,10 @@ class HTTP::Tiny::Headers {
   
   method set_header : void ($name : string, $value : string) {
     
+    unless ($value) {
+      die "The value \$value must be defined.";
+    }
+    
     $self->remove($name);
     
     $self->add($name, $value);
