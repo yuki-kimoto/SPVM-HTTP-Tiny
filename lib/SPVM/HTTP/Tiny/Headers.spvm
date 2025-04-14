@@ -99,6 +99,11 @@ class HTTP::Tiny::Headers {
     $self->{headers_h}->set($name_lc, $new_value);
   }
   
+  method append : void ($name : string, $value : string) {
+    
+    $self->add($name, $value);
+  }
+  
   method remove : void ($name : string) {
     
     unless ($name) {
