@@ -289,7 +289,7 @@ class HTTP::Tiny::Headers {
       $self->{limit} = 1;
     }
   }
-
+  
   method to_string : string () {
     
     my $names = $self->names;
@@ -329,7 +329,7 @@ class HTTP::Tiny::Headers {
 
   method set_accept : void ($value : string) {
     
-    $self->{headers}->set("Accept" => $value);
+    $self->set_header("Accept" => $value);
   }
 
   method accept_charset : string () {
@@ -341,7 +341,7 @@ class HTTP::Tiny::Headers {
 
   method set_accept_charset : void ($value : string) {
 
-    $self->{headers}->set("Accept-Charset" => $value);
+    $self->set_header("Accept-Charset" => $value);
   }
 
   method accept_encoding : string () {
@@ -353,7 +353,7 @@ class HTTP::Tiny::Headers {
 
   method set_accept_encoding : void ($value : string) {
 
-    $self->{headers}->set("Accept-Encoding" => $value);
+    $self->set_header("Accept-Encoding" => $value);
   }
 
   method accept_language : string () {
@@ -365,7 +365,7 @@ class HTTP::Tiny::Headers {
 
   method set_accept_language : void ($value : string) {
 
-    $self->{headers}->set("Accept-Language" => $value);
+    $self->set_header("Accept-Language" => $value);
   }
 
   method accept_ranges : string () {
@@ -377,7 +377,7 @@ class HTTP::Tiny::Headers {
 
   method set_accept_ranges : void ($value : string) {
 
-    $self->{headers}->set("Accept-Ranges" => $value);
+    $self->set_header("Accept-Ranges" => $value);
   }
 
   method access_control_allow_origin : string () {
@@ -389,7 +389,7 @@ class HTTP::Tiny::Headers {
 
   method set_access_control_allow_origin : void ($value : string) {
 
-    $self->{headers}->set("Access-Control-Allow-Origin" => $value);
+    $self->set_header("Access-Control-Allow-Origin" => $value);
   }
 
   method allow : string () {
@@ -401,7 +401,7 @@ class HTTP::Tiny::Headers {
 
   method set_allow : void ($value : string) {
 
-    $self->{headers}->set("Allow" => $value);
+    $self->set_header("Allow" => $value);
   }
 
   method authorization : string () {
@@ -413,7 +413,7 @@ class HTTP::Tiny::Headers {
 
   method set_authorization : void ($value : string) {
 
-    $self->{headers}->set("Authorization" => $value);
+    $self->set_header("Authorization" => $value);
   }
 
   method cache_control : string () {
@@ -425,7 +425,7 @@ class HTTP::Tiny::Headers {
 
   method set_cache_control : void ($value : string) {
 
-    $self->{headers}->set("Cache-Control" => $value);
+    $self->set_header("Cache-Control" => $value);
   }
 
   method connection : string () {
@@ -437,7 +437,7 @@ class HTTP::Tiny::Headers {
 
   method set_connection : void ($value : string) {
 
-    $self->{headers}->set("Connection" => $value);
+    $self->set_header("Connection" => $value);
   }
 
   method content_disposition : string () {
@@ -449,7 +449,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_disposition : void ($value : string) {
 
-    $self->{headers}->set("Content-Disposition" => $value);
+    $self->set_header("Content-Disposition" => $value);
   }
 
   method content_encoding : string () {
@@ -461,7 +461,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_encoding : void ($value : string) {
 
-    $self->{headers}->set("Content-Encoding" => $value);
+    $self->set_header("Content-Encoding" => $value);
   }
 
   method content_language : string () {
@@ -473,7 +473,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_language : void ($value : string) {
 
-    $self->{headers}->set("Content-Language" => $value);
+    $self->set_header("Content-Language" => $value);
   }
 
   method content_length : string () {
@@ -485,7 +485,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_length : void ($value : string) {
 
-    $self->{headers}->set("Content-Length" => $value);
+    $self->set_header("Content-Length" => $value);
   }
 
   method content_location : string () {
@@ -497,7 +497,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_location : void ($value : string) {
 
-    $self->{headers}->set("Content-Location" => $value);
+    $self->set_header("Content-Location" => $value);
   }
 
   method content_range : string () {
@@ -509,7 +509,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_range : void ($value : string) {
 
-    $self->{headers}->set("Content-Range" => $value);
+    $self->set_header("Content-Range" => $value);
   }
 
   method content_security_policy : string () {
@@ -521,7 +521,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_security_policy : void ($value : string) {
 
-    $self->{headers}->set("Content-Security-Policy" => $value);
+    $self->set_header("Content-Security-Policy" => $value);
   }
 
   method content_type : string () {
@@ -533,7 +533,7 @@ class HTTP::Tiny::Headers {
 
   method set_content_type : void ($value : string) {
 
-    $self->{headers}->set("Content-Type" => $value);
+    $self->set_header("Content-Type" => $value);
   }
 
   method cookie : string () {
@@ -545,7 +545,7 @@ class HTTP::Tiny::Headers {
 
   method set_cookie : void ($value : string) {
 
-    $self->{headers}->set("Cookie" => $value);
+    $self->set_header("Cookie" => $value);
   }
 
   method dnt : string () {
@@ -557,7 +557,7 @@ class HTTP::Tiny::Headers {
 
   method set_dnt : void ($value : string) {
 
-    $self->{headers}->set("DNT" => $value);
+    $self->set_header("DNT" => $value);
   }
 
   method date : string () {
@@ -569,7 +569,7 @@ class HTTP::Tiny::Headers {
 
   method set_date : void ($value : string) {
 
-    $self->{headers}->set("Date" => $value);
+    $self->set_header("Date" => $value);
   }
 
   method etag : string () {
@@ -581,7 +581,7 @@ class HTTP::Tiny::Headers {
 
   method set_etag : void ($value : string) {
 
-    $self->{headers}->set("ETag" => $value);
+    $self->set_header("ETag" => $value);
   }
 
   method expect : string () {
@@ -593,7 +593,7 @@ class HTTP::Tiny::Headers {
 
   method set_expect : void ($value : string) {
 
-    $self->{headers}->set("Expect" => $value);
+    $self->set_header("Expect" => $value);
   }
 
   method expires : string () {
@@ -605,7 +605,7 @@ class HTTP::Tiny::Headers {
 
   method set_expires : void ($value : string) {
 
-    $self->{headers}->set("Expires" => $value);
+    $self->set_header("Expires" => $value);
   }
 
   method host : string () {
@@ -617,7 +617,7 @@ class HTTP::Tiny::Headers {
 
   method set_host : void ($value : string) {
 
-    $self->{headers}->set("Host" => $value);
+    $self->set_header("Host" => $value);
   }
 
   method if_modified_since : string () {
@@ -629,7 +629,7 @@ class HTTP::Tiny::Headers {
 
   method set_if_modified_since : void ($value : string) {
 
-    $self->{headers}->set("If-Modified-Since" => $value);
+    $self->set_header("If-Modified-Since" => $value);
   }
 
   method if_none_match : string () {
@@ -641,7 +641,7 @@ class HTTP::Tiny::Headers {
 
   method set_if_none_match : void ($value : string) {
 
-    $self->{headers}->set("If-None-Match" => $value);
+    $self->set_header("If-None-Match" => $value);
   }
 
   method last_modified : string () {
@@ -653,7 +653,7 @@ class HTTP::Tiny::Headers {
 
   method set_last_modified : void ($value : string) {
 
-    $self->{headers}->set("Last-Modified" => $value);
+    $self->set_header("Last-Modified" => $value);
   }
 
   method link : string () {
@@ -665,7 +665,7 @@ class HTTP::Tiny::Headers {
 
   method set_link : void ($value : string) {
 
-    $self->{headers}->set("Link" => $value);
+    $self->set_header("Link" => $value);
   }
 
   method location : string () {
@@ -677,7 +677,7 @@ class HTTP::Tiny::Headers {
 
   method set_location : void ($value : string) {
 
-    $self->{headers}->set("Location" => $value);
+    $self->set_header("Location" => $value);
   }
 
   method origin : string () {
@@ -689,7 +689,7 @@ class HTTP::Tiny::Headers {
 
   method set_origin : void ($value : string) {
 
-    $self->{headers}->set("Origin" => $value);
+    $self->set_header("Origin" => $value);
   }
 
   method proxy_authenticate : string () {
@@ -701,7 +701,7 @@ class HTTP::Tiny::Headers {
 
   method set_proxy_authenticate : void ($value : string) {
 
-    $self->{headers}->set("Proxy-Authenticate" => $value);
+    $self->set_header("Proxy-Authenticate" => $value);
   }
 
   method proxy_authorization : string () {
@@ -713,7 +713,7 @@ class HTTP::Tiny::Headers {
 
   method set_proxy_authorization : void ($value : string) {
 
-    $self->{headers}->set("Proxy-Authorization" => $value);
+    $self->set_header("Proxy-Authorization" => $value);
   }
 
   method range : string () {
@@ -725,7 +725,7 @@ class HTTP::Tiny::Headers {
 
   method set_range : void ($value : string) {
 
-    $self->{headers}->set("Range" => $value);
+    $self->set_header("Range" => $value);
   }
 
   method sec_websocket_accept : string () {
@@ -737,7 +737,7 @@ class HTTP::Tiny::Headers {
 
   method set_sec_websocket_accept : void ($value : string) {
 
-    $self->{headers}->set("Sec-WebSocket-Accept" => $value);
+    $self->set_header("Sec-WebSocket-Accept" => $value);
   }
 
   method sec_websocket_extensions : string () {
@@ -749,7 +749,7 @@ class HTTP::Tiny::Headers {
 
   method set_sec_websocket_extensions : void ($value : string) {
 
-    $self->{headers}->set("Sec-WebSocket-Extensions" => $value);
+    $self->set_header("Sec-WebSocket-Extensions" => $value);
   }
 
   method sec_websocket_key : string () {
@@ -761,7 +761,7 @@ class HTTP::Tiny::Headers {
 
   method set_sec_websocket_key : void ($value : string) {
 
-    $self->{headers}->set("Sec-WebSocket-Key" => $value);
+    $self->set_header("Sec-WebSocket-Key" => $value);
   }
 
   method sec_websocket_protocol : string () {
@@ -773,7 +773,7 @@ class HTTP::Tiny::Headers {
 
   method set_sec_websocket_protocol : void ($value : string) {
 
-    $self->{headers}->set("Sec-WebSocket-Protocol" => $value);
+    $self->set_header("Sec-WebSocket-Protocol" => $value);
   }
 
   method sec_websocket_version : string () {
@@ -785,7 +785,7 @@ class HTTP::Tiny::Headers {
 
   method set_sec_websocket_version : void ($value : string) {
 
-    $self->{headers}->set("Sec-WebSocket-Version" => $value);
+    $self->set_header("Sec-WebSocket-Version" => $value);
   }
 
   method server : string () {
@@ -797,7 +797,7 @@ class HTTP::Tiny::Headers {
 
   method set_server : void ($value : string) {
 
-    $self->{headers}->set("Server" => $value);
+    $self->set_header("Server" => $value);
   }
 
   method server_timing : string () {
@@ -809,7 +809,7 @@ class HTTP::Tiny::Headers {
 
   method set_server_timing : void ($value : string) {
 
-    $self->{headers}->set("Server-Timing" => $value);
+    $self->set_header("Server-Timing" => $value);
   }
 
   method get_set_cookie : string () {
@@ -821,7 +821,7 @@ class HTTP::Tiny::Headers {
 
   method set_set_cookie : void ($value : string) {
 
-    $self->{headers}->set("Set-Cookie" => $value);
+    $self->set_header("Set-Cookie" => $value);
   }
 
   method status : string () {
@@ -833,7 +833,7 @@ class HTTP::Tiny::Headers {
 
   method set_status : void ($value : string) {
 
-    $self->{headers}->set("Status" => $value);
+    $self->set_header("Status" => $value);
   }
 
   method strict_transport_security : string () {
@@ -845,7 +845,7 @@ class HTTP::Tiny::Headers {
 
   method set_strict_transport_security : void ($value : string) {
 
-    $self->{headers}->set("Strict-Transport-Security" => $value);
+    $self->set_header("Strict-Transport-Security" => $value);
   }
 
   method te : string () {
@@ -857,7 +857,7 @@ class HTTP::Tiny::Headers {
 
   method set_te : void ($value : string) {
 
-    $self->{headers}->set("TE" => $value);
+    $self->set_header("TE" => $value);
   }
 
   method trailer : string () {
@@ -869,7 +869,7 @@ class HTTP::Tiny::Headers {
 
   method set_trailer : void ($value : string) {
 
-    $self->{headers}->set("Trailer" => $value);
+    $self->set_header("Trailer" => $value);
   }
 
   method transfer_encoding : string () {
@@ -881,7 +881,7 @@ class HTTP::Tiny::Headers {
 
   method set_transfer_encoding : void ($value : string) {
 
-    $self->{headers}->set("Transfer-Encoding" => $value);
+    $self->set_header("Transfer-Encoding" => $value);
   }
 
   method upgrade : string () {
@@ -893,7 +893,7 @@ class HTTP::Tiny::Headers {
 
   method set_upgrade : void ($value : string) {
 
-    $self->{headers}->set("Upgrade" => $value);
+    $self->set_header("Upgrade" => $value);
   }
 
   method user_agent : string () {
@@ -905,7 +905,7 @@ class HTTP::Tiny::Headers {
 
   method set_user_agent : void ($value : string) {
 
-    $self->{headers}->set("User-Agent" => $value);
+    $self->set_header("User-Agent" => $value);
   }
 
   method vary : string () {
@@ -917,7 +917,7 @@ class HTTP::Tiny::Headers {
 
   method set_vary : void ($value : string) {
 
-    $self->{headers}->set("Vary" => $value);
+    $self->set_header("Vary" => $value);
   }
 
   method www_authenticate : string () {
@@ -929,7 +929,7 @@ class HTTP::Tiny::Headers {
 
   method set_www_authenticate : void ($value : string) {
 
-    $self->{headers}->set("WWW-Authenticate" => $value);
+    $self->set_header("WWW-Authenticate" => $value);
   }
   
 }
