@@ -45,9 +45,9 @@ class HTTP::Tiny::Headers {
   }
   
   # Fields
-  has max_line_size : int;
+  has max_line_size : ro int;
   
-  has max_lines : int;
+  has max_lines : ro int;
   
   # Undocumented Fields
   has headers : Hash;
@@ -58,7 +58,9 @@ class HTTP::Tiny::Headers {
   
   has limit : byte;
   
-  has buffer : string;
+  has buffer : StringBuffer;
+  
+  has cache : List of string[];
   
   # Class Methods
   static method new : HTTP::Tiny::Headers () {
@@ -72,6 +74,8 @@ class HTTP::Tiny::Headers {
     $self->{max_line_size} = 8192;
     
     $self->{max_lines} = 100;
+    
+    $self->{buffer} = StringBuffer->new;
     
     return $self;
   }
@@ -132,7 +136,7 @@ class HTTP::Tiny::Headers {
       $clone->{headers}->set($_ => $self->{headers}->get_string($_));
     }
     
-    $clone->{buffer} = copy $self->{buffer};
+    $clone->{buffer} = $self->{buffer}->clone;
   }
   
   method dehop : void () {
@@ -207,7 +211,7 @@ class HTTP::Tiny::Headers {
   method leftovers : string () {
     my $buffer = $self->{buffer};
     $self->{buffer} = undef;
-    return $buffer;
+    return $buffer->to_string;
   }
   
   method names : string[] () {
@@ -227,6 +231,65 @@ class HTTP::Tiny::Headers {
     return $names;
   }
   
+  method parse : void ($chunk : string) {
+    
+    $self->{state} = "headers";
+    $self->{buffer}->push($chunk);
+    my $headers = $self->{cache} //= List->new(new string[][0]);
+    my $size    = $self->max_line_size;
+    my $lines   = $self->max_lines;
+    my $offset = 0;
+    while (my $_ = Re->s($self->{buffer}, "^(.*?)\x0d?\x0a", "", \$offset)) {
+      my $line_buffer = StringBuffer->new($_->match->cap1);
+      
+      # Check line size limit
+      if ($offset > $size || $headers->length >= $lines) {
+        $self->{state} = "finished";
+        $self->{limit} = 1;
+        return;
+      }
+      
+      # New header
+      if (my $_ = Re->m($line_buffer, "^(\S[^:]*):\s*(.*)$")) { $headers->push([$_->cap1, $_->cap2]); }
+      
+      # Multi-line
+      elsif ((my $_ = Re->s($line_buffer, "^\s+", "")) && $headers->length) {
+        my $last_header = (string[])$headers->get($headers->length - 1);
+        my $last_header_value = $last_header->[1];
+        $last_header->[1] = $last_header_value . " " . $line_buffer->to_string;
+      }
+      
+      # Empty line
+      else {
+        my $name = (string)undef;
+        for (my $i = 0; $i < $headers->length; $i++) {
+          
+          my $header = (string[])$headers->get($i);
+          
+          unless ($name) {
+            $name = $header->[$i];
+            next;
+          }
+          
+          my $value = $header->[$i];
+          
+          $self->add($name, $value);
+        }
+        
+        $self->{state} = "finished";
+        $self->{cache} = StringList->new;
+        
+        return;
+      }
+    }
+    
+    # Check line size limit
+    if ($self->{buffer}->length > $size) {
+      $self->{state} = "finished";
+      $self->{limit} = 1;
+    }
+  }
+
   method to_string : string () {
     
     my $names = $self->names;
@@ -244,11 +307,6 @@ class HTTP::Tiny::Headers {
     my $string = $buffer->to_string;
     
     return $string;
-  }
-  
-  method parse : void ($chunk : string) {
-    
-    die "TODO";
   }
   
   method remove : void ($name : string) {
