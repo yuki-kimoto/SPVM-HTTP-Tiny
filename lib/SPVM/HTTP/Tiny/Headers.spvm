@@ -328,6 +328,17 @@ class HTTP::Tiny::Headers {
     $self->{headers}->delete($key);
   }
   
+  method to_hash : Hash () {
+    
+    my $hash = Hash->new;
+    
+    for my $name (@{$self->names}) {
+      $hash->set($name => $self->header($name));
+    }
+    
+    return $hash;
+  }
+  
   method accept : string () {
 
     my $value = $self->header("Accept");
