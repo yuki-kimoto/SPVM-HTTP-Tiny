@@ -1,4 +1,4 @@
-0.010 2025-04-07
+0.010 2025-04-14
   [Requirement Changes]
     * Require MIME::Base64 1.003.
     * Require SPVM::JSON 1.002.
