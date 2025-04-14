@@ -4,8 +4,6 @@
 class HTTP::Tiny::Headers {
   version_from HTTP::Tiny;
   
-  allow HTTP::Tiny::Handle;
-  
   use Re;
   use StringList;
   use Hash;
