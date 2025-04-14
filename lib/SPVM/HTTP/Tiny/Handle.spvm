@@ -44,6 +44,8 @@ class HTTP::Tiny::Handle {
     my $timeout = $options_h->delete_or_default_double("timeout", 60.0);
     $self->{timeout} = $timeout;
     
+    $self->{transaction} = HTTP::Tiny::Transaction::HTTP->new;
+    
     return $self;
   }
   
