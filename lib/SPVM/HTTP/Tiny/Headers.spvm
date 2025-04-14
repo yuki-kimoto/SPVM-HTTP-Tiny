@@ -58,6 +58,7 @@ class HTTP::Tiny::Headers {
   
   # Class Methods
   static method new : HTTP::Tiny::Headers () {
+    
     my $self = new HTTP::Tiny::Headers;
     
     $self->{headers} = Hash->new;
@@ -113,6 +114,21 @@ class HTTP::Tiny::Headers {
   method append : void ($name : string, $value : string) {
     
     $self->add($name, $value);
+  }
+  
+  method clone : HTTP::Tiny::Headers () {
+    
+    my $clone = HTTP::Tiny::Headers->new;
+    
+    copy_fields $clone, $self, HTTP::Tiny::Headers;
+    
+    $clone->{names} = $self->{names}->clone;
+    
+    for my $_ (@{$self->{headers}->keys}) {
+      $clone->{headers}->set($_ => $self->{headers}->get_string($_));
+    }
+    
+    return $clone;
   }
   
   method remove : void ($name : string) {
@@ -177,22 +193,6 @@ class HTTP::Tiny::Headers {
     my $string = $buffer->to_string;
     
     return $string;
-  }
-  
-  method clone : HTTP::Tiny::Headers () {
-    
-    my $clone = HTTP::Tiny::Headers->new;
-    
-    my $headers = $self->{headers};
-    
-    my $names = $headers->keys;
-    
-    for my $name (@$names) {
-      my $value = $headers->get_string($name);
-      $clone->add($name, $value);
-    }
-    
-    return $clone;
   }
   
   method parse : void ($chunk : string) {
