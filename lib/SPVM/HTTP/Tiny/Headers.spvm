@@ -214,6 +214,9 @@ class HTTP::Tiny::Headers {
     return $buffer->to_string;
   }
   
+  # TODO
+  # mthod links
+  
   method names : string[] () {
     
     my $names_lc = $self->{headers}->keys;
