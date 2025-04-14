@@ -16,13 +16,13 @@ class HTTP::Tiny::Headers {
   use HTTP::Tiny::Cookie::Response;
   
   # Fields
+  has headers_h : Hash;
+  
   has max_line_size : ro int;
   
   has max_lines : ro int;
   
   # Undocumented Fields
-  has headers : Hash;
-  
   has state : string;
   
   has limit : byte;
@@ -36,7 +36,7 @@ class HTTP::Tiny::Headers {
     
     my $self = new HTTP::Tiny::Headers;
     
-    $self->{headers} = Hash->new;
+    $self->{headers_h} = Hash->new;
     
     $self->{max_line_size} = 8192;
     
@@ -69,14 +69,14 @@ class HTTP::Tiny::Headers {
     my $key = Fn->lc($name);
     
     my $new_value = (string)undef;
-    if (my $cur_value = $self->{headers}->get_string($key)) {
+    if (my $cur_value = $self->{headers_h}->get_string($key)) {
       $new_value = "$cur_value, $value";
     }
     else {
       $new_value = $value;
     }
     
-    $self->{headers}->set($key, $new_value);
+    $self->{headers_h}->set($key, $new_value);
   }
   
   method append : void ($name : string, $value : string) {
@@ -90,8 +90,8 @@ class HTTP::Tiny::Headers {
     
     copy_fields $clone, $self, HTTP::Tiny::Headers;
     
-    for my $_ (@{$self->{headers}->keys}) {
-      $clone->{headers}->set($_ => $self->{headers}->get_string($_));
+    for my $_ (@{$self->{headers_h}->keys}) {
+      $clone->{headers_h}->set($_ => $self->{headers_h}->get_string($_));
     }
     
     $clone->{buffer} = $self->{buffer}->clone;
@@ -102,7 +102,7 @@ class HTTP::Tiny::Headers {
     my $hop_by_hop = ["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te trailer", "transfer-encoding upgrade"];
     
     for my $header (@$hop_by_hop) {
-      $self->{headers}->delete($header);
+      $self->{headers_h}->delete($header);
     }
   }
   
@@ -115,7 +115,7 @@ class HTTP::Tiny::Headers {
     
     # Empty hash deletes all headers
     if (@$keys == 0) {
-      $self->{headers} = Hash->new;
+      $self->{headers_h} = Hash->new;
     }
     
     # Merge
@@ -148,11 +148,11 @@ class HTTP::Tiny::Headers {
       die "\$name must be defined.";
     }
     
-    my $headers = $self->{headers};
+    my $headers = $self->{headers_h};
     
     my $key = Fn->lc($name);
     
-    my $value = $self->{headers}->get_string($key);
+    my $value = $self->{headers_h}->get_string($key);
     
     return $value;
   }
@@ -179,7 +179,7 @@ class HTTP::Tiny::Headers {
   
   method names : string[] () {
     
-    my $names = $self->{headers}->keys;
+    my $names = $self->{headers_h}->keys;
     
     Sort->sort_string_asc($names);
     
@@ -280,7 +280,7 @@ class HTTP::Tiny::Headers {
     
     my $key = Fn->lc($name);
     
-    $self->{headers}->delete($key);
+    $self->{headers_h}->delete($key);
   }
   
   method to_hash : Hash () {
