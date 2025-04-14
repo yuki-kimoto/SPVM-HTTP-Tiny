@@ -15,8 +15,28 @@ class HTTP::Tiny::Headers {
   use HTTP::Tiny::Cookie::Request;
   use HTTP::Tiny::Cookie::Response;
   
+  our $NAMES : Hash;
+  INIT {
+    my $header_names = [
+      "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language", "Accept-Ranges", "Access-Control-Allow-Origin", "Allow",
+      "Authorization", "Cache-Control", "Connection", "Content-Disposition", "Content-Encoding", "Content-Language", "Content-Length",
+      "Content-Location", "Content-Range", "Content-Security-Policy", "Content-Type", "Cookie", "DNT", "Date", "ETag", "Expect", "Expires", "Host",
+      "If-Modified-Since", "If-None-Match", "Last-Modified", "Link", "Location", "Origin", "Proxy-Authenticate", "Proxy-Authorization",
+      "Range", "Sec-WebSocket-Accept", "Sec-WebSocket-Extensions", "Sec-WebSocket-Key", "Sec-WebSocket-Protocol",
+      "Sec-WebSocket-Version", "Server", "Server-Timing", "Set-Cookie", "Status", "Strict-Transport-Security", "TE", "Trailer",
+      "Transfer-Encoding", "Upgrade", "User-Agent", "Vary", "WWW-Authenticate"
+    ];
+    
+    $NAMES = Hash->new;
+    
+    for my $header_name (@$header_names) {
+      $NAMES->set(Fn->lc($header_name), $header_name);
+    }
+  }
+  
   # Fields
   has max_line_size : int;
+  
   has max_lines : int;
   
   # Old Fields
