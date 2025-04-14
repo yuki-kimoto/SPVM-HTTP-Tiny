@@ -309,6 +309,14 @@ class HTTP::Tiny::Headers {
     return $string;
   }
   
+  method referer : string () { return $self->referrer; }
+  
+  method set_referer : void ($value : string) { $self->set_referrer($value); }
+  
+  method referrer : string () { return $self->header("Referer"); }
+  
+  method set_referrer : void ($value : string) { $self->set_header(Referer => $value); }
+  
   method remove : void ($name : string) {
     
     unless ($name) {
