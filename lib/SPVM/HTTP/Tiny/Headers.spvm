@@ -34,6 +34,18 @@ class HTTP::Tiny::Headers {
     }
   }
   
+  # Hop-by-hop headers
+  our $HOP_BY_HOP_H : Hash;
+  INIT {
+    $HOP_BY_HOP_H = Hash->new;
+    
+    my $HOP_BY_HOP = ["Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization", "TE Trailer", "Transfer-Encoding Upgrade"];
+    
+    for my $name (@$HOP_BY_HOP) {
+      $HOP_BY_HOP_H->set(Fn->lc($name) => $name); 
+    }
+  }
+  
   # Fields
   has max_line_size : int;
   
