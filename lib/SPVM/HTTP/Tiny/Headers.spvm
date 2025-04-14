@@ -16,9 +16,13 @@ class HTTP::Tiny::Headers {
   # Fields
   has headers_h : Hash;
   
-  has max_line_size : ro int;
+  has max_line_size : rw int;
   
-  has max_lines : ro int;
+  method max_line_size_default : int () { return 8192; }
+  
+  has max_lines : rw int;
+  
+  method max_lines_default : int () { return 100; }
   
   # Undocumented Fields
   has state : string;
@@ -36,9 +40,9 @@ class HTTP::Tiny::Headers {
     
     $self->{headers_h} = Hash->new;
     
-    $self->{max_line_size} = 8192;
+    $self->{max_line_size} = -1;
     
-    $self->{max_lines} = 100;
+    $self->{max_lines} = -1;
     
     $self->{buffer} = StringBuffer->new;
     
@@ -190,7 +194,13 @@ class HTTP::Tiny::Headers {
     $self->{buffer}->push($chunk);
     my $headers = $self->{cache} //= List->new(new string[][0]);
     my $size    = $self->max_line_size;
+    if ($size < 0) {
+      $size = $self->max_line_size_default;
+    }
     my $lines   = $self->max_lines;
+    if ($lines < 0) {
+      $lines = $self->max_lines_default;
+    }
     my $offset = 0;
     while (my $_ = Re->s($self->{buffer}, "^(.*?)\x0d?\x0a", "", \$offset)) {
       my $line_buffer = StringBuffer->new($_->match->cap1);
