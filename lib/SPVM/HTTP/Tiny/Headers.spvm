@@ -54,11 +54,15 @@ class HTTP::Tiny::Headers {
   # Undocumented Fields
   has headers : Hash;
   
+  has names : Hash;
+  
   # Class Methods
   static method new : HTTP::Tiny::Headers () {
     my $self = new HTTP::Tiny::Headers;
     
     $self->{headers} = Hash->new;
+    
+    $self->{names} = Hash->new;
     
     $self->{max_line_size} = 8192;
     
@@ -86,17 +90,24 @@ class HTTP::Tiny::Headers {
       die "Invalid characters in the value of the $name header.";
     }
     
-    my $name_lc = Fn->lc($name);
+    my $key = Fn->lc($name);
+    
+    unless ($NAMES->get_string($key)) {
+      my $name_found = $self->{names}->get_string($key);
+      unless ($name_found) {
+         $self->{names}->set($key, $name);
+      }
+    }
     
     my $new_value = (string)undef;
-    if (my $cur_value = $self->{headers}->get_string($name_lc)) {
+    if (my $cur_value = $self->{headers}->get_string($key)) {
       $new_value = "$cur_value, $value";
     }
     else {
       $new_value = $value;
     }
     
-    $self->{headers}->set($name_lc, $new_value);
+    $self->{headers}->set($key, $new_value);
   }
   
   method append : void ($name : string, $value : string) {
@@ -110,9 +121,9 @@ class HTTP::Tiny::Headers {
       die "The name \$name must be defined";
     }
     
-    my $name_lc = Fn->lc($name);
+    my $key = Fn->lc($name);
     
-    $self->{headers}->delete($name_lc);
+    $self->{headers}->delete($key);
   }
   
   method header : string ($name : string) {
@@ -123,9 +134,9 @@ class HTTP::Tiny::Headers {
     
     my $headers = $self->{headers};
     
-    my $name_lc = Fn->lc($name);
+    my $key = Fn->lc($name);
     
-    my $value = $self->{headers}->get_string($name_lc);
+    my $value = $self->{headers}->get_string($key);
     
     return $value;
   }
