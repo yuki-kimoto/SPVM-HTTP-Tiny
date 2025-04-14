@@ -18,26 +18,26 @@ class HTTP::Tiny::Headers {
   our $NAMES : Hash;
   INIT {
     my $header_names = [
-      "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language", "Accept-Ranges", "Access-Control-Allow-Origin", "Allow",
-      "Authorization", "Cache-Control", "Connection", "Content-Disposition", "Content-Encoding", "Content-Language", "Content-Length",
-      "Content-Location", "Content-Range", "Content-Security-Policy", "Content-Type", "Cookie", "DNT", "Date", "ETag", "Expect", "Expires", "Host",
-      "If-Modified-Since", "If-None-Match", "Last-Modified", "Link", "Location", "Origin", "Proxy-Authenticate", "Proxy-Authorization",
-      "Range", "Sec-WebSocket-Accept", "Sec-WebSocket-Extensions", "Sec-WebSocket-Key", "Sec-WebSocket-Protocol",
-      "Sec-WebSocket-Version", "Server", "Server-Timing", "Set-Cookie", "Status", "Strict-Transport-Security", "TE", "Trailer",
-      "Transfer-Encoding", "Upgrade", "User-Agent", "Vary", "WWW-Authenticate"
+      "accept", "accept-charset", "accept-encoding", "accept-language", "accept-ranges", "access-control-allow-origin", "allow",
+      "authorization", "cache-control", "connection", "content-disposition", "content-encoding", "content-language", "content-length",
+      "content-location", "content-range", "content-security-policy", "content-type", "cookie", "dnt", "date", "etag", "expect", "expires", "host",
+      "if-modified-since", "if-none-match", "last-modified", "link", "location", "origin", "proxy-authenticate", "proxy-authorization",
+      "range", "sec-websocket-accept", "sec-websocket-extensions", "sec-websocket-key", "sec-websocket-protocol",
+      "sec-websocket-version", "server", "server-timing", "set-cookie", "status", "strict-transport-security", "te", "trailer",
+      "transfer-encoding", "upgrade", "user-agent", "vary", "www-authenticate"
     ];
     
     $NAMES = Hash->new;
     
     for my $header_name (@$header_names) {
-      $NAMES->set(Fn->lc($header_name), $header_name);
+      $NAMES->set($header_name, $header_name);
     }
   }
   
   # Hop-by-hop headers
   our $HOP_BY_HOP : string[];
   INIT {
-    my $HOP_BY_HOP = ["Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization", "TE Trailer", "Transfer-Encoding Upgrade"];
+    my $HOP_BY_HOP = ["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te trailer", "transfer-encoding upgrade"];
     
     for (my $i = 0; $i < @$HOP_BY_HOP; $i++) {
       $HOP_BY_HOP->[$i] = Fn->lc($HOP_BY_HOP->[$i]);
@@ -344,614 +344,614 @@ class HTTP::Tiny::Headers {
   
   method accept : string () {
 
-    my $value = $self->header("Accept");
+    my $value = $self->header("accept");
 
     return $value;
   }
 
   method set_accept : void ($value : string) {
     
-    $self->set_header("Accept" => $value);
+    $self->set_header("accept" => $value);
   }
 
   method accept_charset : string () {
 
-    my $value = $self->header("Accept-Charset");
+    my $value = $self->header("accept-charset");
 
     return $value;
   }
 
   method set_accept_charset : void ($value : string) {
 
-    $self->set_header("Accept-Charset" => $value);
+    $self->set_header("accept-charset" => $value);
   }
 
   method accept_encoding : string () {
 
-    my $value = $self->header("Accept-Encoding");
+    my $value = $self->header("accept-encoding");
 
     return $value;
   }
 
   method set_accept_encoding : void ($value : string) {
 
-    $self->set_header("Accept-Encoding" => $value);
+    $self->set_header("accept-encoding" => $value);
   }
 
   method accept_language : string () {
 
-    my $value = $self->header("Accept-Language");
+    my $value = $self->header("accept-language");
 
     return $value;
   }
 
   method set_accept_language : void ($value : string) {
 
-    $self->set_header("Accept-Language" => $value);
+    $self->set_header("accept-language" => $value);
   }
 
   method accept_ranges : string () {
 
-    my $value = $self->header("Accept-Ranges");
+    my $value = $self->header("accept-ranges");
 
     return $value;
   }
 
   method set_accept_ranges : void ($value : string) {
 
-    $self->set_header("Accept-Ranges" => $value);
+    $self->set_header("accept-ranges" => $value);
   }
 
   method access_control_allow_origin : string () {
 
-    my $value = $self->header("Access-Control-Allow-Origin");
+    my $value = $self->header("access-control-allow-origin");
 
     return $value;
   }
 
   method set_access_control_allow_origin : void ($value : string) {
 
-    $self->set_header("Access-Control-Allow-Origin" => $value);
+    $self->set_header("access-control-allow-origin" => $value);
   }
 
   method allow : string () {
 
-    my $value = $self->header("Allow");
+    my $value = $self->header("allow");
 
     return $value;
   }
 
   method set_allow : void ($value : string) {
 
-    $self->set_header("Allow" => $value);
+    $self->set_header("allow" => $value);
   }
 
   method authorization : string () {
 
-    my $value = $self->header("Authorization");
+    my $value = $self->header("authorization");
 
     return $value;
   }
 
   method set_authorization : void ($value : string) {
 
-    $self->set_header("Authorization" => $value);
+    $self->set_header("authorization" => $value);
   }
 
   method cache_control : string () {
 
-    my $value = $self->header("Cache-Control");
+    my $value = $self->header("cache-control");
 
     return $value;
   }
 
   method set_cache_control : void ($value : string) {
 
-    $self->set_header("Cache-Control" => $value);
+    $self->set_header("cache-control" => $value);
   }
 
   method connection : string () {
 
-    my $value = $self->header("Connection");
+    my $value = $self->header("connection");
 
     return $value;
   }
 
   method set_connection : void ($value : string) {
 
-    $self->set_header("Connection" => $value);
+    $self->set_header("connection" => $value);
   }
 
   method content_disposition : string () {
 
-    my $value = $self->header("Content-Disposition");
+    my $value = $self->header("content-disposition");
 
     return $value;
   }
 
   method set_content_disposition : void ($value : string) {
 
-    $self->set_header("Content-Disposition" => $value);
+    $self->set_header("content-disposition" => $value);
   }
 
   method content_encoding : string () {
 
-    my $value = $self->header("Content-Encoding");
+    my $value = $self->header("content-encoding");
 
     return $value;
   }
 
   method set_content_encoding : void ($value : string) {
 
-    $self->set_header("Content-Encoding" => $value);
+    $self->set_header("content-encoding" => $value);
   }
 
   method content_language : string () {
 
-    my $value = $self->header("Content-Language");
+    my $value = $self->header("content-language");
 
     return $value;
   }
 
   method set_content_language : void ($value : string) {
 
-    $self->set_header("Content-Language" => $value);
+    $self->set_header("content-language" => $value);
   }
 
   method content_length : string () {
 
-    my $value = $self->header("Content-Length");
+    my $value = $self->header("content-length");
 
     return $value;
   }
 
   method set_content_length : void ($value : string) {
 
-    $self->set_header("Content-Length" => $value);
+    $self->set_header("content-length" => $value);
   }
 
   method content_location : string () {
 
-    my $value = $self->header("Content-Location");
+    my $value = $self->header("content-location");
 
     return $value;
   }
 
   method set_content_location : void ($value : string) {
 
-    $self->set_header("Content-Location" => $value);
+    $self->set_header("content-location" => $value);
   }
 
   method content_range : string () {
 
-    my $value = $self->header("Content-Range");
+    my $value = $self->header("content-range");
 
     return $value;
   }
 
   method set_content_range : void ($value : string) {
 
-    $self->set_header("Content-Range" => $value);
+    $self->set_header("content-range" => $value);
   }
 
   method content_security_policy : string () {
 
-    my $value = $self->header("Content-Security-Policy");
+    my $value = $self->header("content-security-policy");
 
     return $value;
   }
 
   method set_content_security_policy : void ($value : string) {
 
-    $self->set_header("Content-Security-Policy" => $value);
+    $self->set_header("content-security-policy" => $value);
   }
 
   method content_type : string () {
 
-    my $value = $self->header("Content-Type");
+    my $value = $self->header("content-type");
 
     return $value;
   }
 
   method set_content_type : void ($value : string) {
 
-    $self->set_header("Content-Type" => $value);
+    $self->set_header("content-type" => $value);
   }
 
   method cookie : string () {
 
-    my $value = $self->header("Cookie");
+    my $value = $self->header("cookie");
 
     return $value;
   }
 
   method set_cookie : void ($value : string) {
 
-    $self->set_header("Cookie" => $value);
+    $self->set_header("cookie" => $value);
   }
 
   method dnt : string () {
 
-    my $value = $self->header("DNT");
+    my $value = $self->header("dnt");
 
     return $value;
   }
 
   method set_dnt : void ($value : string) {
 
-    $self->set_header("DNT" => $value);
+    $self->set_header("dnt" => $value);
   }
 
   method date : string () {
 
-    my $value = $self->header("Date");
+    my $value = $self->header("date");
 
     return $value;
   }
 
   method set_date : void ($value : string) {
 
-    $self->set_header("Date" => $value);
+    $self->set_header("date" => $value);
   }
 
   method etag : string () {
 
-    my $value = $self->header("ETag");
+    my $value = $self->header("etag");
 
     return $value;
   }
 
   method set_etag : void ($value : string) {
 
-    $self->set_header("ETag" => $value);
+    $self->set_header("etag" => $value);
   }
 
   method expect : string () {
 
-    my $value = $self->header("Expect");
+    my $value = $self->header("expect");
 
     return $value;
   }
 
   method set_expect : void ($value : string) {
 
-    $self->set_header("Expect" => $value);
+    $self->set_header("expect" => $value);
   }
 
   method expires : string () {
 
-    my $value = $self->header("Expires");
+    my $value = $self->header("expires");
 
     return $value;
   }
 
   method set_expires : void ($value : string) {
 
-    $self->set_header("Expires" => $value);
+    $self->set_header("expires" => $value);
   }
 
   method host : string () {
 
-    my $value = $self->header("Host");
+    my $value = $self->header("host");
 
     return $value;
   }
 
   method set_host : void ($value : string) {
 
-    $self->set_header("Host" => $value);
+    $self->set_header("host" => $value);
   }
 
   method if_modified_since : string () {
 
-    my $value = $self->header("If-Modified-Since");
+    my $value = $self->header("if-modified-since");
 
     return $value;
   }
 
   method set_if_modified_since : void ($value : string) {
 
-    $self->set_header("If-Modified-Since" => $value);
+    $self->set_header("if-modified-since" => $value);
   }
 
   method if_none_match : string () {
 
-    my $value = $self->header("If-None-Match");
+    my $value = $self->header("if-none-match");
 
     return $value;
   }
 
   method set_if_none_match : void ($value : string) {
 
-    $self->set_header("If-None-Match" => $value);
+    $self->set_header("if-none-match" => $value);
   }
 
   method last_modified : string () {
 
-    my $value = $self->header("Last-Modified");
+    my $value = $self->header("last-modified");
 
     return $value;
   }
 
   method set_last_modified : void ($value : string) {
 
-    $self->set_header("Last-Modified" => $value);
+    $self->set_header("last-modified" => $value);
   }
 
   method link : string () {
 
-    my $value = $self->header("Link");
+    my $value = $self->header("link");
 
     return $value;
   }
 
   method set_link : void ($value : string) {
 
-    $self->set_header("Link" => $value);
+    $self->set_header("link" => $value);
   }
 
   method location : string () {
 
-    my $value = $self->header("Location");
+    my $value = $self->header("location");
 
     return $value;
   }
 
   method set_location : void ($value : string) {
 
-    $self->set_header("Location" => $value);
+    $self->set_header("location" => $value);
   }
 
   method origin : string () {
 
-    my $value = $self->header("Origin");
+    my $value = $self->header("origin");
 
     return $value;
   }
 
   method set_origin : void ($value : string) {
 
-    $self->set_header("Origin" => $value);
+    $self->set_header("origin" => $value);
   }
 
   method proxy_authenticate : string () {
 
-    my $value = $self->header("Proxy-Authenticate");
+    my $value = $self->header("proxy-authenticate");
 
     return $value;
   }
 
   method set_proxy_authenticate : void ($value : string) {
 
-    $self->set_header("Proxy-Authenticate" => $value);
+    $self->set_header("proxy-authenticate" => $value);
   }
 
   method proxy_authorization : string () {
 
-    my $value = $self->header("Proxy-Authorization");
+    my $value = $self->header("proxy-authorization");
 
     return $value;
   }
 
   method set_proxy_authorization : void ($value : string) {
 
-    $self->set_header("Proxy-Authorization" => $value);
+    $self->set_header("proxy-authorization" => $value);
   }
 
   method range : string () {
 
-    my $value = $self->header("Range");
+    my $value = $self->header("range");
 
     return $value;
   }
 
   method set_range : void ($value : string) {
 
-    $self->set_header("Range" => $value);
+    $self->set_header("range" => $value);
   }
 
   method sec_websocket_accept : string () {
 
-    my $value = $self->header("Sec-WebSocket-Accept");
+    my $value = $self->header("sec-websocket-accept");
 
     return $value;
   }
 
   method set_sec_websocket_accept : void ($value : string) {
 
-    $self->set_header("Sec-WebSocket-Accept" => $value);
+    $self->set_header("sec-websocket-accept" => $value);
   }
 
   method sec_websocket_extensions : string () {
 
-    my $value = $self->header("Sec-WebSocket-Extensions");
+    my $value = $self->header("sec-websocket-extensions");
 
     return $value;
   }
 
   method set_sec_websocket_extensions : void ($value : string) {
 
-    $self->set_header("Sec-WebSocket-Extensions" => $value);
+    $self->set_header("sec-websocket-extensions" => $value);
   }
 
   method sec_websocket_key : string () {
 
-    my $value = $self->header("Sec-WebSocket-Key");
+    my $value = $self->header("sec-websocket-key");
 
     return $value;
   }
 
   method set_sec_websocket_key : void ($value : string) {
 
-    $self->set_header("Sec-WebSocket-Key" => $value);
+    $self->set_header("sec-websocket-key" => $value);
   }
 
   method sec_websocket_protocol : string () {
 
-    my $value = $self->header("Sec-WebSocket-Protocol");
+    my $value = $self->header("sec-websocket-protocol");
 
     return $value;
   }
 
   method set_sec_websocket_protocol : void ($value : string) {
 
-    $self->set_header("Sec-WebSocket-Protocol" => $value);
+    $self->set_header("sec-websocket-protocol" => $value);
   }
 
   method sec_websocket_version : string () {
 
-    my $value = $self->header("Sec-WebSocket-Version");
+    my $value = $self->header("sec-websocket-version");
 
     return $value;
   }
 
   method set_sec_websocket_version : void ($value : string) {
 
-    $self->set_header("Sec-WebSocket-Version" => $value);
+    $self->set_header("sec-websocket-version" => $value);
   }
 
   method server : string () {
 
-    my $value = $self->header("Server");
+    my $value = $self->header("server");
 
     return $value;
   }
 
   method set_server : void ($value : string) {
 
-    $self->set_header("Server" => $value);
+    $self->set_header("server" => $value);
   }
 
   method server_timing : string () {
 
-    my $value = $self->header("Server-Timing");
+    my $value = $self->header("server-timing");
 
     return $value;
   }
 
   method set_server_timing : void ($value : string) {
 
-    $self->set_header("Server-Timing" => $value);
+    $self->set_header("server-timing" => $value);
   }
 
   method get_set_cookie : string () {
 
-    my $value = $self->header("Set-Cookie");
+    my $value = $self->header("set-cookie");
 
     return $value;
   }
 
   method set_set_cookie : void ($value : string) {
 
-    $self->set_header("Set-Cookie" => $value);
+    $self->set_header("set-cookie" => $value);
   }
 
   method status : string () {
 
-    my $value = $self->header("Status");
+    my $value = $self->header("status");
 
     return $value;
   }
 
   method set_status : void ($value : string) {
 
-    $self->set_header("Status" => $value);
+    $self->set_header("status" => $value);
   }
 
   method strict_transport_security : string () {
 
-    my $value = $self->header("Strict-Transport-Security");
+    my $value = $self->header("strict-transport-security");
 
     return $value;
   }
 
   method set_strict_transport_security : void ($value : string) {
 
-    $self->set_header("Strict-Transport-Security" => $value);
+    $self->set_header("strict-transport-security" => $value);
   }
 
   method te : string () {
 
-    my $value = $self->header("TE");
+    my $value = $self->header("te");
 
     return $value;
   }
 
   method set_te : void ($value : string) {
 
-    $self->set_header("TE" => $value);
+    $self->set_header("te" => $value);
   }
 
   method trailer : string () {
 
-    my $value = $self->header("Trailer");
+    my $value = $self->header("trailer");
 
     return $value;
   }
 
   method set_trailer : void ($value : string) {
 
-    $self->set_header("Trailer" => $value);
+    $self->set_header("trailer" => $value);
   }
 
   method transfer_encoding : string () {
 
-    my $value = $self->header("Transfer-Encoding");
+    my $value = $self->header("transfer-encoding");
 
     return $value;
   }
 
   method set_transfer_encoding : void ($value : string) {
 
-    $self->set_header("Transfer-Encoding" => $value);
+    $self->set_header("transfer-encoding" => $value);
   }
 
   method upgrade : string () {
 
-    my $value = $self->header("Upgrade");
+    my $value = $self->header("upgrade");
 
     return $value;
   }
 
   method set_upgrade : void ($value : string) {
 
-    $self->set_header("Upgrade" => $value);
+    $self->set_header("upgrade" => $value);
   }
 
   method user_agent : string () {
 
-    my $value = $self->header("User-Agent");
+    my $value = $self->header("user-agent");
 
     return $value;
   }
 
   method set_user_agent : void ($value : string) {
 
-    $self->set_header("User-Agent" => $value);
+    $self->set_header("user-agent" => $value);
   }
 
   method vary : string () {
 
-    my $value = $self->header("Vary");
+    my $value = $self->header("vary");
 
     return $value;
   }
 
   method set_vary : void ($value : string) {
 
-    $self->set_header("Vary" => $value);
+    $self->set_header("vary" => $value);
   }
 
   method www_authenticate : string () {
 
-    my $value = $self->header("WWW-Authenticate");
+    my $value = $self->header("www-authenticate");
 
     return $value;
   }
 
   method set_www_authenticate : void ($value : string) {
 
-    $self->set_header("WWW-Authenticate" => $value);
+    $self->set_header("www-authenticate" => $value);
   }
   
 }
