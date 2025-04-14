@@ -176,46 +176,6 @@ class HTTP::Tiny::Headers {
     return $clone;
   }
   
-  method upgrade : string () {
-    
-    die "TODO";
-  }
-  
-  method connection : string () {
-    
-    die "TODO";
-  }
-  
-  method set_connection : void ($value : string) {
-    
-    die "TODO";
-  }
-  
-  method content_length : string () {
-    
-    die "TODO";
-  }
-  
-  method transfer_encoding : string () {
-    
-    die "TODO";
-  }
-  
-  method content_encoding : string () {
-    
-    die "TODO";
-  }
-  
-  method set_transfer_encoding : void ($value : string) {
-    
-    die "TODO";
-  }
-  
-  method set_content_length : void ($value : string) {
-    
-    die "TODO";
-  }
-  
   method parse : void ($chunk : string) {
     
     die "TODO";
@@ -236,64 +196,616 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
-  method cookie : string () {
-    
-    die "TODO";
+  method accept : string () {
+
+    my $value = $self->{headers_h}->get_string("Accept");
+
+    return $value;
   }
-  
-  method set_host : void ($value : string) {
-    
-    die "TODO";
+
+  method set_accept : void ($value : string) {
+
+    $self->{headers_h}->set("Accept" => $value);
   }
-  
+
+  method accept_charset : string () {
+
+    my $value = $self->{headers_h}->get_string("Accept-Charset");
+
+    return $value;
+  }
+
+  method set_accept_charset : void ($value : string) {
+
+    $self->{headers_h}->set("Accept-Charset" => $value);
+  }
+
+  method accept_encoding : string () {
+
+    my $value = $self->{headers_h}->get_string("Accept-Encoding");
+
+    return $value;
+  }
+
+  method set_accept_encoding : void ($value : string) {
+
+    $self->{headers_h}->set("Accept-Encoding" => $value);
+  }
+
+  method accept_language : string () {
+
+    my $value = $self->{headers_h}->get_string("Accept-Language");
+
+    return $value;
+  }
+
+  method set_accept_language : void ($value : string) {
+
+    $self->{headers_h}->set("Accept-Language" => $value);
+  }
+
+  method accept_ranges : string () {
+
+    my $value = $self->{headers_h}->get_string("Accept-Ranges");
+
+    return $value;
+  }
+
+  method set_accept_ranges : void ($value : string) {
+
+    $self->{headers_h}->set("Accept-Ranges" => $value);
+  }
+
+  method access_control_allow_origin : string () {
+
+    my $value = $self->{headers_h}->get_string("Access-Control-Allow-Origin");
+
+    return $value;
+  }
+
+  method set_access_control_allow_origin : void ($value : string) {
+
+    $self->{headers_h}->set("Access-Control-Allow-Origin" => $value);
+  }
+
+  method allow : string () {
+
+    my $value = $self->{headers_h}->get_string("Allow");
+
+    return $value;
+  }
+
+  method set_allow : void ($value : string) {
+
+    $self->{headers_h}->set("Allow" => $value);
+  }
+
   method authorization : string () {
-    
-    die "TODO";
+
+    my $value = $self->{headers_h}->get_string("Authorization");
+
+    return $value;
   }
-  
+
   method set_authorization : void ($value : string) {
-    
-    die "TODO";
+
+    $self->{headers_h}->set("Authorization" => $value);
   }
-  
-  method proxy_authorization : string () {
-    
-    die "TODO";
+
+  method cache_control : string () {
+
+    my $value = $self->{headers_h}->get_string("Cache-Control");
+
+    return $value;
   }
-  
-  method set_proxy_authorization : void ($value : string) {
-    
-    die "TODO";
+
+  method set_cache_control : void ($value : string) {
+
+    $self->{headers_h}->set("Cache-Control" => $value);
   }
-  
-  method host : string () {
-    
-    die "TODO";
+
+  method connection : string () {
+
+    my $value = $self->{headers_h}->get_string("Connection");
+
+    return $value;
   }
-  
-  method set_cookie : string () {
-    
-    die "TODO";
+
+  method set_connection : void ($value : string) {
+
+    $self->{headers_h}->set("Connection" => $value);
   }
-  
+
+  method content_disposition : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Disposition");
+
+    return $value;
+  }
+
+  method set_content_disposition : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Disposition" => $value);
+  }
+
+  method content_encoding : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Encoding");
+
+    return $value;
+  }
+
+  method set_content_encoding : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Encoding" => $value);
+  }
+
+  method content_language : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Language");
+
+    return $value;
+  }
+
+  method set_content_language : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Language" => $value);
+  }
+
+  method content_length : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Length");
+
+    return $value;
+  }
+
+  method set_content_length : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Length" => $value);
+  }
+
+  method content_location : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Location");
+
+    return $value;
+  }
+
+  method set_content_location : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Location" => $value);
+  }
+
+  method content_range : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Range");
+
+    return $value;
+  }
+
+  method set_content_range : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Range" => $value);
+  }
+
+  method content_security_policy : string () {
+
+    my $value = $self->{headers_h}->get_string("Content-Security-Policy");
+
+    return $value;
+  }
+
+  method set_content_security_policy : void ($value : string) {
+
+    $self->{headers_h}->set("Content-Security-Policy" => $value);
+  }
+
   method content_type : string () {
-    
-    die "TODO";
+
+    my $value = $self->{headers_h}->get_string("Content-Type");
+
+    return $value;
   }
-  
+
   method set_content_type : void ($value : string) {
-    
-    die "TODO";
+
+    $self->{headers_h}->set("Content-Type" => $value);
   }
-  
+
+  method cookie : string () {
+
+    my $value = $self->{headers_h}->get_string("Cookie");
+
+    return $value;
+  }
+
+  method set_cookie : void ($value : string) {
+
+    $self->{headers_h}->set("Cookie" => $value);
+  }
+
+  method dnt : string () {
+
+    my $value = $self->{headers_h}->get_string("DNT");
+
+    return $value;
+  }
+
+  method set_dnt : void ($value : string) {
+
+    $self->{headers_h}->set("DNT" => $value);
+  }
+
   method date : string () {
-    
-    die "TODO";
+
+    my $value = $self->{headers_h}->get_string("Date");
+
+    return $value;
   }
-  
+
   method set_date : void ($value : string) {
-    
-    die "TODO";
+
+    $self->{headers_h}->set("Date" => $value);
+  }
+
+  method etag : string () {
+
+    my $value = $self->{headers_h}->get_string("ETag");
+
+    return $value;
+  }
+
+  method set_etag : void ($value : string) {
+
+    $self->{headers_h}->set("ETag" => $value);
+  }
+
+  method expect : string () {
+
+    my $value = $self->{headers_h}->get_string("Expect");
+
+    return $value;
+  }
+
+  method set_expect : void ($value : string) {
+
+    $self->{headers_h}->set("Expect" => $value);
+  }
+
+  method expires : string () {
+
+    my $value = $self->{headers_h}->get_string("Expires");
+
+    return $value;
+  }
+
+  method set_expires : void ($value : string) {
+
+    $self->{headers_h}->set("Expires" => $value);
+  }
+
+  method host : string () {
+
+    my $value = $self->{headers_h}->get_string("Host");
+
+    return $value;
+  }
+
+  method set_host : void ($value : string) {
+
+    $self->{headers_h}->set("Host" => $value);
+  }
+
+  method if_modified_since : string () {
+
+    my $value = $self->{headers_h}->get_string("If-Modified-Since");
+
+    return $value;
+  }
+
+  method set_if_modified_since : void ($value : string) {
+
+    $self->{headers_h}->set("If-Modified-Since" => $value);
+  }
+
+  method if_none_match : string () {
+
+    my $value = $self->{headers_h}->get_string("If-None-Match");
+
+    return $value;
+  }
+
+  method set_if_none_match : void ($value : string) {
+
+    $self->{headers_h}->set("If-None-Match" => $value);
+  }
+
+  method last_modified : string () {
+
+    my $value = $self->{headers_h}->get_string("Last-Modified");
+
+    return $value;
+  }
+
+  method set_last_modified : void ($value : string) {
+
+    $self->{headers_h}->set("Last-Modified" => $value);
+  }
+
+  method link : string () {
+
+    my $value = $self->{headers_h}->get_string("Link");
+
+    return $value;
+  }
+
+  method set_link : void ($value : string) {
+
+    $self->{headers_h}->set("Link" => $value);
+  }
+
+  method location : string () {
+
+    my $value = $self->{headers_h}->get_string("Location");
+
+    return $value;
+  }
+
+  method set_location : void ($value : string) {
+
+    $self->{headers_h}->set("Location" => $value);
+  }
+
+  method origin : string () {
+
+    my $value = $self->{headers_h}->get_string("Origin");
+
+    return $value;
+  }
+
+  method set_origin : void ($value : string) {
+
+    $self->{headers_h}->set("Origin" => $value);
+  }
+
+  method proxy_authenticate : string () {
+
+    my $value = $self->{headers_h}->get_string("Proxy-Authenticate");
+
+    return $value;
+  }
+
+  method set_proxy_authenticate : void ($value : string) {
+
+    $self->{headers_h}->set("Proxy-Authenticate" => $value);
+  }
+
+  method proxy_authorization : string () {
+
+    my $value = $self->{headers_h}->get_string("Proxy-Authorization");
+
+    return $value;
+  }
+
+  method set_proxy_authorization : void ($value : string) {
+
+    $self->{headers_h}->set("Proxy-Authorization" => $value);
+  }
+
+  method range : string () {
+
+    my $value = $self->{headers_h}->get_string("Range");
+
+    return $value;
+  }
+
+  method set_range : void ($value : string) {
+
+    $self->{headers_h}->set("Range" => $value);
+  }
+
+  method sec_websocket_accept : string () {
+
+    my $value = $self->{headers_h}->get_string("Sec-WebSocket-Accept");
+
+    return $value;
+  }
+
+  method set_sec_websocket_accept : void ($value : string) {
+
+    $self->{headers_h}->set("Sec-WebSocket-Accept" => $value);
+  }
+
+  method sec_websocket_extensions : string () {
+
+    my $value = $self->{headers_h}->get_string("Sec-WebSocket-Extensions");
+
+    return $value;
+  }
+
+  method set_sec_websocket_extensions : void ($value : string) {
+
+    $self->{headers_h}->set("Sec-WebSocket-Extensions" => $value);
+  }
+
+  method sec_websocket_key : string () {
+
+    my $value = $self->{headers_h}->get_string("Sec-WebSocket-Key");
+
+    return $value;
+  }
+
+  method set_sec_websocket_key : void ($value : string) {
+
+    $self->{headers_h}->set("Sec-WebSocket-Key" => $value);
+  }
+
+  method sec_websocket_protocol : string () {
+
+    my $value = $self->{headers_h}->get_string("Sec-WebSocket-Protocol");
+
+    return $value;
+  }
+
+  method set_sec_websocket_protocol : void ($value : string) {
+
+    $self->{headers_h}->set("Sec-WebSocket-Protocol" => $value);
+  }
+
+  method sec_websocket_version : string () {
+
+    my $value = $self->{headers_h}->get_string("Sec-WebSocket-Version");
+
+    return $value;
+  }
+
+  method set_sec_websocket_version : void ($value : string) {
+
+    $self->{headers_h}->set("Sec-WebSocket-Version" => $value);
+  }
+
+  method server : string () {
+
+    my $value = $self->{headers_h}->get_string("Server");
+
+    return $value;
+  }
+
+  method set_server : void ($value : string) {
+
+    $self->{headers_h}->set("Server" => $value);
+  }
+
+  method server_timing : string () {
+
+    my $value = $self->{headers_h}->get_string("Server-Timing");
+
+    return $value;
+  }
+
+  method set_server_timing : void ($value : string) {
+
+    $self->{headers_h}->set("Server-Timing" => $value);
+  }
+
+  method get_set_cookie : string () {
+
+    my $value = $self->{headers_h}->get_string("Set-Cookie");
+
+    return $value;
+  }
+
+  method set_set_cookie : void ($value : string) {
+
+    $self->{headers_h}->set("Set-Cookie" => $value);
+  }
+
+  method status : string () {
+
+    my $value = $self->{headers_h}->get_string("Status");
+
+    return $value;
+  }
+
+  method set_status : void ($value : string) {
+
+    $self->{headers_h}->set("Status" => $value);
+  }
+
+  method strict_transport_security : string () {
+
+    my $value = $self->{headers_h}->get_string("Strict-Transport-Security");
+
+    return $value;
+  }
+
+  method set_strict_transport_security : void ($value : string) {
+
+    $self->{headers_h}->set("Strict-Transport-Security" => $value);
+  }
+
+  method te : string () {
+
+    my $value = $self->{headers_h}->get_string("TE");
+
+    return $value;
+  }
+
+  method set_te : void ($value : string) {
+
+    $self->{headers_h}->set("TE" => $value);
+  }
+
+  method trailer : string () {
+
+    my $value = $self->{headers_h}->get_string("Trailer");
+
+    return $value;
+  }
+
+  method set_trailer : void ($value : string) {
+
+    $self->{headers_h}->set("Trailer" => $value);
+  }
+
+  method transfer_encoding : string () {
+
+    my $value = $self->{headers_h}->get_string("Transfer-Encoding");
+
+    return $value;
+  }
+
+  method set_transfer_encoding : void ($value : string) {
+
+    $self->{headers_h}->set("Transfer-Encoding" => $value);
+  }
+
+  method upgrade : string () {
+
+    my $value = $self->{headers_h}->get_string("Upgrade");
+
+    return $value;
+  }
+
+  method set_upgrade : void ($value : string) {
+
+    $self->{headers_h}->set("Upgrade" => $value);
+  }
+
+  method user_agent : string () {
+
+    my $value = $self->{headers_h}->get_string("User-Agent");
+
+    return $value;
+  }
+
+  method set_user_agent : void ($value : string) {
+
+    $self->{headers_h}->set("User-Agent" => $value);
+  }
+
+  method vary : string () {
+
+    my $value = $self->{headers_h}->get_string("Vary");
+
+    return $value;
+  }
+
+  method set_vary : void ($value : string) {
+
+    $self->{headers_h}->set("Vary" => $value);
+  }
+
+  method www_authenticate : string () {
+
+    my $value = $self->{headers_h}->get_string("WWW-Authenticate");
+
+    return $value;
+  }
+
+  method set_www_authenticate : void ($value : string) {
+
+    $self->{headers_h}->set("WWW-Authenticate" => $value);
   }
   
 }

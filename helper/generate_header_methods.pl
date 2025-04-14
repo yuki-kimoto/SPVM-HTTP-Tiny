@@ -5,34 +5,31 @@ while (my $line = <DATA>) {
   
   chomp $line;
   
+  my $header_name = $line;
+  
   my $method_name = lc $line;
   $method_name =~ s/-/_/g;
   
-  my $getter = <<"EOS";
-  method $method_name : string (\$name : string) {
-    
-    my \$values = \$self->{headers_h}->get_string(\$name);
-    
-    unless (\$values) {
-      return undef;
-    }
-    
-    return Fn->join(", ", \$values);
+  my $get = '';
+  
+  if ($method_name eq 'set_cookie') {
+    $get = 'get_'
   }
   
+  my $getter = <<"EOS";
+  method $get$method_name : string () {
+    
+    my \$value = \$self->{headers_h}->get_string("$header_name");
+    
+    return \$value;
+  }
 EOS
 
   my $setter = <<"EOS";
-  method set_$method_name : void (\$name : string, \$value : string) {
+  method set_$method_name : void (\$value : string) {
     
-    if (\$value) {
-      \$self->{headers_h}->set(\$name => [\$value]);
-    }
-    else {
-      \$self->{headers_h}->set(\$name => undef);
-    }
+    \$self->{headers_h}->set("$header_name" => \$value);
   }
-  
 EOS
   
   print "$getter\n";

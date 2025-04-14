@@ -158,7 +158,7 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     # Parse cookies
     my $headers = $self->headers;
     
-    return HTTP::Tiny::Cookie::Response->parse($headers->set_cookie);
+    return HTTP::Tiny::Cookie::Response->parse($headers->get_set_cookie);
   }
   
   method default_message : string ($code : int = -1) {
