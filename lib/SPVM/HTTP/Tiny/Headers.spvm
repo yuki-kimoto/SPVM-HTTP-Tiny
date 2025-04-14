@@ -16,6 +16,10 @@ class HTTP::Tiny::Headers {
   use HTTP::Tiny::Cookie::Response;
   
   # Fields
+  has max_line_size : int;
+  has max_lines : int;
+  
+  # Old Fields
   has headers_h : Hash;
   
   # Class Methods
@@ -23,6 +27,10 @@ class HTTP::Tiny::Headers {
     my $self = new HTTP::Tiny::Headers;
     
     $self->{headers_h} = Hash->new;
+    
+    $self->{max_line_size} = 8192;
+    
+    $self->{max_lines} = 100;
     
     return $self;
   }
