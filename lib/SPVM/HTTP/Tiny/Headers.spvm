@@ -58,6 +58,8 @@ class HTTP::Tiny::Headers {
   
   has limit : byte;
   
+  has buffer : string;
+  
   # Class Methods
   static method new : HTTP::Tiny::Headers () {
     
@@ -130,7 +132,7 @@ class HTTP::Tiny::Headers {
       $clone->{headers}->set($_ => $self->{headers}->get_string($_));
     }
     
-    return $clone;
+    $clone->{buffer} = copy $self->{buffer};
   }
   
   method dehop : void () {
@@ -202,6 +204,12 @@ class HTTP::Tiny::Headers {
   
   method is_limit_exceeded : int () { !!$self->{limit}; }
   
+  method leftovers : string () {
+    my $buffer = $self->{buffer};
+    $self->{buffer} = undef;
+    return $buffer;
+  }
+  
   method names : string[] () {
     my $names = $self->{headers}->keys;
     
@@ -243,11 +251,6 @@ class HTTP::Tiny::Headers {
     my $key = Fn->lc($name);
     
     $self->{headers}->delete($key);
-  }
-  
-  method leftovers : string () {
-    
-    die "TODO";
   }
   
   method accept : string () {
