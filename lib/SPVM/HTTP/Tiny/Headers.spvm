@@ -322,7 +322,7 @@ class HTTP::Tiny::Headers {
   
   method accept : string () {
 
-    my $value = $self->{headers}->get_string("Accept");
+    my $value = $self->header("Accept");
 
     return $value;
   }
@@ -334,7 +334,7 @@ class HTTP::Tiny::Headers {
 
   method accept_charset : string () {
 
-    my $value = $self->{headers}->get_string("Accept-Charset");
+    my $value = $self->header("Accept-Charset");
 
     return $value;
   }
@@ -346,7 +346,7 @@ class HTTP::Tiny::Headers {
 
   method accept_encoding : string () {
 
-    my $value = $self->{headers}->get_string("Accept-Encoding");
+    my $value = $self->header("Accept-Encoding");
 
     return $value;
   }
@@ -358,7 +358,7 @@ class HTTP::Tiny::Headers {
 
   method accept_language : string () {
 
-    my $value = $self->{headers}->get_string("Accept-Language");
+    my $value = $self->header("Accept-Language");
 
     return $value;
   }
@@ -370,7 +370,7 @@ class HTTP::Tiny::Headers {
 
   method accept_ranges : string () {
 
-    my $value = $self->{headers}->get_string("Accept-Ranges");
+    my $value = $self->header("Accept-Ranges");
 
     return $value;
   }
@@ -382,7 +382,7 @@ class HTTP::Tiny::Headers {
 
   method access_control_allow_origin : string () {
 
-    my $value = $self->{headers}->get_string("Access-Control-Allow-Origin");
+    my $value = $self->header("Access-Control-Allow-Origin");
 
     return $value;
   }
@@ -394,7 +394,7 @@ class HTTP::Tiny::Headers {
 
   method allow : string () {
 
-    my $value = $self->{headers}->get_string("Allow");
+    my $value = $self->header("Allow");
 
     return $value;
   }
@@ -406,7 +406,7 @@ class HTTP::Tiny::Headers {
 
   method authorization : string () {
 
-    my $value = $self->{headers}->get_string("Authorization");
+    my $value = $self->header("Authorization");
 
     return $value;
   }
@@ -418,7 +418,7 @@ class HTTP::Tiny::Headers {
 
   method cache_control : string () {
 
-    my $value = $self->{headers}->get_string("Cache-Control");
+    my $value = $self->header("Cache-Control");
 
     return $value;
   }
@@ -430,7 +430,7 @@ class HTTP::Tiny::Headers {
 
   method connection : string () {
 
-    my $value = $self->{headers}->get_string("Connection");
+    my $value = $self->header("Connection");
 
     return $value;
   }
@@ -442,7 +442,7 @@ class HTTP::Tiny::Headers {
 
   method content_disposition : string () {
 
-    my $value = $self->{headers}->get_string("Content-Disposition");
+    my $value = $self->header("Content-Disposition");
 
     return $value;
   }
@@ -454,7 +454,7 @@ class HTTP::Tiny::Headers {
 
   method content_encoding : string () {
 
-    my $value = $self->{headers}->get_string("Content-Encoding");
+    my $value = $self->header("Content-Encoding");
 
     return $value;
   }
@@ -466,7 +466,7 @@ class HTTP::Tiny::Headers {
 
   method content_language : string () {
 
-    my $value = $self->{headers}->get_string("Content-Language");
+    my $value = $self->header("Content-Language");
 
     return $value;
   }
@@ -478,7 +478,7 @@ class HTTP::Tiny::Headers {
 
   method content_length : string () {
 
-    my $value = $self->{headers}->get_string("Content-Length");
+    my $value = $self->header("Content-Length");
 
     return $value;
   }
@@ -490,7 +490,7 @@ class HTTP::Tiny::Headers {
 
   method content_location : string () {
 
-    my $value = $self->{headers}->get_string("Content-Location");
+    my $value = $self->header("Content-Location");
 
     return $value;
   }
@@ -502,7 +502,7 @@ class HTTP::Tiny::Headers {
 
   method content_range : string () {
 
-    my $value = $self->{headers}->get_string("Content-Range");
+    my $value = $self->header("Content-Range");
 
     return $value;
   }
@@ -514,7 +514,7 @@ class HTTP::Tiny::Headers {
 
   method content_security_policy : string () {
 
-    my $value = $self->{headers}->get_string("Content-Security-Policy");
+    my $value = $self->header("Content-Security-Policy");
 
     return $value;
   }
@@ -526,7 +526,7 @@ class HTTP::Tiny::Headers {
 
   method content_type : string () {
 
-    my $value = $self->{headers}->get_string("Content-Type");
+    my $value = $self->header("Content-Type");
 
     return $value;
   }
@@ -538,7 +538,7 @@ class HTTP::Tiny::Headers {
 
   method cookie : string () {
 
-    my $value = $self->{headers}->get_string("Cookie");
+    my $value = $self->header("Cookie");
 
     return $value;
   }
@@ -550,7 +550,7 @@ class HTTP::Tiny::Headers {
 
   method dnt : string () {
 
-    my $value = $self->{headers}->get_string("DNT");
+    my $value = $self->header("DNT");
 
     return $value;
   }
@@ -562,7 +562,7 @@ class HTTP::Tiny::Headers {
 
   method date : string () {
 
-    my $value = $self->{headers}->get_string("Date");
+    my $value = $self->header("Date");
 
     return $value;
   }
@@ -574,7 +574,7 @@ class HTTP::Tiny::Headers {
 
   method etag : string () {
 
-    my $value = $self->{headers}->get_string("ETag");
+    my $value = $self->header("ETag");
 
     return $value;
   }
@@ -586,7 +586,7 @@ class HTTP::Tiny::Headers {
 
   method expect : string () {
 
-    my $value = $self->{headers}->get_string("Expect");
+    my $value = $self->header("Expect");
 
     return $value;
   }
@@ -598,7 +598,7 @@ class HTTP::Tiny::Headers {
 
   method expires : string () {
 
-    my $value = $self->{headers}->get_string("Expires");
+    my $value = $self->header("Expires");
 
     return $value;
   }
@@ -610,7 +610,7 @@ class HTTP::Tiny::Headers {
 
   method host : string () {
 
-    my $value = $self->{headers}->get_string("Host");
+    my $value = $self->header("Host");
 
     return $value;
   }
@@ -622,7 +622,7 @@ class HTTP::Tiny::Headers {
 
   method if_modified_since : string () {
 
-    my $value = $self->{headers}->get_string("If-Modified-Since");
+    my $value = $self->header("If-Modified-Since");
 
     return $value;
   }
@@ -634,7 +634,7 @@ class HTTP::Tiny::Headers {
 
   method if_none_match : string () {
 
-    my $value = $self->{headers}->get_string("If-None-Match");
+    my $value = $self->header("If-None-Match");
 
     return $value;
   }
@@ -646,7 +646,7 @@ class HTTP::Tiny::Headers {
 
   method last_modified : string () {
 
-    my $value = $self->{headers}->get_string("Last-Modified");
+    my $value = $self->header("Last-Modified");
 
     return $value;
   }
@@ -658,7 +658,7 @@ class HTTP::Tiny::Headers {
 
   method link : string () {
 
-    my $value = $self->{headers}->get_string("Link");
+    my $value = $self->header("Link");
 
     return $value;
   }
@@ -670,7 +670,7 @@ class HTTP::Tiny::Headers {
 
   method location : string () {
 
-    my $value = $self->{headers}->get_string("Location");
+    my $value = $self->header("Location");
 
     return $value;
   }
@@ -682,7 +682,7 @@ class HTTP::Tiny::Headers {
 
   method origin : string () {
 
-    my $value = $self->{headers}->get_string("Origin");
+    my $value = $self->header("Origin");
 
     return $value;
   }
@@ -694,7 +694,7 @@ class HTTP::Tiny::Headers {
 
   method proxy_authenticate : string () {
 
-    my $value = $self->{headers}->get_string("Proxy-Authenticate");
+    my $value = $self->header("Proxy-Authenticate");
 
     return $value;
   }
@@ -706,7 +706,7 @@ class HTTP::Tiny::Headers {
 
   method proxy_authorization : string () {
 
-    my $value = $self->{headers}->get_string("Proxy-Authorization");
+    my $value = $self->header("Proxy-Authorization");
 
     return $value;
   }
@@ -718,7 +718,7 @@ class HTTP::Tiny::Headers {
 
   method range : string () {
 
-    my $value = $self->{headers}->get_string("Range");
+    my $value = $self->header("Range");
 
     return $value;
   }
@@ -730,7 +730,7 @@ class HTTP::Tiny::Headers {
 
   method sec_websocket_accept : string () {
 
-    my $value = $self->{headers}->get_string("Sec-WebSocket-Accept");
+    my $value = $self->header("Sec-WebSocket-Accept");
 
     return $value;
   }
@@ -742,7 +742,7 @@ class HTTP::Tiny::Headers {
 
   method sec_websocket_extensions : string () {
 
-    my $value = $self->{headers}->get_string("Sec-WebSocket-Extensions");
+    my $value = $self->header("Sec-WebSocket-Extensions");
 
     return $value;
   }
@@ -754,7 +754,7 @@ class HTTP::Tiny::Headers {
 
   method sec_websocket_key : string () {
 
-    my $value = $self->{headers}->get_string("Sec-WebSocket-Key");
+    my $value = $self->header("Sec-WebSocket-Key");
 
     return $value;
   }
@@ -766,7 +766,7 @@ class HTTP::Tiny::Headers {
 
   method sec_websocket_protocol : string () {
 
-    my $value = $self->{headers}->get_string("Sec-WebSocket-Protocol");
+    my $value = $self->header("Sec-WebSocket-Protocol");
 
     return $value;
   }
@@ -778,7 +778,7 @@ class HTTP::Tiny::Headers {
 
   method sec_websocket_version : string () {
 
-    my $value = $self->{headers}->get_string("Sec-WebSocket-Version");
+    my $value = $self->header("Sec-WebSocket-Version");
 
     return $value;
   }
@@ -790,7 +790,7 @@ class HTTP::Tiny::Headers {
 
   method server : string () {
 
-    my $value = $self->{headers}->get_string("Server");
+    my $value = $self->header("Server");
 
     return $value;
   }
@@ -802,7 +802,7 @@ class HTTP::Tiny::Headers {
 
   method server_timing : string () {
 
-    my $value = $self->{headers}->get_string("Server-Timing");
+    my $value = $self->header("Server-Timing");
 
     return $value;
   }
@@ -814,7 +814,7 @@ class HTTP::Tiny::Headers {
 
   method get_set_cookie : string () {
 
-    my $value = $self->{headers}->get_string("Set-Cookie");
+    my $value = $self->header("Set-Cookie");
 
     return $value;
   }
@@ -826,7 +826,7 @@ class HTTP::Tiny::Headers {
 
   method status : string () {
 
-    my $value = $self->{headers}->get_string("Status");
+    my $value = $self->header("Status");
 
     return $value;
   }
@@ -838,7 +838,7 @@ class HTTP::Tiny::Headers {
 
   method strict_transport_security : string () {
 
-    my $value = $self->{headers}->get_string("Strict-Transport-Security");
+    my $value = $self->header("Strict-Transport-Security");
 
     return $value;
   }
@@ -850,7 +850,7 @@ class HTTP::Tiny::Headers {
 
   method te : string () {
 
-    my $value = $self->{headers}->get_string("TE");
+    my $value = $self->header("TE");
 
     return $value;
   }
@@ -862,7 +862,7 @@ class HTTP::Tiny::Headers {
 
   method trailer : string () {
 
-    my $value = $self->{headers}->get_string("Trailer");
+    my $value = $self->header("Trailer");
 
     return $value;
   }
@@ -874,7 +874,7 @@ class HTTP::Tiny::Headers {
 
   method transfer_encoding : string () {
 
-    my $value = $self->{headers}->get_string("Transfer-Encoding");
+    my $value = $self->header("Transfer-Encoding");
 
     return $value;
   }
@@ -886,7 +886,7 @@ class HTTP::Tiny::Headers {
 
   method upgrade : string () {
 
-    my $value = $self->{headers}->get_string("Upgrade");
+    my $value = $self->header("Upgrade");
 
     return $value;
   }
@@ -898,7 +898,7 @@ class HTTP::Tiny::Headers {
 
   method user_agent : string () {
 
-    my $value = $self->{headers}->get_string("User-Agent");
+    my $value = $self->header("User-Agent");
 
     return $value;
   }
@@ -910,7 +910,7 @@ class HTTP::Tiny::Headers {
 
   method vary : string () {
 
-    my $value = $self->{headers}->get_string("Vary");
+    my $value = $self->header("Vary");
 
     return $value;
   }
@@ -922,7 +922,7 @@ class HTTP::Tiny::Headers {
 
   method www_authenticate : string () {
 
-    my $value = $self->{headers}->get_string("WWW-Authenticate");
+    my $value = $self->header("WWW-Authenticate");
 
     return $value;
   }
