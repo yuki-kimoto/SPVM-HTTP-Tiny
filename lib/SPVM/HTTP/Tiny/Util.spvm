@@ -331,6 +331,33 @@ class HTTP::Tiny::Util {
     return "\"$str\"";
   }
   
+  method header_params : object[] ($value : string){
+    
+    my $params = Hash->new;
+    my $offset = 0;
+    while (my $_ = Re->m($value, "\A[;\s]*([^=;, ]+)\s*", \$offset)) {
+      my $name = $_->cap1;
+      
+      # Quoted value
+      if (my $_ = Re->m($value, $QUOTED_VALUE_RE, \$offset)) {
+        my $found = $params->get($name);
+        unless ($found) {
+          $params->set($name, &unquote($_->cap1));
+        }
+      }
+      
+      # Unquoted value
+      elsif (my $_ = Re->m($value, $UNQUOTED_VALUE_RE, \$offset)) {
+        my $found = $params->get($name);
+        unless ($found) {
+          $params->set($name, $_->cap1);
+        }
+      }
+    }
+    
+    return [(object)$params, Fn->substr($value, $offset)];
+  }
+
 }
 
 __END__
