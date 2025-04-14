@@ -28,6 +28,8 @@ class HTTP::Tiny::Handle {
   
   has response_buffer : StringBuffer;
   
+  has transaction : HTTP::Tiny::Transaction::HTTP;
+  
   private static method new : HTTP::Tiny::Handle ($options : object[]) {
     
     my $options_h = Hash->new($options);
