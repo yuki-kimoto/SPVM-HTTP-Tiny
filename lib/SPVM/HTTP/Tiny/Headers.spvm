@@ -15,25 +15,6 @@ class HTTP::Tiny::Headers {
   use HTTP::Tiny::Cookie::Request;
   use HTTP::Tiny::Cookie::Response;
   
-  our $NAMES : Hash;
-  INIT {
-    my $header_names = [
-      "accept", "accept-charset", "accept-encoding", "accept-language", "accept-ranges", "access-control-allow-origin", "allow",
-      "authorization", "cache-control", "connection", "content-disposition", "content-encoding", "content-language", "content-length",
-      "content-location", "content-range", "content-security-policy", "content-type", "cookie", "dnt", "date", "etag", "expect", "expires", "host",
-      "if-modified-since", "if-none-match", "last-modified", "link", "location", "origin", "proxy-authenticate", "proxy-authorization",
-      "range", "sec-websocket-accept", "sec-websocket-extensions", "sec-websocket-key", "sec-websocket-protocol",
-      "sec-websocket-version", "server", "server-timing", "set-cookie", "status", "strict-transport-security", "te", "trailer",
-      "transfer-encoding", "upgrade", "user-agent", "vary", "www-authenticate"
-    ];
-    
-    $NAMES = Hash->new;
-    
-    for my $header_name (@$header_names) {
-      $NAMES->set($header_name, $header_name);
-    }
-  }
-  
   # Hop-by-hop headers
   our $HOP_BY_HOP : string[];
   INIT {
@@ -101,11 +82,9 @@ class HTTP::Tiny::Headers {
     
     my $key = Fn->lc($name);
     
-    unless ($NAMES->get_string($key)) {
-      my $name_found = $self->{names}->get_string($key);
-      unless ($name_found) {
-         $self->{names}->set($key, $name);
-      }
+    my $name_found = $self->{names}->get_string($key);
+    unless ($name_found) {
+       $self->{names}->set($key, $name);
     }
     
     my $new_value = (string)undef;
@@ -228,7 +207,7 @@ class HTTP::Tiny::Headers {
     for (my $i = 0; $i < @$names_lc; $i++) {
       my $_ = $names_lc->[$i];
       
-      $names->[$i] = $NAMES->get_string($_) // $self->{names}->get_string($_);
+      $names->[$i] = $self->{names}->get_string($_);
     }
     
     return $names;
