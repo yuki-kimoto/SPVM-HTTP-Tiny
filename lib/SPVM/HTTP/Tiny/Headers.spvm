@@ -102,16 +102,12 @@ class HTTP::Tiny::Headers {
   method remove : void ($name : string) {
     
     unless ($name) {
-      die "The \$name must be defined";
+      die "The name \$name must be defined";
     }
     
     my $name_lc = Fn->lc($name);
     
-    my $values_list = (StringList)$self->{headers_h}->get($name_lc);
-    
-    if ($values_list) {
-      $self->{headers_h}->set($name_lc, undef);
-    }
+    $self->{headers_h}->delete($name_lc);
   }
   
   method header : string ($name : string) {
