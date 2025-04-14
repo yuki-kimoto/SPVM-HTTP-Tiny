@@ -219,7 +219,7 @@ class HTTP::Tiny::Headers {
     my $names = new string[@$names_lc];
     
     for (my $i = 0; $i < @$names_lc; $i++) {
-      my $_ = $names->[$i];
+      my $_ = $names_lc->[$i];
       
       $names->[$i] = $NAMES->get_string($_) // $self->{names}->get_string($_);
     }
