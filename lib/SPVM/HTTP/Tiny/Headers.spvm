@@ -23,8 +23,6 @@ class HTTP::Tiny::Headers {
   # Undocumented Fields
   has headers : Hash;
   
-  has names : Hash;
-  
   has state : string;
   
   has limit : byte;
@@ -39,8 +37,6 @@ class HTTP::Tiny::Headers {
     my $self = new HTTP::Tiny::Headers;
     
     $self->{headers} = Hash->new;
-    
-    $self->{names} = Hash->new;
     
     $self->{max_line_size} = 8192;
     
@@ -72,11 +68,6 @@ class HTTP::Tiny::Headers {
     
     my $key = Fn->lc($name);
     
-    my $name_found = $self->{names}->get_string($key);
-    unless ($name_found) {
-       $self->{names}->set($key, $name);
-    }
-    
     my $new_value = (string)undef;
     if (my $cur_value = $self->{headers}->get_string($key)) {
       $new_value = "$cur_value, $value";
@@ -98,8 +89,6 @@ class HTTP::Tiny::Headers {
     my $clone = HTTP::Tiny::Headers->new;
     
     copy_fields $clone, $self, HTTP::Tiny::Headers;
-    
-    $clone->{names} = $self->{names}->clone;
     
     for my $_ (@{$self->{headers}->keys}) {
       $clone->{headers}->set($_ => $self->{headers}->get_string($_));
@@ -190,17 +179,9 @@ class HTTP::Tiny::Headers {
   
   method names : string[] () {
     
-    my $names_lc = $self->{headers}->keys;
+    my $names = $self->{headers}->keys;
     
-    Sort->sort_string_asc($names_lc);
-    
-    my $names = new string[@$names_lc];
-    
-    for (my $i = 0; $i < @$names_lc; $i++) {
-      my $_ = $names_lc->[$i];
-      
-      $names->[$i] = $self->{names}->get_string($_);
-    }
+    Sort->sort_string_asc($names);
     
     return $names;
   }
