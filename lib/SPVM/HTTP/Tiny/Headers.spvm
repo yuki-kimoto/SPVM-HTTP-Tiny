@@ -54,6 +54,8 @@ class HTTP::Tiny::Headers {
   
   has names : Hash;
   
+  has state : string;
+  
   # Class Methods
   static method new : HTTP::Tiny::Headers () {
     
@@ -172,17 +174,6 @@ class HTTP::Tiny::Headers {
     }
   }
   
-  method remove : void ($name : string) {
-    
-    unless ($name) {
-      die "The name \$name must be defined";
-    }
-    
-    my $key = Fn->lc($name);
-    
-    $self->{headers}->delete($key);
-  }
-  
   method header : string ($name : string) {
     
     unless ($name) {
@@ -200,14 +191,12 @@ class HTTP::Tiny::Headers {
   
   method set_header : void ($name : string, $value : string) {
     
-    unless ($value) {
-      die "The value \$value must be defined.";
-    }
-    
     $self->remove($name);
     
     $self->add($name, $value);
   }
+  
+  method is_finished : int () { return ($self->{state} // "") eq "finished"; }
   
   method names : string[] () {
     my $names = $self->{headers}->keys;
@@ -241,9 +230,15 @@ class HTTP::Tiny::Headers {
     die "TODO";
   }
   
-  method is_finished : int () {
+  method remove : void ($name : string) {
     
-    die "TODO";
+    unless ($name) {
+      die "The name \$name must be defined";
+    }
+    
+    my $key = Fn->lc($name);
+    
+    $self->{headers}->delete($key);
   }
   
   method leftovers : string () {
