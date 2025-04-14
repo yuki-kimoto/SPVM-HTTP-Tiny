@@ -56,6 +56,8 @@ class HTTP::Tiny::Headers {
   
   has state : string;
   
+  has limit : byte;
+  
   # Class Methods
   static method new : HTTP::Tiny::Headers () {
     
@@ -198,6 +200,8 @@ class HTTP::Tiny::Headers {
   
   method is_finished : int () { return ($self->{state} // "") eq "finished"; }
   
+  method is_limit_exceeded : int () { !!$self->{limit}; }
+  
   method names : string[] () {
     my $names = $self->{headers}->keys;
     
@@ -242,11 +246,6 @@ class HTTP::Tiny::Headers {
   }
   
   method leftovers : string () {
-    
-    die "TODO";
-  }
-  
-  method is_limit_exceeded : int () {
     
     die "TODO";
   }
