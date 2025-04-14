@@ -211,9 +211,18 @@ class HTTP::Tiny::Headers {
   }
   
   method names : string[] () {
-    my $names = $self->{headers}->keys;
     
-    Sort->sort_string_asc($names);
+    my $names_lc = $self->{headers}->keys;
+    
+    Sort->sort_string_asc($names_lc);
+    
+    my $names = new string[@$names_lc];
+    
+    for (my $i = 0; $i < @$names_lc; $i++) {
+      my $_ = $names->[$i];
+      
+      $names->[$i] = $NAMES->get_string($_) // $self->{names}->get_string($_);
+    }
     
     return $names;
   }
