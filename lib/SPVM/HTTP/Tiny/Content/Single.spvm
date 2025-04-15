@@ -104,7 +104,11 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     return (HTTP::Tiny::Content)$multi;
   }
-
+  
+  method is_multipart : int () {
+    return 0;
+  }
+  
 }
 
 __END__
