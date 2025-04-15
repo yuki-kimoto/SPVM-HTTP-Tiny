@@ -65,6 +65,23 @@ class HTTP::Tiny::EventEmitter {
     # die "TODO";
   }
   
+  method subscribers : HTTP::Tiny::EventEmitter::Callback[] ($name : string) {
+    
+    my $events = $self->events;
+    
+    my $cbs_list = (List)$events->get($name);
+    
+    my $cbs = (HTTP::Tiny::EventEmitter::Callback[])undef;
+    if ($cbs_list) {
+      $cbs = (HTTP::Tiny::EventEmitter::Callback[])$cbs_list->to_array;
+    }
+    else {
+      $cbs = new HTTP::Tiny::EventEmitter::Callback[0];
+    }
+    
+    return $cbs;
+  }
+  
   method unsubscribe : void ($name : string, $cb : object) {
     
     # die "TODO";
