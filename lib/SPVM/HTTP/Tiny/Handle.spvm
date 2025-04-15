@@ -35,8 +35,8 @@ class HTTP::Tiny::Handle {
     my $self = new HTTP::Tiny::Handle;
     
     # The response_buffer field
-    my $response_buffer = StringBuffer->new;
-    $self->{response_buffer} = $response_buffer;
+    my $res_buffer = StringBuffer->new;
+    $self->{response_buffer} = $res_buffer;
     
     # The timeout field
     my $timeout = $options_h->delete_or_default_double("timeout", 60.0);
@@ -45,9 +45,9 @@ class HTTP::Tiny::Handle {
     return $self;
   }
   
-  private method connect : HTTP::Tiny::Handle ($request : HTTP::Tiny::Message::Request) {
+  private method connect : HTTP::Tiny::Handle ($req : HTTP::Tiny::Message::Request) {
     
-    my $url = $request->url;
+    my $url = $req->url;
     my $scheme = $url->scheme;
     my $host = $url->host;
     my $port = $url->port;
@@ -84,34 +84,34 @@ class HTTP::Tiny::Handle {
     return $self;
   }
   
-  private method write_request : void ($request : HTTP::Tiny::Message::Request) {
+  private method write_request : void ($req : HTTP::Tiny::Message::Request) {
     
-    $self->write_request_line($request);
+    $self->write_request_line($req);
     
-    $self->write_request_headers($request);
+    $self->write_request_headers($req);
     
     $self->write("\r\n");
   }
   
-  private method write_request_line : void ($request : HTTP::Tiny::Message::Request) {
+  private method write_request_line : void ($req : HTTP::Tiny::Message::Request) {
     
-    my $method = $request->method;
+    my $method = $req->method;
     
-    my $url = $request->url;
+    my $url = $req->url;
     
     my $path = $url->path->to_string;
     
-    my $request_line = "$method $path HTTP/1.1\r\n";
+    my $req_line = "$method $path HTTP/1.1\r\n";
     
-    $self->write($request_line);
+    $self->write($req_line);
   }
   
-  private method write_request_headers : void ($request : HTTP::Tiny::Message::Request) {
+  private method write_request_headers : void ($req : HTTP::Tiny::Message::Request) {
     
-    my $method = $request->method;
-    my $url = $request->url;
+    my $method = $req->method;
+    my $url = $req->url;
     my $url_string = $url->to_string;
-    my $headers = $request->headers;
+    my $headers = $req->headers;
     
     # HTTP Headers
     {
@@ -146,18 +146,18 @@ class HTTP::Tiny::Handle {
   
   private method read_response : HTTP::Tiny::Message::Response () {
     
-    my $response = HTTP::Tiny::Message::Response->new;
+    my $res = HTTP::Tiny::Message::Response->new;
     
-    $self->read_status_line($response);
+    $self->read_status_line($res);
     
-    $self->read_response_headers($response);
+    $self->read_response_headers($res);
     
-    $self->read_response_body($response);
+    $self->read_response_body($res);
     
-    return $response;
+    return $res;
   }
   
-  private method read_status_line : void ($response : HTTP::Tiny::Message::Response) {
+  private method read_status_line : void ($res : HTTP::Tiny::Message::Response) {
     
     my $status_line = $self->readline;
     
@@ -182,11 +182,11 @@ class HTTP::Tiny::Handle {
       die "Unsupported HTTP protocol: $protocol";
     }
     
-    $response->set_code(Fn->to_int($status));
+    $res->set_code(Fn->to_int($status));
   }
   
-  private method read_response_headers : HTTP::Tiny::Headers ($response : HTTP::Tiny::Message::Response) {
-    my $headers = $response->headers;
+  private method read_response_headers : HTTP::Tiny::Headers ($res : HTTP::Tiny::Message::Response) {
+    my $headers = $res->headers;
     
     while (1) {
       my $line = $self->readline;
@@ -204,7 +204,7 @@ class HTTP::Tiny::Handle {
       }
     }
     
-    $response->content->set_headers($headers);
+    $res->content->set_headers($headers);
   }
   
   private method readline : string () {
@@ -215,13 +215,13 @@ class HTTP::Tiny::Handle {
     
     my $line = (string)undef;
     while (1) {
-      my $response_content = $self->{response_buffer}->to_string;
+      my $res_content = $self->{response_buffer}->to_string;
       
       my $replace_info_ref = new Regex::ReplaceInfo[1];
-      my $response_content_ref = [$response_content];
-      my $replace_info = Re->s($response_content_ref, "\A([^\r\n]*\r?\n)", "");
-      $response_content = $response_content_ref->[0];
-      $self->{response_buffer} = StringBuffer->new($response_content);
+      my $res_content_ref = [$res_content];
+      my $replace_info = Re->s($res_content_ref, "\A([^\r\n]*\r?\n)", "");
+      $res_content = $res_content_ref->[0];
+      $self->{response_buffer} = StringBuffer->new($res_content);
       
       if ($replace_info) {
         my $match = $replace_info->match;
@@ -247,9 +247,9 @@ class HTTP::Tiny::Handle {
     return $line;
   }
   
-  private method read_response_body : int ($response : HTTP::Tiny::Message::Response) {
+  private method read_response_body : int ($res : HTTP::Tiny::Message::Response) {
     
-    my $content_length_string = $response->headers->header("Content-Length");
+    my $content_length_string = $res->headers->header("Content-Length");
     my $content_length = Fn->to_long($content_length_string);
     
     if ($content_length >= 0) {
@@ -265,7 +265,7 @@ class HTTP::Tiny::Handle {
         
         my $buffer = $self->read((int)$read_length);
         
-        $response->content_buffer->push($buffer);
+        $res->content_buffer->push($buffer);
         
         $length -= length $buffer;
       }
