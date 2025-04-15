@@ -82,9 +82,29 @@ class HTTP::Tiny::EventEmitter {
     return $cbs;
   }
   
-  method unsubscribe : void ($name : string, $cb : object) {
+  method unsubscribe : void ($name : string, $cb : HTTP::Tiny::EventEmitter::Callback = undef) {
     
-    # die "TODO";
+    my $events = $self->events;
+    
+    # One
+    if ($cb) {
+      my $cbs_list = (List)$events->get($name);
+      
+      if ($cbs_list) {
+        for (my $i = 0; $i < $cbs_list->length; $i++) {
+          my $cur_cb = (HTTP::Tiny::EventEmitter::Callback)$cbs_list->get($i);
+          if ($cb == $cur_cb) {
+            $cbs_list->remove($i);
+            last;
+          }
+        }
+      }
+    }
+    
+    # All
+    else {
+      $events->delete($name);
+    }
   }
   
 }
