@@ -51,9 +51,9 @@ class HTTP::Tiny::Response {
   
   method reason : string () {
     
-    my $status = $self->status;
+    my $res = $self->{response};
     
-    my $reason = HTTP::Tiny::Status->status_message($status);
+    my $reason = $res->message;
     
     return $reason;
   }

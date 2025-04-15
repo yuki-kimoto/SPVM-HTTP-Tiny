@@ -7,9 +7,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   use HTTP::Tiny::Cookie::Response;
   use HTTP::Tiny::Date;
   
-  # Old classes
-  use HTTP::Tiny::Status;
-  
   # Class Variables
   our $MESSAGES_H : Hash of string;
   INIT {
