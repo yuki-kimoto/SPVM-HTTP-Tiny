@@ -4,14 +4,30 @@
 class HTTP::Tiny::EventEmitter {
   version_from HTTP::Tiny;
   
+  use HTTP::Tiny::EventEmitter::Callback;
+  
+  # Undocumeted Fields
+  has events : Hash of HTTP::Tiny::EventEmitter::Callback;
+  
   # Instance Methods
-  method catch : void ($cb : object) {
+  method catch : void ($cb : HTTP::Tiny::EventEmitter::Callback) {
     $self->on(error => $cb);
   }
   
   method emit : void ($name : string, $args : object[] = undef) {
     
-    # die "[TODO]";
+    $self->{events} //= Hash->new;
+    
+    if (my $s = (HTTP::Tiny::EventEmitter::Callback[])$self->{events}->get($name)) {
+      for my $cb (@$s) {
+        $cb->($self, $args);
+      }
+    }
+    else {
+      if ($name eq "error") {
+        die "emit error";
+      }
+    }
   }
   
   method once : void ($name : string, $cb : object) {
