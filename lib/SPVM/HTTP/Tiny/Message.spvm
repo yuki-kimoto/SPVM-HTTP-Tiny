@@ -127,15 +127,17 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   
   method build_body : string () {
     
-    $self->_build("get_body_chunk");
+    return $self->_build("get_body_chunk");
   }
   
   method build_headers : string () {
-    $self->_build("get_header_chunk");
+    
+    return $self->_build("get_header_chunk");
   }
   
   method build_start_line : string () {
-    $self->_build("get_start_line_chunk");
+    
+    return $self->_build("get_start_line_chunk");
   }
   
   method cookie : HTTP::Tiny::Cookie ($name : string) {

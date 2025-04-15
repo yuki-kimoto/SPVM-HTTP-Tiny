@@ -105,7 +105,7 @@ class HTTP::Tiny::Handle {
     
     my $start_line = $req->build_start_line;
     
-    $self->write($req_line);
+    $self->write($start_line);
   }
   
   private method write_request_headers : void ($req : HTTP::Tiny::Message::Request) {
