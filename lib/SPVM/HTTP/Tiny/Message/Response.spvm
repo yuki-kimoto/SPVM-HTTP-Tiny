@@ -107,34 +107,6 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   }
   
   # Instance Methods
-  method build_start_line : string () {
-    
-    my $status = $self->{code};
-    
-    my $message = $self->message;
-    
-    my $start_line = "HTTP/1.1 $status $message\x0d\x0a";
-    
-    return $start_line;
-  }
-  
-  method build_headers : string () {
-    # TODO
-    
-    return undef;
-  }
-  
-  method build_body : string (){
-    # TODO
-    
-    return undef;
-  }
-  
-  method parse : void ($chunk : string) {
-    
-    die "TODO";
-  }
-  
   method cookies : HTTP::Tiny::Cookie::Response[] () {
     
     # Parse cookies
