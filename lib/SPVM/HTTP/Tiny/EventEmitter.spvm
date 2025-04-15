@@ -9,6 +9,15 @@ class HTTP::Tiny::EventEmitter {
   # Undocumeted Fields
   has events : Hash of HTTP::Tiny::EventEmitter::Callback;
   
+  method events : Hash of HTTP::Tiny::EventEmitter::Callback () {
+    
+    unless ($self->{events}) {
+      $self->{events} = Hash->new;
+    }
+    
+    return $self->{events};
+  }
+  
   # Instance Methods
   method catch : void ($cb : HTTP::Tiny::EventEmitter::Callback) {
     $self->on(error => $cb);
@@ -16,9 +25,9 @@ class HTTP::Tiny::EventEmitter {
   
   method emit : void ($name : string, $args : object[] = undef) {
     
-    $self->{events} //= Hash->new;
+    my $events = $self->events;
     
-    if (my $s = (HTTP::Tiny::EventEmitter::Callback[])$self->{events}->get($name)) {
+    if (my $s = (HTTP::Tiny::EventEmitter::Callback[])$events->get($name)) {
       for my $cb (@$s) {
         $cb->($self, $args);
       }
@@ -30,16 +39,23 @@ class HTTP::Tiny::EventEmitter {
     }
   }
   
-  method once : void ($name : string, $cb : object) {
+  method has_subscribers : int ($name : string) {
     
-    # die "TODO";
+    my $events = $self->events;
+    
+    return !!$events->get($name);
   }
   
   method on : void ($name : string, $cb : object) {
     
     # die "TODO";
   }
-
+  
+  method once : void ($name : string, $cb : object) {
+    
+    # die "TODO";
+  }
+  
   method unsubscribe : void ($name : string, $cb : object) {
     
     # die "TODO";
