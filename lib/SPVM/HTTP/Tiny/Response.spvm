@@ -27,7 +27,11 @@ class HTTP::Tiny::Response {
     
     my $res = $self->{response};
     
-    return $res->protocol;
+    my $version = $res->version;
+    
+    my $protocol = "HTTP/$version";
+    
+    return $protocol;
   }
   
   method status : int () {
@@ -39,12 +43,9 @@ class HTTP::Tiny::Response {
   
   method success : int () {
     
-    my $status = $self->status;
+    my $res = $self->{response};
     
-    my $success = 0;
-    if ($status >= 200 & $status < 300) {
-      $success = 1;
-    }
+    my $success = $res->is_success;
     
     return $success;
   }

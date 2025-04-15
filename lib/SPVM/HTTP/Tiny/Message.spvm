@@ -46,7 +46,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   has _cache : Hash;
   
   # Old Fields
-  has content_buffer : StringBuffer;
+  has content_buffer : ro StringBuffer;
   
   # Instance Methods
   protected method init : void ($options : object[] = undef) {

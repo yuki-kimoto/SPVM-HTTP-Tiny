@@ -186,12 +186,7 @@ class HTTP::Tiny::Handle {
       die "Unsupported HTTP protocol: $protocol";
     }
     
-    $response->{protocol} = $protocol;
-    $response->{code} = Fn->to_int($status);
-    
-    if ($status && $status->[0] == '2') {
-      $response->{success} = 1;
-    }
+    $response->set_code(Fn->to_int($status));
   }
   
   private method read_response_headers : HTTP::Tiny::Headers ($response : HTTP::Tiny::Message::Response) {
@@ -274,7 +269,7 @@ class HTTP::Tiny::Handle {
         
         my $buffer = $self->read((int)$read_length);
         
-        $response->{content_buffer}->push($buffer);
+        $response->content_buffer->push($buffer);
         
         $length -= length $buffer;
       }

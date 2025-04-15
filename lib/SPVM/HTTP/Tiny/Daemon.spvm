@@ -79,8 +79,6 @@ class HTTP::Tiny::Daemon {
     
     my $message = $res->message;
     
-    my $protocol = $res->protocol;
-    
     my $request = $self->{request};
     
     my $request_has_data_callback = 0;
@@ -127,9 +125,9 @@ class HTTP::Tiny::Daemon {
     
     my $io_socket = $self->{io_socket};
     
-    my $res = new HTTP::Tiny::Message::Response;
+    my $res = HTTP::Tiny::Message::Response->new;
     
-    $res->{code} = $status;
+    $res->set_code($status);
     
     my $status_message = $res->message;
     
