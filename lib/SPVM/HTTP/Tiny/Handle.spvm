@@ -95,14 +95,6 @@ class HTTP::Tiny::Handle {
   
   private method write_request_line : void ($req : HTTP::Tiny::Message::Request) {
     
-    my $method = $req->method;
-    
-    my $url = $req->url;
-    
-    my $path = $url->path->to_string;
-    
-    my $req_line = "$method $path HTTP/1.1\r\n";
-    
     my $start_line = $req->build_start_line;
     
     $self->write($start_line);
@@ -110,31 +102,7 @@ class HTTP::Tiny::Handle {
   
   private method write_request_headers : void ($req : HTTP::Tiny::Message::Request) {
     
-    my $method = $req->method;
-    my $url = $req->url;
-    my $url_string = $url->to_string;
-    my $headers = $req->headers;
-    
-    # HTTP Headers
-    {
-      # host
-      unless ($headers->header("host")) {
-        my $host = $url->host;
-        my $port = $url->port;
-        if ($port < 0) {
-          $port = 80;
-        }
-        my $host_port = "$host:$port";
-        $headers->add("host" => $host_port);
-      }
-      
-      # connection
-      unless ($headers->header("connection")) {
-        $headers->add("connection" => "close");
-      }
-    }
-    
-    my $header_lines = $headers->to_string;
+    my $header_lines = $req->build_headers;
     
     $self->write($header_lines);
   }

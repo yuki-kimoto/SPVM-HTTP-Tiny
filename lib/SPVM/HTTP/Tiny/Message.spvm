@@ -208,7 +208,9 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     
     $self->fix_headers;
     
-    return $self->content->get_header_chunk($offset);
+    my $chunk = $self->content->get_header_chunk($offset);
+    
+    return $chunk;
   }
   
   method get_start_line_chunk : string ($offset : int) { die "Not implemented."; }

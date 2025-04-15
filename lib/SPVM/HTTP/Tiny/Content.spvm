@@ -188,7 +188,11 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
     my $header_buffer = $self->{header_buffer};
     
-    my $chunk = Fn->substr($header_buffer, $offset, 131072 - $offset);
+    my $header_buffer_length = length $header_buffer;
+    
+    my $max = ($header_buffer_length <= 131072) ? $header_buffer_length : 131072;
+    
+    my $chunk = Fn->substr($header_buffer, $offset, $max - $offset);
     
     return $chunk;
   }
