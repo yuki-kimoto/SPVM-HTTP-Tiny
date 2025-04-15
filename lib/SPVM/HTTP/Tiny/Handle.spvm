@@ -28,8 +28,6 @@ class HTTP::Tiny::Handle {
   
   has response_buffer : StringBuffer;
   
-  has transaction : HTTP::Tiny::Transaction::HTTP;
-  
   private static method new : HTTP::Tiny::Handle ($options : object[]) {
     
     my $options_h = Hash->new($options);
@@ -43,8 +41,6 @@ class HTTP::Tiny::Handle {
     # The timeout field
     my $timeout = $options_h->delete_or_default_double("timeout", 60.0);
     $self->{timeout} = $timeout;
-    
-    $self->{transaction} = HTTP::Tiny::Transaction::HTTP->new;
     
     return $self;
   }
