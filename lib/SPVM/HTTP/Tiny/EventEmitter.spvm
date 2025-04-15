@@ -5,6 +5,10 @@ class HTTP::Tiny::EventEmitter {
   version_from HTTP::Tiny;
   
   # Instance Methods
+  method catch : void ($cb : object) {
+    $self->on(error => $cb);
+  }
+  
   method emit : void ($name : string, $args : object[] = undef) {
     
     # die "[TODO]";
