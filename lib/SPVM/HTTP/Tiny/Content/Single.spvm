@@ -15,7 +15,7 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
   has auto_upgrade : ro byte;
   
   # Undocumented Fields
-  has read : object;
+  has read : HTTP::Tiny::EventEmitter::Callback;
   
   has body_size : int;
   
@@ -29,8 +29,7 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     $self->init($options);
     
-    $self->{read} = method : void ($args : object[]){
-      my $that = $args->[0]->(HTTP::Tiny::Content::Single);
+    $self->{read} = method : void ($that : HTTP::Tiny::Content::Single, $args : object[]){
       my $chunk = $args->[1]->(string);
       
       $that->set_asset($that->asset->add_chunk($chunk));

@@ -46,9 +46,18 @@ class HTTP::Tiny::EventEmitter {
     return !!$events->get($name);
   }
   
-  method on : void ($name : string, $cb : object) {
+  method on : void ($name : string, $cb : HTTP::Tiny::EventEmitter::Callback) {
     
-    # die "TODO";
+    my $events = $self->events;
+    
+    my $cbs_list = (List)$events->get($name);
+    
+    unless ($cbs_list) {
+      $cbs_list = List->new(new HTTP::Tiny::EventEmitter::Callback[0]);
+      $events->set($name, $cbs_list);
+    }
+    
+    $cbs_list->push($cb);
   }
   
   method once : void ($name : string, $cb : object) {
