@@ -13,14 +13,36 @@ class HTTP::Tiny::Headers {
   use HTTP::Tiny::Cookie::Request;
   use HTTP::Tiny::Cookie::Response;
   
+  # Enumerations
+  enum {
+    MAX_LINE_SIZE_DEFAULT = 8192,
+    MAX_LINES_DEFAULT = 100,
+  }
+  
   # Fields
   has headers_h : Hash;
   
-  has max_line_size : rw int;
+  has max_line_size : wo int;
   
-  method max_line_size_default : int () { return 8192; }
+  method max_line_size : int () {
+    
+    if ($self->{max_line_size} < 0) {
+      $self->{max_line_size} = &MAX_LINE_SIZE_DEFAULT;
+    }
+    
+    return $self->{max_line_size};
+  }
   
-  has max_lines : rw int;
+  has max_lines : wo int;
+  
+  method max_lines : int () {
+    
+    if ($self->{max_lines} < 0) {
+      $self->{max_lines} = &MAX_LINES_DEFAULT;
+    }
+    
+    return $self->{max_lines};
+  }
   
   method max_lines_default : int () { return 100; }
   
@@ -194,13 +216,8 @@ class HTTP::Tiny::Headers {
     $self->{buffer}->push($chunk);
     my $headers = $self->{cache} //= List->new(new string[][0]);
     my $size    = $self->max_line_size;
-    if ($size < 0) {
-      $size = $self->max_line_size_default;
-    }
     my $lines   = $self->max_lines;
-    if ($lines < 0) {
-      $lines = $self->max_lines_default;
-    }
+    
     my $offset = 0;
     while (my $_ = Re->s($self->{buffer}, "^(.*?)\x0d?\x0a", "", \$offset)) {
       my $line_buffer = StringBuffer->new($_->match->cap1);
