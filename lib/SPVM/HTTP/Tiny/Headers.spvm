@@ -212,25 +212,54 @@ class HTTP::Tiny::Headers {
   
   method parse : void ($chunk : string) {
     
-    $self->{state} = "headers";
-    $self->{buffer}->push($chunk);
+    my $_ = 0;
+    my $_ = 0;
+    my $_ = 0;
+    my $_ = 0;
+    my $_ = 0;
+    my $_ = 0;
+    my $_ = 0;
+    my $_ = 0;
+    
     my $headers = $self->{cache} //= List->new(new string[][0]);
+    $self->{buffer}->push($chunk);
+    my $buffer = $self->{buffer};
     my $size    = $self->max_line_size;
     my $lines   = $self->max_lines;
     
+    $self->{state} = "headers";
+    
     my $offset = 0;
-    while (my $_ = Re->s($self->{buffer}, "^(.*?)\x0d?\x0a", "", \$offset)) {
+    while (1) {
+      
+      my $_ = Re->s($buffer, "^(.*?)\x0d?\x0a", "");
+      
+      unless ($_) {
+        last;
+      }
+      
       my $line_buffer = StringBuffer->new($_->match->cap1);
       
       # Check line size limit
+
+=pod TODO
+
       if ($offset > $size || $headers->length >= $lines) {
         $self->{state} = "finished";
         $self->{limit} = 1;
         return;
       }
+
+=cut
       
       # New header
-      if (my $_ = Re->m($line_buffer, "^(\S[^:]*):\s*(.*)$")) { $headers->push([$_->cap1, $_->cap2]); }
+      if (my $_ = Re->m($line_buffer, "^(\S[^:]*):\s*(.*)$")) {
+        
+        my $name = $_->cap1;
+        my $value = $_->cap2;
+        
+        $headers->push([$name, $value]);
+      }
       
       # Multi-line
       elsif ((my $_ = Re->s($line_buffer, "^\s+", "")) && $headers->length) {
@@ -241,19 +270,21 @@ class HTTP::Tiny::Headers {
       
       # Empty line
       else {
-        my $name = (string)undef;
         for (my $i = 0; $i < $headers->length; $i++) {
           
-          my $header = (string[])$headers->get($i);
+          my $items = (string[])$headers->get($i);
           
-          unless ($name) {
-            $name = $header->[$i];
-            next;
+          my $name = (string)undef;
+          for (my $item_index = 0; $item_index < @$items; $item_index++) {
+            unless ($name) {
+              $name = $items->[$item_index];
+              next;
+            }
+            
+            my $value = $items->[$item_index];
+            
+            $self->add($name, $value);
           }
-          
-          my $value = $header->[$i];
-          
-          $self->add($name, $value);
         }
         
         $self->{state} = "finished";
@@ -261,13 +292,19 @@ class HTTP::Tiny::Headers {
         
         return;
       }
+      
     }
-    
+
+=pod
+
     # Check line size limit
     if ($self->{buffer}->length > $size) {
       $self->{state} = "finished";
       $self->{limit} = 1;
     }
+
+=cut
+
   }
   
   method to_string : string () {
