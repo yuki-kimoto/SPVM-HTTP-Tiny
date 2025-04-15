@@ -63,6 +63,8 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->{content} = HTTP::Tiny::Content::Single->new;
     
     $self->{_cache} = Hash->new;
+    
+    $self->{buffer} = "";
   }
   
   method content_v0 : string () {
@@ -247,7 +249,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     $self->{raw_size} += length $chunk;
     
     $self->{buffer} .= $chunk;
-
+    
     # Start-line
     unless ($self->{state}) {
       
@@ -358,14 +360,14 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
     while (1) {
       
       my $chunk = (string)undef;
-      if ($method eq "get_body_chunk") {
-        $chunk = $self->get_body_chunk($offset);
+      if ($method eq "get_start_line_chunk") {
+        $chunk = $self->get_start_line_chunk($offset);
       }
       elsif ($method eq "get_header_chunk") {
         $chunk = $self->get_header_chunk($offset);
       }
-      elsif ($method eq "get_start_line_chunk") {
-        $chunk = $self->get_start_line_chunk($offset);
+      elsif ($method eq "get_body_chunk") {
+        $chunk = $self->get_body_chunk($offset);
       }
       
       # No chunk yet, try again

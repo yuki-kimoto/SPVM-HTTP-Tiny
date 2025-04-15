@@ -186,9 +186,15 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     
     $self->emit(progress => [(object)"start_line", $offset]);
     
-    return Fn->substr($self->{start_buffer}, $offset, 131072);
+    my $start_buffer_length = length $self->{start_buffer};
+    
+    my $max = ($start_buffer_length <= 131072) ? $start_buffer_length : 131072;
+    
+    my $chunk = Fn->substr($self->{start_buffer}, $offset, $max - $offset);
+    
+    return $chunk;
   }
-
+  
   method is_handshake : int () { return Fn->lc($self->headers->upgrade // "") eq "websocket"; }
   
   method is_secure : int () {
