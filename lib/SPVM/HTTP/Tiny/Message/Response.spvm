@@ -97,6 +97,8 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     my $self = new HTTP::Tiny::Message::Response;
     
+    $self->SUPER::init;
+    
     $self->{content_buffer} = StringBuffer->new;
     
     $self->{content} = HTTP::Tiny::Content::Single->new;

@@ -38,6 +38,8 @@ class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
     
     my $self = new HTTP::Tiny::Message::Request;
     
+    $self->SUPER::init;
+    
     $self->{method} = $options_h->delete_or_default_string("method", undef);
     
     $self->{url} = (HTTP::Tiny::URL)$options_h->delete_or_default("url", undef);
