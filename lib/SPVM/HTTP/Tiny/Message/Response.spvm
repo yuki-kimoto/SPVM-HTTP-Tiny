@@ -87,6 +87,8 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
   
   has max_message_size : rw int;
   
+  method max_message_size_default : int () { return 2147483647; }
+  
   # Undocumented Fields
   has start_buffer : string;
   
@@ -101,7 +103,7 @@ class HTTP::Tiny::Message::Response extends HTTP::Tiny::Message {
     
     $self->content->set_headers(HTTP::Tiny::Headers->new);
     
-    $self->{max_message_size} = 2147483647;
+    $self->{max_message_size} = -1;
     
     return $self;
   }
