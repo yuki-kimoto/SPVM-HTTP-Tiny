@@ -15,10 +15,24 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   use HTTP::Tiny::Upload;
   use JSON;
   
+  # Enumerations
+  private enum {
+    MAX_LINE_SIZE_DEFAULT = 8192,
+  }
+  
   # Fields
   has content : ro HTTP::Tiny::Content;
   
-  has max_line_size : ro int;
+  has max_line_size : wo int;
+  
+  method max_line_size : int () {
+    
+    if ($self->{max_line_size} < 0) {
+      $self->{max_line_size} = &MAX_LINE_SIZE_DEFAULT;
+    }
+    
+    return $self->{max_line_size};
+  }
   
   has max_message_size : ro int;
   
@@ -51,15 +65,21 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
   # Instance Methods
   protected method init : void ($options : object[] = undef) {
     
+    my $options_h = Hash->new($options);
+    
     $self->{version} //= "1.1";
     
     if ($self->{max_message_size} < 0) {
       $self->{max_message_size} = 16777216;
     }
     
-    if ($self->{max_line_size} < 0) {
-      $self->{max_line_size} = 8192;
+    if ($options_h->exists("max_line_size")) {
+      $self->{max_line_size} = $options_h->get_int("max_line_size");
     }
+    else {
+      $self->{max_line_size} = -1;
+    }
+    
     $self->{content} = HTTP::Tiny::Content::Single->new;
     
     $self->{_cache} = Hash->new;
@@ -262,6 +282,7 @@ class HTTP::Tiny::Message extends HTTP::Tiny::EventEmitter {
       if ($len < 0) {
         $len = length $self->{buffer};
       }
+      
       if ($len > $self->max_line_size) {
         $self->_limit("Maximum start-line size exceeded");
         return;

@@ -152,7 +152,7 @@ class HTTP::Tiny::Handle {
       die "Unsupported HTTP protocol: $protocol";
     }
     
-    $res->set_code(Fn->to_int($status));
+    $res->parse($status_line);
   }
   
   private method read_response_headers : HTTP::Tiny::Headers ($res : HTTP::Tiny::Message::Response) {
