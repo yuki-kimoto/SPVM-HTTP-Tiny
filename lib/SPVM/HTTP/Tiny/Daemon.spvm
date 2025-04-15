@@ -314,7 +314,7 @@ $error
           }
         }
       }
-      $request->{content_buffer} = StringBuffer->new($body);
+      $request->set_content_buffer(StringBuffer->new($body));
       
       $request->headers->remove("Transfer-Encoding");
       
@@ -389,7 +389,7 @@ $error
       
       $buf->set_length((int)$content_length_long);
       
-      $request->{content_buffer} = $buf;
+      $request->set_content_buffer($buf);
     }
     
     return $request;

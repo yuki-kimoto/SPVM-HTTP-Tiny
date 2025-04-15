@@ -4,10 +4,6 @@
 class HTTP::Tiny::Message::Request extends HTTP::Tiny::Message {
   version_from HTTP::Tiny;
   
-  allow HTTP::Tiny;
-  allow HTTP::Tiny::Handle;
-  allow HTTP::Tiny::Daemon;
-  
   use HTTP::Tiny::Headers;
   use Digest::SHA;
   use HTTP::Tiny::Cookie::Request;

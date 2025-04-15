@@ -99,9 +99,9 @@ class HTTP::Tiny::Handle {
   
   private method write_request_line : void ($request : HTTP::Tiny::Message::Request) {
     
-    my $method = $request->{method};
+    my $method = $request->method;
     
-    my $url = $request->{url};
+    my $url = $request->url;
     
     my $path = $url->path->to_string;
     
@@ -112,8 +112,8 @@ class HTTP::Tiny::Handle {
   
   private method write_request_headers : void ($request : HTTP::Tiny::Message::Request) {
     
-    my $method = $request->{method};
-    my $url = $request->{url};
+    my $method = $request->method;
+    my $url = $request->url;
     my $url_string = $url->to_string;
     my $headers = $request->headers;
     
