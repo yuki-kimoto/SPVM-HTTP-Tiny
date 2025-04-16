@@ -117,11 +117,32 @@ class HTTP::Tiny::Handle {
   private method read_response : HTTP::Tiny::Message::Response () {
     
     my $res = HTTP::Tiny::Message::Response->new;
-    
+
+=pod
+
     my $handle = $self->{socket};
     
-    my $chunk = (mutable string)new_string_len &READ_BUFFER_SIZE;
-    
+    while (1) {
+      my $chunk = (mutable string)new_string_len &READ_BUFFER_SIZE;
+      
+      my $read_length = $handle->read($chunk);
+      
+      if ($read_length == 0) {
+        $res->finish;
+        last;
+      }
+      
+      Fn->shorten($chunk, $read_length);
+      
+      $res->parse($chunk);
+      
+      if ($res->is_finished) {
+        last;
+      }
+    }
+
+=cut
+
     $self->read_status_line($res);
     
     $self->read_response_headers($res);
