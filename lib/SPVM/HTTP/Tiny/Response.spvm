@@ -69,7 +69,9 @@ class HTTP::Tiny::Response {
     
     my $res = $self->{response};
     
-    my $content = $res->content_v0;
+    # my $content = $res->content_v0;
+    
+    my $content = $res->content->(HTTP::Tiny::Content::Single)->asset->slurp;
     
     return $content;
   }

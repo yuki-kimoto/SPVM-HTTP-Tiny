@@ -316,12 +316,15 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     my $len = 0;
     eval { $len = Fn->to_int($content_length); }
     
-    if (my $need = ($len - $self->{size}) > 0) {
+    if ((my $need = ($len - $self->{size})) > 0) {
       my $len   = length $self->{buffer};
       if ($need > $len) {
         $need = $len;
       }
-      my $chunk = Fn->substr($self->{buffer}, 0, $need, "");
+      
+      my $chunk = Fn->substr($self->{buffer}, 0, $need);
+      $self->{buffer} = Fn->substr($self->{buffer}, $need);
+      
       $self->_decompress($chunk);
       $self->{size} += length $chunk;
     }

@@ -27,8 +27,9 @@ class HTTP::Tiny::EventEmitter {
     
     my $events = $self->events;
     
-    if (my $s = (HTTP::Tiny::EventEmitter::Callback[])$events->get($name)) {
-      for my $cb (@$s) {
+    if (my $cbs_list = (List)$events->get($name)) {
+      for (my $i = 0; $i < $cbs_list->length; $i++) {
+        my $cb = (HTTP::Tiny::EventEmitter::Callback)$cbs_list->get($i);
         $cb->($self, $args);
       }
     }

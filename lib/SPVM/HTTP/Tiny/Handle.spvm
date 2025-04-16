@@ -118,8 +118,6 @@ class HTTP::Tiny::Handle {
     
     my $res = HTTP::Tiny::Message::Response->new;
 
-=pod
-
     my $handle = $self->{socket};
     
     while (1) {
@@ -141,14 +139,16 @@ class HTTP::Tiny::Handle {
       }
     }
 
-=cut
+=pod
 
     $self->read_status_line($res);
     
     $self->read_response_headers($res);
     
     $self->read_response_body($res);
-    
+
+=cut
+
     return $res;
   }
   
