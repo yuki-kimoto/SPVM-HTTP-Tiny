@@ -357,7 +357,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     return $progress;
   }
   
-  method write : void ($chunk : string, $cb : object) {
+  method write : void ($chunk : string, $cb : HTTP::Tiny::EventEmitter::Callback) {
     
     $self->{dynamic} = 1;
     
@@ -375,7 +375,7 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
     
   }
   
-  method write_chunk : void ($chunk : string, $cb : object) {
+  method write_chunk : void ($chunk : string, $cb : HTTP::Tiny::EventEmitter::Callback) {
     
     unless ($self->{chunked}) {
       $self->headers->set_transfer_encoding("chunked");

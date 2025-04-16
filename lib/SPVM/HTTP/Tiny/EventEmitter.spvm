@@ -60,9 +60,17 @@ class HTTP::Tiny::EventEmitter {
     $cbs_list->push($cb);
   }
   
-  method once : void ($name : string, $cb : object) {
+  method once : HTTP::Tiny::EventEmitter::Callback ($name : string, $cb : HTTP::Tiny::EventEmitter::Callback) {
     
-    # die "TODO";
+    my $wrapper = [$that : HTTP::Tiny::EventEmitter = $self, $cb : HTTP::Tiny::EventEmitter::Callback] method : void ($name : string, $args : object[]) {
+      $that->unsubscribe($name => $self);
+      $cb->($that, $args);
+    };
+    weaken $wrapper->{that};
+    
+    $self->on($name => $wrapper);
+    
+    return $wrapper;
   }
   
   method subscribers : HTTP::Tiny::EventEmitter::Callback[] ($name : string) {
