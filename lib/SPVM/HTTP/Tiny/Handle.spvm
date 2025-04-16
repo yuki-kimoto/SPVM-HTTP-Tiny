@@ -118,6 +118,10 @@ class HTTP::Tiny::Handle {
     
     my $res = HTTP::Tiny::Message::Response->new;
     
+    my $handle = $self->{socket};
+    
+    my $chunk = (mutable string)new_string_len &READ_BUFFER_SIZE;
+    
     $self->read_status_line($res);
     
     $self->read_response_headers($res);
