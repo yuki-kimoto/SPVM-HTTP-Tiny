@@ -10,10 +10,7 @@ class HTTP::Tiny::Handle {
   use HTTP::Tiny::Message::Response;
   
   use Fn;
-  use StringBuffer;
-  use Format;
   use Re;
-  use Regex::ReplaceInfo;
   use IO::Socket::INET;
   
   # Enumerations
@@ -26,17 +23,11 @@ class HTTP::Tiny::Handle {
   
   has socket : IO::Socket;
   
-  has response_buffer : StringBuffer;
-  
   private static method new : HTTP::Tiny::Handle ($options : object[]) {
     
     my $options_h = Hash->new($options);
     
     my $self = new HTTP::Tiny::Handle;
-    
-    # The response_buffer field
-    my $res_buffer = StringBuffer->new;
-    $self->{response_buffer} = $res_buffer;
     
     # The timeout field
     my $timeout = $options_h->delete_or_default_double("timeout", 60.0);
