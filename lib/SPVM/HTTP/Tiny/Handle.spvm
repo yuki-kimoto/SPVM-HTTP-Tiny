@@ -77,32 +77,17 @@ class HTTP::Tiny::Handle {
   
   private method write_request : void ($req : HTTP::Tiny::Message::Request) {
     
-    $self->write_request_line($req);
-    
-    $self->write_request_headers($req);
-    
-    $self->write("\r\n");
-  }
-  
-  private method write_request_line : void ($req : HTTP::Tiny::Message::Request) {
+    my $socket = $self->{socket};
     
     my $start_line = $req->build_start_line;
     
-    $self->write($start_line);
-  }
-  
-  private method write_request_headers : void ($req : HTTP::Tiny::Message::Request) {
+    $socket->write($start_line);
     
     my $header_lines = $req->build_headers;
     
-    $self->write($header_lines);
-  }
-  
-  private method write : void ($buffer : string) {
+    $socket->write($header_lines);
     
-    my $socket = $self->{socket};
-    
-    $socket->write($buffer);
+    $socket->write("\r\n");
   }
   
   private method read_response : HTTP::Tiny::Message::Response () {
