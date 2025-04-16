@@ -52,8 +52,6 @@ lib/SPVM/HTTP/Tiny/Path.pm
 lib/SPVM/HTTP/Tiny/Path.spvm
 lib/SPVM/HTTP/Tiny/Response.pm
 lib/SPVM/HTTP/Tiny/Response.spvm
-lib/SPVM/HTTP/Tiny/Status.pm
-lib/SPVM/HTTP/Tiny/Status.spvm
 lib/SPVM/HTTP/Tiny/Transaction.pm
 lib/SPVM/HTTP/Tiny/Transaction.spvm
 lib/SPVM/HTTP/Tiny/Transaction/HTTP.pm
