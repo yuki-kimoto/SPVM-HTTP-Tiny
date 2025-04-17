@@ -30,7 +30,16 @@ class HTTP::Tiny::EventEmitter {
     if (my $cbs_list = (List)$events->get($name)) {
       for (my $i = 0; $i < $cbs_list->length; $i++) {
         my $cb = (HTTP::Tiny::EventEmitter::Callback)$cbs_list->get($i);
-        $cb->($self, $args);
+        
+        my $cb_args = new object[3];
+        
+        if ($args) {
+          for (my $i = 0; $i < @$args; $i++) {
+            $cb_args->[$i] = $args->[$i];
+          }
+        }
+        
+        $cb->($self, $cb_args->[0], $cb_args->[1], $cb_args->[2]);
       }
     }
     else {
