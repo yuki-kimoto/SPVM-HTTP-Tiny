@@ -322,8 +322,8 @@ class HTTP::Tiny::Content extends HTTP::Tiny::EventEmitter {
         $need = $len;
       }
       
-      my $chunk = Fn->substr($self->{buffer}, 0, $need);
-      $self->{buffer} = Fn->substr($self->{buffer}, $need);
+      my $chunk = Fn->substr(my $ref = [$self->{buffer}], 0, $need, "");
+      $self->{buffer} = $ref->[0];
       
       $self->_decompress($chunk);
       $self->{size} += length $chunk;
