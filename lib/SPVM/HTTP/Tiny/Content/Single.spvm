@@ -95,7 +95,7 @@ class HTTP::Tiny::Content::Single extends HTTP::Tiny::Content {
     
     my $multi = HTTP::Tiny::Content::MultiPart->new_from_single($self);
     
-    $self->emit(upgrade => [(object)$multi]);
+    $self->emit(upgrade => $multi);
     
     $multi->parse(undef);
     
