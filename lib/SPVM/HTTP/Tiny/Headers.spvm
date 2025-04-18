@@ -294,17 +294,12 @@ class HTTP::Tiny::Headers {
       }
       
     }
-
-=pod
-
+   
     # Check line size limit
     if ($self->{buffer}->length > $size) {
       $self->{state} = "finished";
       $self->{limit} = 1;
     }
-
-=cut
-
   }
   
   method to_string : string () {
