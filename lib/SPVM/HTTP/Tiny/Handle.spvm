@@ -20,7 +20,7 @@ class HTTP::Tiny::Handle {
   }
   
   # Fields
-  has timeout : double;
+  has inactivity_timeout : double;
   
   has socket : IO::Socket;
   
@@ -30,9 +30,9 @@ class HTTP::Tiny::Handle {
     
     my $self = new HTTP::Tiny::Handle;
     
-    # The timeout field
-    my $timeout = $options_h->get_or_default("timeout", 60.0)->(double);
-    $self->{timeout} = $timeout;
+    # The inactivity_timeout field
+    my $inactivity_timeout = $options_h->get_or_default("inactivity_timeout", 60.0)->(double);
+    $self->{inactivity_timeout} = $inactivity_timeout;
     
     return $self;
   }
@@ -44,7 +44,7 @@ class HTTP::Tiny::Handle {
     my $host = $url->host;
     my $port = $url->port;
     
-    my $timeout = $self->{timeout};
+    my $inactivity_timeout = $self->{inactivity_timeout};
     
     my $socket = (IO::Socket)undef;
     
@@ -53,7 +53,7 @@ class HTTP::Tiny::Handle {
       $socket = IO::Socket::INET->new({
         PeerAddr  => $host,
         PeerPort  => $port,
-        Timeout   => $timeout,
+        Timeout   => $inactivity_timeout,
       });
     }
     elsif ($scheme eq "https") {
@@ -62,7 +62,7 @@ class HTTP::Tiny::Handle {
         $socket = IO::Socket::SSL->new({
           PeerAddr  => $host,
           PeerPort  => $port,
-          Timeout   => $timeout,
+          Timeout   => $inactivity_timeout,
         });
       }
       else {

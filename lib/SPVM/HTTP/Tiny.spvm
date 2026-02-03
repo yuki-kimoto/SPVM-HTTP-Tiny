@@ -42,7 +42,7 @@ class HTTP::Tiny {
   
   has max_size : rw int;
   
-  has timeout : rw double;
+  has inactivity_timeout : rw double;
   
   has verify_SSL : rw byte;
   
@@ -57,11 +57,11 @@ class HTTP::Tiny {
     
     my $self = new HTTP::Tiny;
     
-    # timeout
-    my $timeout = $options_h->get_or_default("timeout", 60.0)->(double);
-    $self->{timeout} = $timeout;
-    unless ($timeout >= 0) {
-      die "The timeout option must be greater than or equal to 0";
+    # inactivity_timeout
+    my $inactivity_timeout = $options_h->get_or_default("inactivity_timeout", 60.0)->(double);
+    $self->{inactivity_timeout} = $inactivity_timeout;
+    unless ($inactivity_timeout >= 0) {
+      die "The inactivity_timeout option must be greater than or equal to 0";
     }
     
     # agent
@@ -311,7 +311,7 @@ class HTTP::Tiny {
     
     my $headers = (Mojo::Headers)$options_h->get_or_default("headers", undef);
     
-    my $timeout = $options_h->get_or_default("timeout", $self->{timeout})->(double);
+    my $inactivity_timeout = $options_h->get_or_default("inactivity_timeout", $self->{inactivity_timeout})->(double);
     
     for my $name (@{$options_h->keys}) {
       die "The \$name option is not available.";
@@ -337,7 +337,7 @@ class HTTP::Tiny {
     $request->content->set_headers($headers);
     
     my $socket  = HTTP::Tiny::Handle->new({
-      timeout => $timeout,
+      inactivity_timeout => $inactivity_timeout,
       data_callback => $data_callback,
     });
     

@@ -54,11 +54,11 @@ C<has agent : ro string;>
 
 The user agent.
 
-=head2 timeout
+=head2 inactivity_timeout
 
-C<has timeout : ro double;>
+C<has inactivity_timeout : ro double;>
 
-The request timeout seconds.
+The request inactivity_timeout seconds.
 
 =head1 Class Methods
 
@@ -76,9 +76,9 @@ Options:
 
 Sets the L</"agent"> field.
 
-=item C<timeout> : Double
+=item C<inactivity_timeout> : Double
 
-Sets the L</"timeout"> field.
+Sets the L</"inactivity_timeout"> field.
 
 =back
 
@@ -100,7 +100,7 @@ Options:
 
 Headers for an HTTP request.
 
-=item C<timeout> : Double
+=item C<inactivity_timeout> : Double
 
 Timeout seconds.
 
