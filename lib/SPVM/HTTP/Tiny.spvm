@@ -13,6 +13,7 @@ class HTTP::Tiny {
   use File::Temp;
   use IO::File;
   use Time::Piece;
+  use Go::Context;
   
   use HTTP::Tiny::Handle;
   use HTTP::Tiny::Response;
@@ -149,49 +150,49 @@ class HTTP::Tiny {
   }
   
   # Instance Methods
-  method get : HTTP::Tiny::Response ($url : string, $options : object[] = undef) {
+  method get : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $options : object[] = undef) {
     
-    my $response = $self->request("GET", $url, $options);
-    
-    return $response;
-  }
-  
-  method head : HTTP::Tiny::Response ($url : string, $options : object[] = undef) {
-    
-    my $response = $self->request("HEAD", $url, $options);
+    my $response = $self->request($ctx, "GET", $url, $options);
     
     return $response;
   }
   
-  method put : HTTP::Tiny::Response ($url : string, $options : object[] = undef) {
+  method head : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $options : object[] = undef) {
     
-    my $response = $self->request("PUT", $url, $options);
-    
-    return $response;
-  }
-  
-  method post : HTTP::Tiny::Response ($url : string, $options : object[] = undef) {
-    
-    my $response = $self->request("POST", $url, $options);
+    my $response = $self->request($ctx, "HEAD", $url, $options);
     
     return $response;
   }
   
-  method patch : HTTP::Tiny::Response ($url : string, $options : object[] = undef) {
+  method put : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $options : object[] = undef) {
     
-    my $response = $self->request("PATCH", $url, $options);
-    
-    return $response;
-  }
-  
-  method delete : HTTP::Tiny::Response ($url : string, $options : object[] = undef) {
-    
-    my $response = $self->request("DELETE", $url, $options);
+    my $response = $self->request($ctx, "PUT", $url, $options);
     
     return $response;
   }
   
-  method post_form : HTTP::Tiny::Response ($url : string, $data : object[], $options : object[] = undef) {
+  method post : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $options : object[] = undef) {
+    
+    my $response = $self->request($ctx, "POST", $url, $options);
+    
+    return $response;
+  }
+  
+  method patch : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $options : object[] = undef) {
+    
+    my $response = $self->request($ctx, "PATCH", $url, $options);
+    
+    return $response;
+  }
+  
+  method delete : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $options : object[] = undef) {
+    
+    my $response = $self->request($ctx, "DELETE", $url, $options);
+    
+    return $response;
+  }
+  
+  method post_form : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $data : object[], $options : object[] = undef) {
     
     my $options_h = Hash->new($options);
     
@@ -213,7 +214,7 @@ class HTTP::Tiny {
     
     $options_h->set("headers", $new_headers);
     
-    my $response = $self->request("POST", $url, $options_h->to_array);
+    my $response = $self->request($ctx, "POST", $url, $options_h->to_array);
     
     return $response;
   }
@@ -302,7 +303,7 @@ class HTTP::Tiny {
     return $default_agent;
   }
   
-  private method request : HTTP::Tiny::Response ($method : string, $url_string : string, $options : object[])  {
+  private method request : HTTP::Tiny::Response ($ctx : Go::Context, $method : string, $url_string : string, $options : object[])  {
     
     my $options_h = Hash->new($options);
     
@@ -340,11 +341,12 @@ class HTTP::Tiny {
       data_callback => $data_callback,
     });
     
-    $socket->connect($request);
+    # Passing context to handle methods
+    $socket->connect($ctx, $request);
     
-    $socket->write_request($request);
+    $socket->write_request($ctx, $request);
     
-    my $response = $socket->read_response;
+    my $response = $socket->read_response($ctx);
     
     my $result = HTTP::Tiny::Response->new($response);
     
@@ -410,7 +412,7 @@ class HTTP::Tiny {
     return $ca_file;
   }
   
-  method mirror : HTTP::Tiny::Response ($url : string, $file : string, $options : object[] = undef) {
+  method mirror : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $file : string, $options : object[] = undef) {
     
     unless ($file) {
       die "\$file must be defined.";
@@ -448,7 +450,7 @@ class HTTP::Tiny {
     
     $options_h->set(data_callback => [$io_file : IO::File] method : void ($chunk : string) { $io_file->print($chunk); });
     
-    my $result = $self->request("GET", $url, $options_h->to_array);
+    my $result = $self->request($ctx, "GET", $url, $options_h->to_array);
     
     if ($result->success) {
       Sys->rename($tempfile, $file);
@@ -465,14 +467,6 @@ class HTTP::Tiny {
         }
       }
     }
-
-=pod TODO
-
-    unless ($response->success) {
-      $response->{success} = (byte)($response->{status} == 304);
-    }
-
-=cut
 
     return $result;
   }

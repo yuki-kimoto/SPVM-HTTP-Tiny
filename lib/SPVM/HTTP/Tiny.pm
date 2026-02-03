@@ -17,8 +17,10 @@ B<This class is highly experimental. Many dramatic incompatibilities are expecte
 =head1 Usage
 
   use HTTP::Tiny;
+  use Go::Context;
   
-  my $response = HTTP::Tiny->new->get('http://example.com/');
+  my $ctx = Go::Context->background;
+  my $response = HTTP::Tiny->new->get($ctx, 'http://example.com/');
   
   unless ($response->success) {
     die "Failed!";
@@ -84,7 +86,7 @@ Sets the L</"timeout"> field.
 
 =head2 get
 
-C<method get : HTTP::Tiny::Response ($url : string, $options : object[] = undef);>
+C<method get : HTTP::Tiny::Response ($ctx : L<Go::Context|SPVM::Go::Context>, $url : string, $options : object[] = undef);>
 
 Gets the HTTP response by sending an HTTP GET request to the URL $url.
 
@@ -106,23 +108,23 @@ Timeout seconds.
 
 =head2 head
 
-C<method head : HTTP::Tiny::Response ($url : string, $options : object[] = undef);>
+C<method head : HTTP::Tiny::Response ($ctx : L<Go::Context|SPVM::Go::Context>, $url : string, $options : object[] = undef);>
 
 =head2 put
 
-C<method put : HTTP::Tiny::Response ($url : string, $options : object[] = undef);>
+C<method put : HTTP::Tiny::Response ($ctx : L<Go::Context|SPVM::Go::Context>, $url : string, $options : object[] = undef);>
 
 =head2 post
 
-C<method post : HTTP::Tiny::Response ($url : string, $options : object[] = undef);>
+C<method post : HTTP::Tiny::Response ($ctx : L<Go::Context|SPVM::Go::Context>, $url : string, $options : object[] = undef);>
 
 =head2 patch
 
-C<method patch : HTTP::Tiny::Response ($url : string, $options : object[] = undef);>
+C<method patch : HTTP::Tiny::Response ($ctx : L<Go::Context|SPVM::Go::Context>, $url : string, $options : object[] = undef);>
 
 =head2 delete
 
-C<method delete : HTTP::Tiny::Response ($url : string, $options : object[] = undef);>
+C<method delete : HTTP::Tiny::Response ($ctx : L<Go::Context|SPVM::Go::Context>, $url : string, $options : object[] = undef);>
 
 =head1 Repository
 
@@ -137,4 +139,3 @@ Yuki Kimoto C<kimoto.yuki@gmail.com>
 Copyright (c) 2023 Yuki Kimoto
 
 MIT License
-
