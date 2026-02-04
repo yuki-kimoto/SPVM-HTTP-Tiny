@@ -11,7 +11,7 @@ class HTTP::Tiny {
   use HTTP::Tiny::Response;
 
   # Fields
-  has ua : rw Mojo::UserAgent;
+  has ua : ro Mojo::UserAgent;
   
   # Class Methods
   static method new : HTTP::Tiny ($options : object[] = undef) {

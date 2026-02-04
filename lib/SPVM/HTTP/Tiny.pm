@@ -53,7 +53,7 @@ This class is a wrapper of L<Mojo::UserAgent|SPVM::Mojo::UserAgent>. Unlike Perl
 
 =head2 ua
 
-C<has ua : rw L<Mojo::UserAgent|SPVM::Mojo::UserAgent>;>
+C<has ua : ro L<Mojo::UserAgent|SPVM::Mojo::UserAgent>;>
 
 The L<Mojo::UserAgent|SPVM::Mojo::UserAgent> object used for HTTP requests.
 
