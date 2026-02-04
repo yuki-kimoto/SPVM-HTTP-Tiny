@@ -59,11 +59,17 @@ class HTTP::Tiny::Response {
     return $reason;
   }
   
-  method headers : Mojo::Headers () {
+  method headers : Hash () {
     
     my $res = $self->{response};
     
-    return $res->headers;
+    my $mojo_headers = $res->headers;
+    
+    # Get headers as a Hash (key is string, value is string or string[])
+    # Note: to_hash returns a Hash where values are typically concatenated with commas or stored as arrays
+    my $headers_hash = $mojo_headers->to_hash;
+    
+    return $headers_hash;
   }
   
   method content : string () {

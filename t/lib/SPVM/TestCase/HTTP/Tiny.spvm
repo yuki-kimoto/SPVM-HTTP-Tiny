@@ -33,6 +33,25 @@ class TestCase::HTTP::Tiny {
         diag;
         return 0;
       }
+      
+      # --- Response Header Test ---
+      # Get headers as a Hash object
+      my $headers = $res->headers;
+      
+      # httpbin.org returns "application/json" as Content-Type
+      # Note: We use lower-case keys for compatibility
+      my $content_type = (string)$headers->get("content-type");
+      unless (Fn->contains($content_type, "application/json")) {
+        diag;
+        return 0;
+      }
+
+      # Check another common header like "server"
+      my $server = (string)$headers->get("server");
+      if (Fn->length($server) == 0) {
+        diag;
+        return 0;
+      }
     }
     
     {

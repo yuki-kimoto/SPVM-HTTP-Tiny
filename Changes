@@ -4,6 +4,7 @@
   [Incompatible Changes]
     * Remove HTTP::Tiny#mirror method.
     * Remove HTTP::Tiny#post_form method.
+    * Update HTTP::Tiny::Response#headers to return a Hash object instead of Mojo::Headers for better compatibility.
     
 0.016 2025-10-13
   [Requirement Changes]
