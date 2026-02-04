@@ -7,14 +7,8 @@ class HTTP::Tiny {
   use Fn;
   use Hash;
   use Mojo::UserAgent;
-  use Mojo::Headers;
-  use Mojo::URL;
-  use Mojo::Date;
   use Go::Context;
   use HTTP::Tiny::Response;
-  use File::Temp;
-  use IO::File;
-  use Sys;
 
   # Fields
   has ua : rw Mojo::UserAgent;
@@ -62,82 +56,26 @@ class HTTP::Tiny {
     return $self->request($ctx, "DELETE", $url, $options);
   }
 
-  method post_form : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $data : object[], $options : object[] = undef) {
-    my $options_h = Hash->new($options);
-    $options_h->set(form => $data);
-    return $self->request($ctx, "POST", $url, $options_h->to_array);
-  }
-
-  method mirror : HTTP::Tiny::Response ($ctx : Go::Context, $url : string, $file : string, $options : object[] = undef) {
-    unless ($file) { die "\$file must be defined."; }
-
-    my $options_h = Hash->new($options);
-    my $headers = (Mojo::Headers)$options_h->get_or_default("headers", Mojo::Headers->new);
-
-    if (Sys->e($file)) {
-      my $mtime = Sys->stat($file)->st_mtime;
-      unless ($headers->if_modified_since) {
-        $headers->set_if_modified_since(Mojo::Date->new($mtime)->to_string);
-      }
-    }
-
-    my $tmp_dir = File::Temp->newdir;
-    my $tempfile = $tmp_dir->dirname . "/mirror";
-    
-    my $tx = $self->{ua}->build_tx("GET", $url);
-    
-    # Use from_hash with Hash object
-    if (@{$headers->names} > 0) {
-      $tx->req->headers->from_hash($headers->to_hash);
-    }
-    
-    $self->{ua}->start($ctx, $tx);
-    my $res = $tx->res;
-
-    if ($res->is_success) {
-      my $io_file = IO::File->new($tempfile, ">");
-      $io_file->print($res->body);
-      $io_file->close;
-      
-      Sys->rename($tempfile, $file);
-      
-      my $lm = $res->headers->last_modified;
-      if ($lm) {
-        my $mtime = Mojo::Date->new($lm)->epoch_sec;
-        Sys->utime($mtime, $mtime, $file);
-      }
-    }
-
-    return HTTP::Tiny::Response->new($res);
-  }
-
   private method request : HTTP::Tiny::Response ($ctx : Go::Context, $method : string, $url : string, $options : object[]) {
     my $options_h = Hash->new($options);
     
-    my $headers_opt = (Mojo::Headers)$options_h->get_or_default("headers", undef);
-    my $content     = (string)$options_h->get_or_default("content", undef);
-    my $form        = (object[])$options_h->get_or_default("form", undef);
+    my $tx = $self->{ua}->build_tx($method, $url);
     
-    my $tx = (Mojo::Transaction::HTTP)undef;
-    if ($form) {
-      $tx = $self->{ua}->build_tx($method, $url, form => $form);
-    } else {
-      $tx = $self->{ua}->build_tx($method, $url, $content);
-    }
-
     # Use from_hash with Hash object
-    if ($headers_opt) {
-      $tx->req->headers->from_hash($headers_opt->to_hash);
+    my $headers_h = $options_h->get("headers")->(Hash);
+    if ($headers_h) {
+      $tx->req->headers->from_hash($headers_h);
     }
 
     # max_redirects is already set in new() on the $self->{ua} object
     $tx = $self->{ua}->start($ctx, $tx);
-
+    
     return HTTP::Tiny::Response->new($tx->res);
   }
 
-  method create_default_agent : string () {
+  private method create_default_agent : string () {
     my $version = Fn->get_version_string("HTTP::Tiny");
     return "SPVM/HTTP::Tiny/$version";
   }
+  
 }
