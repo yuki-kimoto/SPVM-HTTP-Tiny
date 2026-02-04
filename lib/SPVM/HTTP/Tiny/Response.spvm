@@ -11,14 +11,18 @@ class HTTP::Tiny::Response {
   use Hash;
   
   # Fields
-  has res : ro Mojo::Message::Response;
+  has tx : ro Mojo::Transaction::HTTP;
+  
+  has res : virtual ro Mojo::Message::Response
+    get {
+      return $self->{tx}->res;
+    }
+  ;
   
   # Class Methods
-  private static method new : HTTP::Tiny::Response ($response : Mojo::Message::Response) {
+  private static method new : HTTP::Tiny::Response () {
     
     my $self = new HTTP::Tiny::Response;
-    
-    $self->{res} = $response;
     
     return $self;
   }
@@ -26,7 +30,7 @@ class HTTP::Tiny::Response {
   # Instance Methods
   method protocol : string () {
     
-    my $res = $self->{res};
+    my $res = $self->res;
     
     my $version = $res->version;
     
@@ -37,14 +41,14 @@ class HTTP::Tiny::Response {
   
   method status : int () {
     
-    my $res = $self->{res};
+    my $res = $self->res;
     
     return $res->code;
   }
   
   method success : int () {
     
-    my $res = $self->{res};
+    my $res = $self->res;
     
     my $success = $res->is_success;
     
@@ -53,7 +57,7 @@ class HTTP::Tiny::Response {
   
   method reason : string () {
     
-    my $res = $self->{res};
+    my $res = $self->res;
     
     my $reason = $res->message;
     
@@ -62,7 +66,7 @@ class HTTP::Tiny::Response {
   
   method headers : Hash () {
     
-    my $res = $self->{res};
+    my $res = $self->res;
     
     my $mojo_headers = $res->headers;
     
@@ -75,7 +79,7 @@ class HTTP::Tiny::Response {
   
   method content : string () {
     
-    my $res = $self->{res};
+    my $res = $self->res;
     
     # Extract the response body using Mojo's content structure
     my $content = $res->content->(Mojo::Content::Single)->asset->slurp;

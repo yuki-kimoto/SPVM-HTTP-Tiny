@@ -68,7 +68,10 @@ class HTTP::Tiny {
     # max_redirects is already set in new() on the $self->{ua} object
     $tx = $self->{ua}->start($ctx, $tx);
     
-    return HTTP::Tiny::Response->new($tx->res);
+    my $res = HTTP::Tiny::Response->new;
+    $res->{tx} = $tx;
+    
+    return $res;
   }
 
   private method create_default_agent : string () {
