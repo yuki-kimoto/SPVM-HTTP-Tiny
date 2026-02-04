@@ -16,8 +16,8 @@ class TestCase::HTTP::Tiny {
     
     my $ctx = Go::Context->background;
     
-    # Pass $ctx as the first argument
-    my $res = $http->get($ctx, $url);
+    # Pass $ctx and options with custom headers
+    my $res = $http->get($ctx, $url, {headers => {"X-HTTP-Tiny-Test" => "Passed"}});
     
     my $content = $res->content;
     

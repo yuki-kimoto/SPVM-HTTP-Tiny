@@ -62,7 +62,7 @@ class HTTP::Tiny {
     my $tx = $self->{ua}->build_tx($method, $url);
     
     # Use from_hash with Hash object
-    my $headers_h = $options_h->get("headers")->(Hash);
+    my $headers_h = Fn->to_hash($options_h->get("headers"));
     if ($headers_h) {
       $tx->req->headers->from_hash($headers_h);
     }
