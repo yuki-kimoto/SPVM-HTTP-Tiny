@@ -20,38 +20,17 @@ class HTTP::Tiny {
   has ua : rw Mojo::UserAgent;
   
   # Class Methods
-  static method new : HTTP::Tiny ($options : object[] = undef) {
+  static method new : HTTP::Tiny () {
     
     my $self = new HTTP::Tiny;
-    my $options_h = Hash->new($options);
     
     my $ua = Mojo::UserAgent->new;
     
-    # Set custom User-Agent
-    my $agent = (string)$options_h->get_or_default("agent", undef);
-    if ($agent) {
-      $ua->transactor->set_name($agent);
-    } else {
-      $ua->transactor->set_name($self->create_default_agent);
-    }
-    
-    # Configure inactivity timeout
-    my $inactivity_timeout = $options_h->get_or_default("inactivity_timeout", 60.0)->(double);
-    $ua->set_inactivity_timeout($inactivity_timeout);
-    
-    # Configure SSL verification
-    my $verify_SSL = $options_h->get_or_default("verify_SSL", (byte)0)->(byte);
-    $ua->set_insecure($verify_SSL ? (byte)0 : (byte)1);
-    
-    # SSL_options: set_tls_options needs object[] via to_options
-    my $ssl_options = $options_h->get_or_default("SSL_options", undef);
-    if ($ssl_options) {
-      $ua->set_tls_options(Hash->new((object[])$ssl_options)->to_options);
-    }
-
-    # Set max_redirect directly to Mojo::UserAgent (default to 5)
-    my $max_redirect = $options_h->get_or_default("max_redirect", 5)->(int);
-    $ua->set_max_redirects($max_redirect);
+    # Use default values from Mojo::UserAgent
+    $ua->transactor->set_name($self->create_default_agent);
+    $ua->set_inactivity_timeout(60.0);
+    $ua->set_insecure(1); # verify_SSL: 0 (default) -> insecure: 1
+    $ua->set_max_redirects(5);
     
     $self->{ua} = $ua;
     
