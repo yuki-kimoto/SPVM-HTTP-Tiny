@@ -20,7 +20,7 @@ class HTTP::Tiny {
   has ua : rw Mojo::UserAgent;
   
   # Class Methods
-  static method new : HTTP::Tiny () {
+  static method new : HTTP::Tiny ($options : object[] = undef) {
     
     my $self = new HTTP::Tiny;
     
