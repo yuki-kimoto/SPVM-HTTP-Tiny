@@ -62,6 +62,62 @@ class TestCase::HTTP::Tiny {
     return 1;
   }
   
+  static method test_methods : int () {
+    my $http = HTTP::Tiny->new;
+    my $ctx = Go::Context->background;
+
+=pod TODO:Temporarily disable HEAD method test due to hang issue in SPVM::Mojo::UserAgent
+
+    # HEAD (Body must be empty)
+    {
+      my $res = $http->head($ctx, "https://httpbin.org/get");
+      unless ($res->status == 200 && (Fn->length($res->content) == 0)) {
+        diag;
+        return 0;
+      }
+    }
+
+=cut
+
+    # POST
+    {
+      my $res = $http->post($ctx, "https://httpbin.org/post");
+      unless ($res->status == 200 && Fn->contains($res->content, "httpbin.org/post")) {
+        diag;
+        return 0;
+      }
+    }
+
+    # PUT
+    {
+      my $res = $http->put($ctx, "https://httpbin.org/put");
+      unless ($res->status == 200 && Fn->contains($res->content, "httpbin.org/put")) {
+        diag;
+        return 0;
+      }
+    }
+
+    # PATCH
+    {
+      my $res = $http->patch($ctx, "https://httpbin.org/patch");
+      unless ($res->status == 200 && Fn->contains($res->content, "httpbin.org/patch")) {
+        diag;
+        return 0;
+      }
+    }
+
+    # DELETE
+    {
+      my $res = $http->delete($ctx, "https://httpbin.org/delete");
+      unless ($res->status == 200 && Fn->contains($res->content, "httpbin.org/delete")) {
+        diag;
+        return 0;
+      }
+    }
+
+    return 1;
+  }
+  
   static method go : int () {
     
     $RESULT = IntList->new;
