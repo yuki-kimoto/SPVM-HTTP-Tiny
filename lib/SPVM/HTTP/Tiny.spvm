@@ -54,7 +54,7 @@ class HTTP::Tiny {
     return $self->request($ctx, "DELETE", $url, $options);
   }
 
-  private method request : HTTP::Tiny::Response ($ctx : Go::Context, $method : string, $url : string, $options : object[]) {
+  method request : HTTP::Tiny::Response ($ctx : Go::Context, $method : string, $url : string, $options : object[]) {
     my $options_h = Hash->new($options);
     
     my $tx = $self->{ua}->build_tx($method, $url);

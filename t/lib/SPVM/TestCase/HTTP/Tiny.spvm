@@ -10,25 +10,50 @@ class TestCase::HTTP::Tiny {
   
   static method test : int () {
     
-    my $url = "http://google.com";
-    
-    my $http = HTTP::Tiny->new;
-    
-    my $ctx = Go::Context->background;
-    
-    # Pass $ctx and options with custom headers
-    my $res = $http->get($ctx, $url, {headers => {"X-HTTP-Tiny-Test" => "Passed"}});
-    
-    my $content = $res->content;
-    
-    unless (Fn->contains($content, "www.google.com")) {
-      diag;
-      return 0;
+    {
+      my $url = "http://google.com";
+      
+      my $http = HTTP::Tiny->new;
+      
+      my $ctx = Go::Context->background;
+      
+      # Pass $ctx and options with custom headers
+      my $res = $http->get($ctx, $url, {headers => {"X-HTTP-Tiny-Test" => "Passed"}});
+      
+      my $content = $res->content;
+      
+      unless (Fn->contains($content, "www.google.com")) {
+        diag;
+        return 0;
+      }
+      
+      unless ($res->status == 200 || $res->status == 301) {
+        diag;
+        return 0;
+      }
     }
     
-    unless ($res->status == 200 || $res->status == 301) {
-      diag;
-      return 0;
+    {
+      my $url = "http://google.com";
+      
+      my $http = HTTP::Tiny->new;
+      
+      my $ctx = Go::Context->background;
+      
+      # Use request method explicitly
+      my $res = $http->request($ctx, "GET", $url, {headers => {"X-Request-Method-Test" => "Active"}});
+      
+      my $content = $res->content;
+      
+      unless (Fn->contains($content, "www.google.com")) {
+        diag;
+        return 0;
+      }
+      
+      unless ($res->status == 200 || $res->status == 301) {
+        diag;
+        return 0;
+      }
     }
     
     return 1;
