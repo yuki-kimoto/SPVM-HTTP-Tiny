@@ -4,7 +4,6 @@
 class HTTP::Tiny::Response {
   version_from HTTP::Tiny;
   
-  allow HTTP::Tiny::Handle;
   allow HTTP::Tiny;
   
   use Mojo::Headers;
