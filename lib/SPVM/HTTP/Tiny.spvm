@@ -18,7 +18,6 @@ class HTTP::Tiny {
 
   # Fields
   has ua : rw Mojo::UserAgent;
-  has max_redirect : rw int;
   
   # Class Methods
   static method new : HTTP::Tiny ($options : object[] = undef) {
@@ -49,9 +48,12 @@ class HTTP::Tiny {
     if ($ssl_options) {
       $ua->set_tls_options(Hash->new((object[])$ssl_options)->to_options);
     }
+
+    # Set max_redirect directly to Mojo::UserAgent (default to 5)
+    my $max_redirect = $options_h->get_or_default("max_redirect", 5)->(int);
+    $ua->set_max_redirects($max_redirect);
     
     $self->{ua} = $ua;
-    $self->{max_redirect} = $options_h->get_or_default("max_redirect", 5)->(int);
     
     return $self;
   }
@@ -149,7 +151,7 @@ class HTTP::Tiny {
       $tx->req->headers->from_hash($headers_opt->to_hash);
     }
 
-    $self->{ua}->set_max_redirects($self->{max_redirect});
+    # max_redirects is already set in new() on the $self->{ua} object
     $tx = $self->{ua}->start($ctx, $tx);
 
     return HTTP::Tiny::Response->new($tx->res);
