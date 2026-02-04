@@ -36,11 +36,19 @@ This class provides an interface compatible with Perl's C<HTTP::Tiny> response h
 
 =head1 Fields
 
+=head2 tx
+
+C<has tx : ro L<Mojo::Transaction::HTTP|SPVM::Mojo::Transaction::HTTP>;>
+
+The underlying L<Mojo::Transaction::HTTP|SPVM::Mojo::Transaction::HTTP> object. This field stores the entire HTTP transaction, including the request and response.
+
 =head2 res
 
-C<has res : ro L<Mojo::Message::Response|SPVM::Mojo::Message::Response>;>
+C<has res : virtual ro L<Mojo::Message::Response|SPVM::Mojo::Message::Response>;>
 
-The underlying L<Mojo::Message::Response|SPVM::Mojo::Message::Response> object. You can use this field to access low-level response data not provided by the C<HTTP::Tiny::Response> wrapper.
+The underlying L<Mojo::Message::Response|SPVM::Mojo::Message::Response> object. This is a virtual field that retrieves the response object directly from the L</"tx"> field.
+
+You can use this field to access low-level response data not provided by the C<HTTP::Tiny::Response> wrapper.
 
 =head1 Instance Methods
 
