@@ -15,40 +15,60 @@ class TestCase::HTTP::Tiny {
       my $url = "https://httpbin.org/get";
       
       my $http = HTTP::Tiny->new;
-      
       my $ctx = Go::Context->background;
       
-      # Minimal GET request without custom headers
       my $res = $http->get($ctx, $url);
       
-      my $content = $res->content;
-      
-      # Verify host connection by checking the URL in response body
-      unless (Fn->contains($content, "httpbin.org")) {
+      # 1. success: Check if the request was successful
+      unless ($res->success) {
         diag;
         return 0;
       }
       
+      # 2. status: Check HTTP status code
       unless ($res->status == 200) {
         diag;
         return 0;
       }
       
-      # --- Response Header Test ---
-      # Get headers as a Hash object
-      my $headers = $res->headers;
+      # 3. reason: Check status message (e.g., "OK")
+      my $reason = $res->reason;
+      unless (Fn->length($reason) > 0) {
+        diag;
+        return 0;
+      }
       
-      # httpbin.org returns "application/json" as Content-Type
-      # Note: We use lower-case keys for compatibility
+      # 4. protocol: Check HTTP protocol version (e.g., "HTTP/1.1")
+      my $protocol = $res->protocol;
+      unless (Fn->contains($protocol, "HTTP/")) {
+        diag;
+        return 0;
+      }
+      
+      # 5. content: Verify response body
+      my $content = $res->content;
+      unless (Fn->contains($content, "httpbin.org")) {
+        diag;
+        return 0;
+      }
+      
+      # 6. headers: Verify headers Hash
+      my $headers = $res->headers;
       my $content_type = (string)$headers->get("content-type");
       unless (Fn->contains($content_type, "application/json")) {
         diag;
         return 0;
       }
 
-      # Check another common header like "server"
-      my $server = (string)$headers->get("server");
-      if (Fn->length($server) == 0) {
+      # 7. res (field): Verify the underlying Mojo::Message::Response object
+      my $mojo_res = $res->res;
+      unless ($mojo_res isa Mojo::Message::Response) {
+        diag;
+        return 0;
+      }
+      
+      # Double check using mojo_res directly
+      unless ($mojo_res->code == 200) {
         diag;
         return 0;
       }
