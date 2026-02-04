@@ -22,8 +22,6 @@ class HTTP::Tiny {
     
     # Use default values from Mojo::UserAgent
     $ua->transactor->set_name($self->create_default_agent);
-    $ua->set_inactivity_timeout(60.0);
-    $ua->set_insecure(1); # verify_SSL: 0 (default) -> insecure: 1
     $ua->set_max_redirects(5);
     
     $self->{ua} = $ua;
